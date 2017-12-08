@@ -7,7 +7,79 @@ import os
 import sys
 import threading
 from subprocess import Popen, check_output
+from colorama import init, Fore, Back, Style
+#from netCDF4 import Dataset
+init()
 
+DEBUG = True
+
+class Messages():
+    def __init__(self):
+        self.context = {'warning':Fore.YELLOW,
+                        'error':Fore.RED,
+                        'ok': Fore.GREEN,
+                        'normal': Style.NORMAL+Fore.WHITE,
+                        'header': Style.BRIGHT}
+    def build_msg(self,str_msg,context_str=None):
+        """
+        Constructs the desired strings for color and Style
+
+        Args;
+            str_msg: String the user wants to output
+            context_str: type of print style and color, key associated with self.context
+        Returns:
+            final_msg: Str containing the desired colors and styles
+        """
+
+        if context_str == None:
+            context_str = 'normal'
+
+        if context_str in self.context.keys():
+            final_msg = self.context[context_str]+ str_msg + Style.RESET_ALL
+        else:
+            raise ValueError("Not a valid context")
+        return final_msg
+
+    def msg(self,str_msg,context_str=None):
+        final_msg = self.build_msg(str_msg,context_str)
+        print('\n'+final_msg)
+
+    def dbg(self,str_msg,context_str=None):
+        final_msg = self.build_msg('[DEBUG]: ','header')
+        final_msg +=str_msg
+        final_msg = self.build_msg(final_msg,context_str)
+        print('\n'+final_msg)
+
+    def warn(self,str_msg):
+        final_msg = self.build_msg('[WARNING]: ','header')
+        final_msg = self.build_msg(final_msg+str_msg, 'warning')
+        print('\n'+final_msg)
+
+    def error(self,str_msg):
+        final_msg = self.build_msg('[ERROR]: ','header')
+        final_msg = self.build_msg(final_msg+str_msg,'error')
+        print('\n'+final_msg)
+
+    def respond(self,str_msg):
+        final_msg = self.build_msg(str_msg, 'ok')
+        print('\t'+final_msg)
+
+
+
+out = Messages()
+
+def parse_info(fname):
+    """
+    Uses ogr to parse the information of some GIS file and returns a dict of the
+    response of the things important to this script.
+
+    Args:
+        fname: Full path point to file containing GIS information
+
+    Returns:
+        Dict: Containg limited amounts of information from file for convenient ref.
+    """
+    pass
 
 def download_zipped_url(url):
     """
@@ -18,160 +90,191 @@ def download_zipped_url(url):
     z = zipfile.ZipFile(StringIO.StringIO(r.content))
     z.extractall('~/Downloads')
 
+def main():
 
-#Parge command line arguments
-p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
+    #Parge command line arguments
+    p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
 
-p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=True,
-                help="Path to shapefile that defines the basin")
+    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=True,
+                    help="Path to shapefile that defines the basin")
 
-p.add_argument('-c','--cell_size', dest='cell_size',required=False, default=50,
-                help="Pixel size to use for the basin in meters")
+    p.add_argument('-c','--cell_size', dest='cell_size',required=False, default=50,
+                    help="Pixel size to use for the basin in meters")
 
-p.add_argument('-dm','--dem', dest='dem',required=True,
-                help="DEM file in geotiff")
-
-
-# p.add_argument('-lf','--landfire', dest='landfire',required=False, action="store_true",
-#                 help="flag for what data type to use for vegetation maps")
-#
-# p.add_argument('-nl','--nlcd', dest='landfire',required=False, action="store_true",
-#                 help="flag for what data type to use for vegetation maps")
-
-p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
-                help="Location to check for veg data or download vegetation data")
-
-p.add_argument('-o','--output', dest='output',required=False, default='./output',
-                help="Location to output data")
-
-args = p.parse_args()
-
-msg = "SMRF Basin Setup"
-
-print("="*len(msg))
-print("SMRF Basin Setup {0}".format("v0.1.0"))
-print("="*len(msg))
-
-#==================== Check Inputs ======================= #
-
-if args.basin_shapefile.split('.')[-1] == 'shp':
-    basin_shp = args.basin_shapefile
-else:
-    print("File type must be ESRI shapefile (.shp)\nExiting...")
-    sys.exit()
-
-#Check and setup for an output dir, downloads dir, and temp dir
-required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
-
-#Filename and paths and potential sources
-images={'dem':{'path':None,'source':None},
-        'mask shapefile':{'path':None,'source':None},
-        'vegetation type':{'path':None,'source':None},
-        'vegetation height':{'path':None,'source':None},
-        'vegetation k':{'path':None,'source':None},
-        'vegetation tau':{'path':None,'source':None},
-        'maxus':{'path':None,'source':None}}
-
-#Populate Images for non downloaded files
-images['dem']['path'] = os.path.abspath(os.path.expanduser(args.dem))
-images['mask shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
-
-#Populate images for downloaded sources
-images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
-images['vegetation height']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
-images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt.ovr')
-images['vegetation height']['path'] = os.path.join(required_dirs['downloads'],'US_140EVH_12052016','Grid','us_140evh.ovr')
-
-for k,d in required_dirs.items():
-    full = os.path.abspath(os.path.expanduser(d))
-
-    if not os.path.isdir(os.path.dirname(full)):
-        raise IOError("Path to vegetation data/download directory does not exist.\n %s" % full)
+    p.add_argument('-dm','--dem', dest='dem',required=True,
+                    help="DEM file in geotiff")
 
 
-    if k != 'downloads':
-        if os.path.isdir(full):
-            print("\nWARNING: {0} folder exists, potential to overwrite non-downloaded files!".format(k))
+    # p.add_argument('-lf','--landfire', dest='landfire',required=False, action="store_true",
+    #                 help="flag for what data type to use for vegetation maps")
+    #
+    # p.add_argument('-nl','--nlcd', dest='landfire',required=False, action="store_true",
+    #                 help="flag for what data type to use for vegetation maps")
 
-        else:
-            print("\nMaking folder...")
-            os.mkdir(os.path.abspath(full))
+    p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
+                    help="Location to check for veg data or download vegetation data")
+
+    p.add_argument('-o','--output', dest='output',required=False, default='./output',
+                    help="Location to output data")
+
+    args = p.parse_args()
+
+    msg ="SMRF Basin Setup {0}".format("v0.1.0")
+    m = "="*len(msg)
+    out.msg(m,'header')
+    out.msg(msg,'header')
+    out.msg(m,'header')
+
+    #==================== Check Inputs ======================= #
+
+    if args.basin_shapefile.split('.')[-1] == 'shp':
+        basin_shp = args.basin_shapefile
     else:
-        if os.path.isdir(full):
-            print("{0} folder found!".format(k))
+        out.error("File type must be ESRI shapefile (.shp)\nExiting...")
+        sys.exit()
+
+    #Check and setup for an output dir, downloads dir, and temp dir
+    required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
+
+
+    #Filename and paths and potential sources
+    images={'dem':{'path':None,'source':None},
+            'mask shapefile':{'path':None,'source':None},
+            'vegetation type':{'path':None,'source':None,'map':None},
+            'vegetation height':{'path':None,'source':None,'map':None},
+            'vegetation k':{'path':None,'source':None},
+            'vegetation tau':{'path':None,'source':None},
+            'maxus':{'path':None,'source':None}}
+
+    #Populate Images for non downloaded files
+    images['dem']['path'] = os.path.abspath(os.path.expanduser(args.dem))
+    images['mask shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
+
+    #Populate images for downloaded sources
+    images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
+    images['vegetation height']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
+    images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt','hdr.adf')
+    images['vegetation height']['path'] = os.path.join(required_dirs['downloads'],'US_140EVH_12052016','Grid','us_140evh', 'hdr.adf')
+
+    for k,d in required_dirs.items():
+        full = os.path.abspath(os.path.expanduser(d))
+
+        if not os.path.isdir(os.path.dirname(full)):
+            raise IOError("Path to vegetation data/download directory does not exist.\n %s" % full)
+
+
+        if k != 'downloads':
+            if os.path.isdir(full):
+                out.warn("{0} folder exists, potential to overwrite non-downloaded files!".format(k))
+
+            else:
+                out.msg("Making folder...")
+                os.mkdir(os.path.abspath(full))
         else:
-            print("\nMaking {0} folder...".format(k))
-            os.mkdir(full)
+            if os.path.isdir(full):
+                out.respond("{0} folder found!".format(k))
+            else:
+                out.msg("Making {0} folder...".format(k))
+                os.mkdir(full)
 
-#==================== Downloads and Checking ======================= #
-for image_name in ['vegetation type', 'vegetation height']:
-    info = images[image_name]
-    info['path'] = os.path.abspath(os.path.expanduser(info['path']))
-    images[image_name] = info
+    #==================== Downloads and Checking ======================= #
+    for image_name in ['vegetation type', 'vegetation height']:
+        info = images[image_name]
+        info['path'] = os.path.abspath(os.path.expanduser(info['path']))
+        images[image_name] = info
 
-    print("\nChecking for {0} data in {1}...".format(image_name, required_dirs['downloads']))
+        out.msg("Checking for {0} data in {1}...".format(image_name, required_dirs['downloads']))
 
-    #Cycle through all the downloads
-    print("\nLooking for: \n%s " % info['path'])
-    if not os.path.isdir(os.path.dirname(info['path'])):
+        #Cycle through all the downloads
+        out.msg("Looking for: \n%s " % info['path'])
+        if not os.path.isdir(os.path.dirname(info['path'])):
 
-        #missing downloaded data
-        print("\nUnzipped folder not found, check for zipped folder.")
-        zipped = (os.path.dirname(os.path.dirname(info['path']))+'.zip')
-        print("Looking for:\n %s" % zipped)
+            #missing downloaded data
+            out.msg("Unzipped folder not found, check for zipped folder.")
+            zipped = (os.path.dirname(os.path.dirname(info['path']))+'.zip')
+            out.msg("Looking for:\n %s" % zipped)
 
-        if not os.path.isfile(zipped):
-            #Zip file does not exist
-            print("\nNo data found!\nDownloading %s ..." % image_name)
-            print("This could take up to 20mins, so sit back and relax.")
-            download_zipped_url(info['source'])
+            if not os.path.isfile(zipped):
+                #Zip file does not exist
+                out.warn("No data found!\nDownloading %s ..." % image_name)
+                out.warn("This could take up to 20mins, so sit back and relax.")
+                download_zipped_url(info['source'])
 
-        #Downloaded but not unzipped
+            #Downloaded but not unzipped
+            else:
+                out.respond("Zipped data found, unzipping...")
+                z = zipfile.ZipFile(zipped)
+                z.extractall(zipped)
+            #Download found as expected
         else:
-            print("\nZipped data found, unzipping...")
-            z = zipfile.ZipFile(zipped)
-            z.extractall(zipped)
-        #Download found as expected
-    else:
-        print("\n%s found!" % info['path'])
+            out.respond("found!")
 
-#==================== Processing ======================= #
-#Setup a workspace
-TEMP = required_dirs['temp']
-shp_out = required_dirs['output']
+        #CSV map should be in the downloaded folder name
+        map_src = os.path.dirname(os.path.dirname(os.path.dirname(info['path'])))
 
-#General info for basin shape file
-print("\nRetrieving basin outline info...\n")
-basin_shp_info = check_output(['ogrinfo','-al',basin_shp])
-parse_list = basin_shp_info.split('\n')
+        out.msg("Searching for {0} map...".format(image_name))
 
-#Desired proj
-proj = basin_shp.split('.')[0]+'.prj'
+        for root, dirnames, filenames in os.walk(map_src):
+            for f in filenames:
+                #looking for the only csv
+                if f.split('.')[-1] == 'csv':
+                    info['map'] = os.path.join(root,f)
+                    out.respond('{0} map found!\n\t{1}'.format(image_name,info['map']))
+                    break
 
-#Parse extents from basin info
-for l in parse_list:
-    if 'extent' in l.lower():
-        k,v = l.split(':')
-        parseable = ''.join( c for c in v if  c not in ' ()\n')
-        parseable = parseable.replace('-',',')
-        extent = [i for i in parseable.split(',')]
-        print(extent)
-        break
+        if info['map'] == None:
+            out.error("Could not find {0} map!".format(image_name))
+            sys.exit()
 
-#Reproject and clip according to the basin mask
-for name in ['vegetation height','vegetation type', 'dem']:
-    img = images[name]
-    #Get data loaded in
-    print("\nGetting {0} image info...".format(name))
+    #==================== Processing ======================= #
+    #Setup a workspace
+    TEMP = required_dirs['temp']
+    shp_out = required_dirs['output']
 
-    img_info = check_output(['gdalinfo',img['path']])
+    #General info for basin shape file
+    out.msg("Retrieving basin outline info...\n")
+    basin_shp_info = check_output(['ogrinfo','-al',basin_shp])
+    #out.dbg(basin_shp_info)
+    parse_list = basin_shp_info.split('\n')
 
-    fname = name.replace(' ', '_')
+    #Desired proj
+    proj = basin_shp.split('.')[0]+'.prj'
 
-    CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'.format(fname)))
+    #Parse extents from basin info
+    for l in parse_list:
+        if 'extent' in l.lower():
+            k,v = l.split(':')
+            parseable = ''.join( c for c in v if  c not in ' ()\n')
+            parseable = parseable.replace('-',',')
+            extent = [i for i in parseable.split(',')]
+            #out.dbg(extent)
+            break
 
-    print("\nReprojecting and clipping {0}...".format(name))
-    p = Popen(['gdalwarp','SRC_METHOD=NO_GEOTRANSFORM','-dstnodata', '"NaN"','-t_srs', proj,'-te',
-                extent[0],extent[1],extent[2],extent[3], '-overwrite',
-                img['path'], CLIPPED])
-    p.wait()
+    #Reproject and clip according to the basin mask
+    for name in ['vegetation height','vegetation type', 'dem']:
+        img = images[name]
+        #Get data loaded in
+        out.msg("Getting {0} image info...".format(name))
+
+        img_info = check_output(['gdalinfo',img['path']])
+
+        fname = name.replace(' ', '_')
+
+        CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'.format(fname)))
+
+        out.msg("Reprojecting and clipping {0} rasters...".format(name))
+        p = Popen(['gdalwarp','-dstnodata', '"NaN"','-t_srs', proj,'-te',
+                    extent[0],extent[1],extent[2],extent[3], '-tr',str(args.cell_size), str(args.cell_size),'-overwrite',
+                    img['path'], CLIPPED])
+
+        p.wait()
+
+        #Convert to Netcdf
+        out.msg("Converting {0} to NetCDF...".format(name))
+        NC = CLIPPED.split('.')[0]+'.nc'
+        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', CLIPPED,NC])
+        s.wait()
+        
+
+if __name__ == '__main__':
+    main()
