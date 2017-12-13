@@ -6,7 +6,7 @@ import StringIO
 import os
 import sys
 import threading
-from subprocess import Popen, check_output
+from subprocess import Popen, check_output, PIPE
 from colorama import init, Fore, Back, Style
 from netCDF4 import Dataset
 from datetime import datetime
@@ -151,12 +151,6 @@ def main():
 
 #==================== Check Inputs ======================= #
 
-    if args.basin_shapefile.split('.')[-1] == 'shp':
-        basin_shp = args.basin_shapefile
-    else:
-        out.error("File type must be ESRI shapefile (.shp)\nExiting...")
-        sys.exit()
-
     # Check and setup for an output dir, downloads dir, and temp dir
     required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
 
@@ -171,9 +165,15 @@ def main():
             'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
             'maxus':{'path':None,'source':None}}
 
+    #Only accept .shp for now
+    if args.basin_shapefile.split('.')[-1] == 'shp':
+        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
+    else:
+        out.error("File type must be ESRI shapefile (.shp)\nExiting...")
+        sys.exit()
+
     # Populate Images for non downloaded files
     images['dem']['path'] = os.path.abspath(os.path.expanduser(args.dem))
-    images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
 
     # Populate images for downloaded sources
     images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
@@ -181,12 +181,12 @@ def main():
     images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt','hdr.adf')
     images['vegetation height']['path'] = os.path.join(required_dirs['downloads'],'US_140EVH_12052016','Grid','us_140evh', 'hdr.adf')
 
+    #Make directories and create setup
     for k,d in required_dirs.items():
         full = os.path.abspath(os.path.expanduser(d))
 
         if not os.path.isdir(os.path.dirname(full)):
             raise IOError("Path to vegetation data/download directory does not exist.\n %s" % full)
-
 
         if k != 'downloads':
             if os.path.isdir(full):
@@ -259,12 +259,11 @@ def main():
 
     # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
-    basin_shp_info = check_output(['ogrinfo','-al',basin_shp])
-    #out.dbg(basin_shp_info)
+    basin_shp_info = check_output(['ogrinfo','-al',images['shapefile']['path']])
     parse_list = basin_shp_info.split('\n')
 
-    # Parse the desired proj
-    proj = basin_shp.split('.')[0]+'.prj'
+    # Parse the desired projection
+    proj = images['shapefile']['path'].split('.')[0]+'.prj'
 
     # Parse extents from basin info
     for l in parse_list:
@@ -276,9 +275,23 @@ def main():
             #out.dbg(extent)
             break
 
+    #Create a tiff of the mask from shapefile then conver to netcdf
+    images['mask']['path'] = os.path.join(TEMP,'mask.tiff')
+    z = Popen(['gdal_rasterize', '-tr',str(args.cell_size), str(args.cell_size),
+               '-te', extent[0],extent[1],extent[2],extent[3],
+               '-burn','1', '-ot','int', images['shapefile']['path'],
+                images['mask']['path']],stdout=PIPE)
+    z.wait()
+
+    NC = os.path.abspath(os.path.join(TEMP,'clipped_mask.nc'))
+    s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images['mask']['path'],NC],stdout=PIPE)
+    s.wait()
+    images['mask']['path'] = NC
+
     # Reproject and clip according to the basin mask
     for name in ['vegetation height','vegetation type', 'dem']:
         img = images[name]
+
         #Get data loaded in
         out.msg("Getting {0} image info...".format(name))
 
@@ -289,24 +302,27 @@ def main():
         CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
-        p = Popen(['gdalwarp','-dstnodata', '"NaN"','-t_srs', proj,'-te',
-                    extent[0],extent[1],extent[2],extent[3], '-tr',str(args.cell_size), str(args.cell_size),'-overwrite',
-                    img['path'], CLIPPED])
+        p = Popen(['gdalwarp','-t_srs', proj,'-te', extent[0],extent[1],
+                    extent[2],extent[3], '-tr',str(args.cell_size),
+                    str(args.cell_size),'-overwrite', img['path'], CLIPPED],
+                    stdout=PIPE)
 
         p.wait()
 
         # Convert to Netcdf
         out.msg("Converting {0} to NetCDF...".format(name))
         NC = CLIPPED.split('.')[0]+'.nc'
-        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', CLIPPED,NC])
+        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', CLIPPED,NC],stdout=PIPE)
         images[name]['path'] = NC
         s.wait()
 
     #Building the final netcdf
-    out.msg("Creating final output for netcdf...")
+    out.msg("\nCreating final output for netcdf...")
     x = np.arange(float(extent[0]), float(extent[2]),float(args.cell_size),dtype=float)
     y = np.arange(float(extent[1]),float(extent[3]),float(args.cell_size),dtype=float)
-    y = y[0:-1]
+    #HACK
+    #y = y[0:-1]
+
     out.dbg('Output netCDF file is {0}X{1}'.format(x.shape[0],y.shape[0]))
     TOPO_PATH = os.path.join(required_dirs['output'],'topo.nc')
     topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
@@ -316,6 +332,7 @@ def main():
         datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     setattr(topo, 'last_modified', h)
 
+    #Add dimensions, variables and such
     topo.createDimension('y', y.shape[0])
     topo.createDimension('x', x.shape[0])
 
@@ -346,7 +363,7 @@ def main():
 
     #Cycle through and add/generate all the images that go into the topo.nc
     for name, image in images.items():
-        if name not in ['shapefile', 'maxus']:
+        if name not in ['shapefile','maxus']:
             out.msg("Adding variable {0}".format(name))
 
             if 'short_name' in image.keys():
@@ -359,24 +376,35 @@ def main():
 
             if image['path'] != None and os.path.isfile(image['path']):
                 d = Dataset(image['path'],'r')
-                topo.variables[short_name][:] = d.variables['Band1'][:]
+                try:
+                    topo.variables[short_name][:] = d.variables['Band1'][:]
+                except Exception as e:
+                    print short_name
+                    #print(d.variables)
+                    raise(e)
                 d.close()
+
 
     #==================== Post-Processing ======================= #
     #CALCULATE TAU AND K
+    out.msg('Calculating veg_tau and veg_k...')
+
+    #Open veg tyep data set convert to an array and creat empty vars to populate
     d = Dataset(images['vegetation type']['path'],'r')
     veggies = np.array(d.variables['Band1'][:])
     veg_tau = np.zeros(veggies.shape)
     veg_k = np.zeros(veggies.shape)
 
+    #Get the unique values available in the array
     veg_values = np.unique(np.array(topo.variables['veg_type'][:]))
     d.close()
 
-    #
+    #Open the key provided by Landfire to auto assign values in Tau and K
     f = images['vegetation type']['map']
     veg_map = pd.read_csv(f)
     veg_map = veg_map.ix[veg_map['VALUE'].isin(veg_values)]
 
+    #Cycle through the key words in the table used for conversion and assign values
     for k,keywords in veg_keywords.items():
         for word in keywords:
             veg_filter = veg_map['VALUE'].ix[veg_map['EVT_SBCLS']==word]
@@ -384,11 +412,13 @@ def main():
                 veg_tau[veggies==vtype]=tau[k]
                 veg_k[veggies==vtype]=mu[k]
 
-    topo.variables['veg_tau'][:]=veg_tau
-    topo.variables['veg_k'][:]=veg_k
+    topo.variables['veg_tau'][:] = veg_tau
+    topo.variables['veg_k'][:] = veg_k
 
+    #REMAP VEGETATION HEIGHT
+    out.msg('Estimating vegetation heights...')
 
-    #REMAP Veg Height
+    #Open veg heights and convert to array
     d = Dataset(images['vegetation height']['path'],'r')
     veg_height = np.array(d.variables['Band1'][:])
     final_veg_height = np.zeros(veg_height.shape)
@@ -396,12 +426,13 @@ def main():
     height_values = np.unique(np.array(topo.variables['veg_height'][:]))
     d.close()
 
+    #Open the key provided by Landfire to auto assign values in the final veg height
     f = images['vegetation height']['map']
     height_key = pd.read_csv(f)
     height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
     height_map = {}
 
-    #Parse the veg height ranges
+    #Parse the veg height ranges and create a dictionary for converting
     for i,row in height_key.iterrows():
         description = row['CLASSNAMES']
         height_range = []
@@ -415,16 +446,21 @@ def main():
         height_map[row['VALUE']] = height_range
 
     count = 0
-    #Reassign random height values
+
+    #Reassign random height values or max values
     for k,height in height_map.items():
             ind = veg_height==k
-            #rand = np.random.rand(*veg_height[ind].shape)
-            #veg_height[ind] = (rand* height[1]) + height[0]
+            #Randomized
+            rand = np.random.rand(*veg_height[ind].shape)
+            final_veg_height[ind] = (rand* height[1]) + height[0]
 
-            final_veg_height[ind] = max(height)
-            count += len(ind)
-            print(final_veg_height[ind])
+            #Max
+            #final_veg_height[ind] = max(height)
+            #count += len(ind)
+
+    #Reassign to the NetCDF and finish
     topo.variables['veg_height'][:] = final_veg_height
     topo.close()
+
 if __name__ == '__main__':
     main()
