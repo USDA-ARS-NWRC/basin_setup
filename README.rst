@@ -4,15 +4,15 @@ The basin setup tool is a python script designed to create the required inputs f
 SMRF_ and AWSF_ simulations. The tool outputs a single netcdf file containing:
 
 .. _SMRF: https://smrf.readthedocs.io/en/develop/
-.. _ASMF: ihttps://github.com/USDA-ARS-NWRC/AWSF
+.. _ASMF: https://github.com/USDA-ARS-NWRC/AWSM
 
 
 * Basin mask
 * Basin DEM
 * Basin Vegetation type (From NLCD)
 * Basin Vegetation Height (From Landfire)
-* Basin Vegetaton Tau
-* Basin Vegetaton K
+* Basin Vegetation Tau
+* Basin Vegetation K
 
 
 INSTALL
