@@ -8,7 +8,12 @@ import sys
 import threading
 from subprocess import Popen, check_output
 from colorama import init, Fore, Back, Style
-#from netCDF4 import Dataset
+from netCDF4 import Dataset
+from datetime import datetime
+import numpy as np
+import pandas as pd
+
+
 init()
 
 DEBUG = True
@@ -64,8 +69,6 @@ class Messages():
         final_msg = self.build_msg(str_msg, 'ok')
         print('\t'+final_msg)
 
-
-
 out = Messages()
 
 def parse_info(fname):
@@ -92,7 +95,7 @@ def download_zipped_url(url):
 
 def main():
 
-    #Parge command line arguments
+    # Parge command line arguments
     p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
 
     p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=True,
@@ -119,13 +122,34 @@ def main():
 
     args = p.parse_args()
 
-    msg ="SMRF Basin Setup {0}".format("v0.1.0")
+    msg ="Basin Setup Tool{0}".format("v0.1.0")
     m = "="*len(msg)
     out.msg(m,'header')
     out.msg(msg,'header')
     out.msg(m,'header')
 
-    #==================== Check Inputs ======================= #
+    #Vegetation Tau and K table from Link and Marks 1999
+    # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract
+    tau = {'open':1.0,
+           'deciduous':0.44,
+           'mixed conifer and deciduous':0.30,
+           'medium conifer':0.20,
+           'dense conifer':0.16}
+    mu = {'open':0.0,
+           'deciduous':0.025,
+           'mixed conifer and deciduous':0.033,
+           'medium conifer':0.040,
+           'dense conifer':0.074}
+
+    #Keywords for landfire data sets
+    veg_keywords = {'open':['Sparsely vegetated','graminoid'],
+                    'deciduous':['Deciduous open tree canopy'],
+                    'mixed conifer and deciduous':['Mixed evergreen-deciduous shrubland'],
+                    'medium conifer':['Mixed evergreen-deciduous open tree canopy'],
+                    'dense conifer':['Evergreen closed tree canopy','conifer']}
+
+
+#==================== Check Inputs ======================= #
 
     if args.basin_shapefile.split('.')[-1] == 'shp':
         basin_shp = args.basin_shapefile
@@ -133,24 +157,25 @@ def main():
         out.error("File type must be ESRI shapefile (.shp)\nExiting...")
         sys.exit()
 
-    #Check and setup for an output dir, downloads dir, and temp dir
+    # Check and setup for an output dir, downloads dir, and temp dir
     required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
 
 
-    #Filename and paths and potential sources
+    # Filename and paths and potential sources
     images={'dem':{'path':None,'source':None},
-            'mask shapefile':{'path':None,'source':None},
-            'vegetation type':{'path':None,'source':None,'map':None},
-            'vegetation height':{'path':None,'source':None,'map':None},
-            'vegetation k':{'path':None,'source':None},
-            'vegetation tau':{'path':None,'source':None},
+            'shapefile':{'path':None,'source':None},
+            'mask':{'path':None,'source':None,'short_name':'mask'},
+            'vegetation type':{'path':None,'source':None,'map':None,'short_name':'veg_type'},
+            'vegetation height':{'path':None,'source':None,'map':None,'short_name':'veg_height'},
+            'vegetation k':{'path':None,'source':None,'short_name':'veg_k'},
+            'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
             'maxus':{'path':None,'source':None}}
 
-    #Populate Images for non downloaded files
+    # Populate Images for non downloaded files
     images['dem']['path'] = os.path.abspath(os.path.expanduser(args.dem))
-    images['mask shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
+    images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
 
-    #Populate images for downloaded sources
+    # Populate images for downloaded sources
     images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
     images['vegetation height']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
     images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt','hdr.adf')
@@ -189,34 +214,34 @@ def main():
         out.msg("Looking for: \n%s " % info['path'])
         if not os.path.isdir(os.path.dirname(info['path'])):
 
-            #missing downloaded data
+            # Missing downloaded data
             out.msg("Unzipped folder not found, check for zipped folder.")
             zipped = (os.path.dirname(os.path.dirname(info['path']))+'.zip')
             out.msg("Looking for:\n %s" % zipped)
 
             if not os.path.isfile(zipped):
-                #Zip file does not exist
+                # Zip file does not exist
                 out.warn("No data found!\nDownloading %s ..." % image_name)
                 out.warn("This could take up to 20mins, so sit back and relax.")
                 download_zipped_url(info['source'])
 
-            #Downloaded but not unzipped
+            # Downloaded but not unzipped
             else:
                 out.respond("Zipped data found, unzipping...")
                 z = zipfile.ZipFile(zipped)
                 z.extractall(zipped)
-            #Download found as expected
+            # Download found as expected
         else:
             out.respond("found!")
 
-        #CSV map should be in the downloaded folder name
+        # CSV map should be in the downloaded folder name
         map_src = os.path.dirname(os.path.dirname(os.path.dirname(info['path'])))
 
         out.msg("Searching for {0} map...".format(image_name))
 
         for root, dirnames, filenames in os.walk(map_src):
             for f in filenames:
-                #looking for the only csv
+                # Looking for the only csv
                 if f.split('.')[-1] == 'csv':
                     info['map'] = os.path.join(root,f)
                     out.respond('{0} map found!\n\t{1}'.format(image_name,info['map']))
@@ -226,21 +251,22 @@ def main():
             out.error("Could not find {0} map!".format(image_name))
             sys.exit()
 
+
     #==================== Processing ======================= #
-    #Setup a workspace
+    # Setup a workspace
     TEMP = required_dirs['temp']
     shp_out = required_dirs['output']
 
-    #General info for basin shape file
+    # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
     basin_shp_info = check_output(['ogrinfo','-al',basin_shp])
     #out.dbg(basin_shp_info)
     parse_list = basin_shp_info.split('\n')
 
-    #Desired proj
+    # Parse the desired proj
     proj = basin_shp.split('.')[0]+'.prj'
 
-    #Parse extents from basin info
+    # Parse extents from basin info
     for l in parse_list:
         if 'extent' in l.lower():
             k,v = l.split(':')
@@ -250,7 +276,7 @@ def main():
             #out.dbg(extent)
             break
 
-    #Reproject and clip according to the basin mask
+    # Reproject and clip according to the basin mask
     for name in ['vegetation height','vegetation type', 'dem']:
         img = images[name]
         #Get data loaded in
@@ -269,12 +295,136 @@ def main():
 
         p.wait()
 
-        #Convert to Netcdf
+        # Convert to Netcdf
         out.msg("Converting {0} to NetCDF...".format(name))
         NC = CLIPPED.split('.')[0]+'.nc'
         s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', CLIPPED,NC])
+        images[name]['path'] = NC
         s.wait()
-        
 
+    #Building the final netcdf
+    out.msg("Creating final output for netcdf...")
+    x = np.arange(float(extent[0]), float(extent[2]),float(args.cell_size),dtype=float)
+    y = np.arange(float(extent[1]),float(extent[3]),float(args.cell_size),dtype=float)
+    y = y[0:-1]
+    out.dbg('Output netCDF file is {0}X{1}'.format(x.shape[0],y.shape[0]))
+    TOPO_PATH = os.path.join(required_dirs['output'],'topo.nc')
+    topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
+
+    #Add modification note
+    h = '[{}] Data added or updated'.format(
+        datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    setattr(topo, 'last_modified', h)
+
+    topo.createDimension('y', y.shape[0])
+    topo.createDimension('x', x.shape[0])
+
+    topo.createVariable('y', 'f', 'y')
+    topo.createVariable('x', 'f', 'x')
+
+    # the y variable attributes
+    topo.variables['y'].setncattr(
+            'units',
+            'meters')
+    topo.variables['y'].setncattr(
+            'description',
+            'UTM, north south')
+    topo.variables['y'].setncattr(
+            'long_name',
+            'y coordinate')
+
+    # the x variable attributes
+    topo.variables['x'].setncattr(
+            'units',
+            'meters')
+    topo.variables['x'].setncattr(
+            'description',
+            'UTM, east west')
+    topo.variables['x'].setncattr(
+            'long_name',
+            'x coordinate')
+
+    #Cycle through and add/generate all the images that go into the topo.nc
+    for name, image in images.items():
+        if name not in ['shapefile', 'maxus']:
+            out.msg("Adding variable {0}".format(name))
+
+            if 'short_name' in image.keys():
+                short_name = image['short_name']
+            else:
+                short_name = name
+
+            topo.createVariable(short_name, 'f',('y','x'))
+            topo.variables[short_name].setncattr('long_name',name)
+
+            if image['path'] != None and os.path.isfile(image['path']):
+                d = Dataset(image['path'],'r')
+                topo.variables[short_name][:] = d.variables['Band1'][:]
+                d.close()
+
+    #==================== Post-Processing ======================= #
+    #CALCULATE TAU AND K
+    d = Dataset(images['vegetation type']['path'],'r')
+    veggies = np.array(d.variables['Band1'][:])
+    veg_tau = np.zeros(veggies.shape)
+    veg_k = np.zeros(veggies.shape)
+
+    veg_values = np.unique(np.array(topo.variables['veg_type'][:]))
+    d.close()
+
+    #
+    f = images['vegetation type']['map']
+    veg_map = pd.read_csv(f)
+    veg_map = veg_map.ix[veg_map['VALUE'].isin(veg_values)]
+
+    for k,keywords in veg_keywords.items():
+        for word in keywords:
+            veg_filter = veg_map['VALUE'].ix[veg_map['EVT_SBCLS']==word]
+            for vtype in veg_filter.tolist():
+                veg_tau[veggies==vtype]=tau[k]
+                veg_k[veggies==vtype]=mu[k]
+
+    topo.variables['veg_tau'][:]=veg_tau
+    topo.variables['veg_k'][:]=veg_k
+
+
+    #REMAP Veg Height
+    d = Dataset(images['vegetation height']['path'],'r')
+    veg_height = np.array(d.variables['Band1'][:])
+    final_veg_height = np.zeros(veg_height.shape)
+
+    height_values = np.unique(np.array(topo.variables['veg_height'][:]))
+    d.close()
+
+    f = images['vegetation height']['map']
+    height_key = pd.read_csv(f)
+    height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
+    height_map = {}
+
+    #Parse the veg height ranges
+    for i,row in height_key.iterrows():
+        description = row['CLASSNAMES']
+        height_range = []
+        for word in description.split(' '):
+            try:
+                height_range.append(float(word))
+            except:
+                if description == 'Sparse Vegetation Height':
+                    height_range = [0,0.1]
+
+        height_map[row['VALUE']] = height_range
+
+    count = 0
+    #Reassign random height values
+    for k,height in height_map.items():
+            ind = veg_height==k
+            #rand = np.random.rand(*veg_height[ind].shape)
+            #veg_height[ind] = (rand* height[1]) + height[0]
+
+            final_veg_height[ind] = max(height)
+            count += len(ind)
+            print(final_veg_height[ind])
+    topo.variables['veg_height'][:] = final_veg_height
+    topo.close()
 if __name__ == '__main__':
     main()
