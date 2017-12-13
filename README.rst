@@ -1,13 +1,19 @@
 BASIN SETUP TOOL v0.1.0
 =======================
 The basin setup tool is a python script designed to create the required inputs for running
-SMRF and AWSM. The tool outputs a netcdf file containing:
+SMRF_ and AWSF_ simulations. The tool outputs a single netcdf file containing:
+
+.. _SMRF: https://smrf.readthedocs.io/en/develop/
+.. _ASMF: ihttps://github.com/USDA-ARS-NWRC/AWSF
+
 
 * Basin mask
 * Basin DEM
 * Basin Vegetation type (From NLCD)
 * Basin Vegetation Height (From Landfire)
-* Basin Vegetaiton 
+* Basin Vegetaton Tau
+* Basin Vegetaton K
+
 
 INSTALL
 -------
@@ -26,18 +32,31 @@ http://trac.osgeo.org/gdal/wiki/BuildHints
 
 Once GDAL is installed, install the python requirements using pip:
 
-pip install -r requirements.txt
+.. code-block:: bash
+
+	$ pip install -r requirements.txt
 
 Finally to install basin_setup for commandline use use:
 
-sudo make install
+.. code-block:: bash
+
+	$ sudo make install
 
 If you want to develop on basin_setup use the following command to install the utility
 so that you changes to the source will be used without having to reinstall
 
-sudo make develop
+
+.. code-block:: bash
+
+	$ sudo make develop
 
 
 USAGE
 -----
-basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif
+To use basin_setup at it's simplest form, just provide a shapefile and dem:
+
+.. code-block:: bash
+
+	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif
+
+
