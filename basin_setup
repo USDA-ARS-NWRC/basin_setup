@@ -12,7 +12,7 @@ from netCDF4 import Dataset
 from datetime import datetime
 import numpy as np
 import pandas as pd
-from shutil import copyfile
+from shutil import copyfile,rmtree
 import zipfile
 
 init()
@@ -512,7 +512,6 @@ def main():
     height_key = pd.read_csv(f)
     height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
     height_map = {}
-    #print(height_key)
 
     #Parse the veg height ranges and create a dictionary for converting
     for i,row in height_key.iterrows():
@@ -525,10 +524,10 @@ def main():
                 #Exceptions to veg heights not provided with a height that are guessed
                 if description in ['Sparse Vegetation Height','NASS-Row Crop',' NASS-Close Grown Crop']:
                     height_range = [0,0.1]
-
                 elif description in ['Developed-Upland Deciduous Forest','Developed-Upland Mixed Forest','Developed - Medium Intensity']:
                     height_range = [0,5]
                 elif description in ['Developed-Upland Shrubland','NASS-Vineyard']:
+                    ind = veg_height==k
                     height_range = [0,2]
                 elif description in ['Developed-Upland Herbaceous','NASS-Wheat']:
                     height_range = [0,1]
@@ -538,7 +537,6 @@ def main():
 
     #Reassign random height values or max values
     for k,height in height_map.items():
-            ind = veg_height==k
             #Randomized
             # rand = np.random.rand(*veg_height[ind].shape)
             # final_veg_height[ind] = (rand* height[1]) + height[0]
@@ -555,5 +553,10 @@ def main():
     topo.variables['veg_height'][:] = final_veg_height
     topo.close()
 
+    #Clean up
+    out.msg('Cleaning up temporary files.')
+    out.msg('\nRequested output written to:\n{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
+    out.msg("Basin setup files complete!")
+    rmtree(required_dirs['temp'])
 if __name__ == '__main__':
     main()
