@@ -53,10 +53,21 @@ so that you changes to the source will be used without having to reinstall
 
 USAGE
 -----
+To use basin_setup you only need a shapefile of your basins boundary and a dem that contains the 
+the extents of the shapefile. **It is required that the shapefile is in UTM.**. The projection of
+the DEM wil be converted to that of the shapefile.
+
 To use basin_setup at it's simplest form, just provide a shapefile and dem:
 
 .. code-block:: bash
 
 	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif
+
+To specify the cell size use the  cellsize flag which is specified in meters, if it is not used the default is 50m:
+
+.. code-block:: bash
+
+	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif -- cell_size 10
+
 
 
