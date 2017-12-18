@@ -41,10 +41,22 @@ class Messages():
             context_str = 'normal'
 
         if context_str in self.context.keys():
+            if type(str_msg) == list:
+                str_msg = ', '.join([str(s) for s in str_msg])
+
             final_msg = self.context[context_str]+ str_msg + Style.RESET_ALL
         else:
             raise ValueError("Not a valid context")
         return final_msg
+
+    def _structure_msg(self, a_msg):
+        if type(a_msg) == list:
+            a_msg = ', '.join([str(s) for s in a_msg])
+
+        if type(a_msg)!=str:
+            a = str(a_msg)
+
+        return a_msg
 
     def msg(self,str_msg,context_str=None):
         final_msg = self.build_msg(str_msg,context_str)
@@ -52,7 +64,7 @@ class Messages():
 
     def dbg(self,str_msg,context_str=None):
         final_msg = self.build_msg('[DEBUG]: ','header')
-        final_msg +=str_msg
+        final_msg+=self._structure_msg(str_msg)
         final_msg = self.build_msg(final_msg,context_str)
         print('\n'+final_msg)
 
@@ -72,7 +84,7 @@ class Messages():
 
 out = Messages()
 
-def parse_info(fname):
+def parse_extent(fname):
     """
     Uses ogr to parse the information of some GIS file and returns a dict of the
     response of the things important to this script.
@@ -81,9 +93,39 @@ def parse_info(fname):
         fname: Full path point to file containing GIS information
 
     Returns:
-        Dict: Containg limited amounts of information from file for convenient ref.
+        extent: containing images extent in str type.
     """
-    pass
+    file_type = fname.split('.')[-1]
+    if file_type == 'shp':
+        basin_shp_info = check_output(['ogrinfo','-al',fname])
+        parse_list = basin_shp_info.split('\n')
+        # Parse extents from basin info
+        for l in parse_list:
+            if 'extent' in l.lower():
+                k,v = l.split(':')
+                parseable = ''.join( c for c in v if  c not in ' ()\n')
+                parseable = parseable.replace('-',',')
+                extent = [i for i in parseable.split(',')]
+                out.dbg(extent)
+                break
+    elif file_type == 'tif':
+        basin_shp_info = check_output(['gdalinfo',fname])
+        parse_list = basin_shp_info.split('\n')
+        extent = []
+        for l in parse_list:
+            if 'lower left' in l.lower() or 'upper right' in l.lower():
+                 for w in l.split(' '):
+                     try:
+                         if len(extent) <=4:
+                             parseable = ''.join( c for c in w if  c not in ' ,()\n')
+                             print(parseable)
+                             extent.append(float(parseable))
+                     except:
+                        pass
+    else:
+        raise IOError("File type .{0} not recoginizeable for parsing extent".format(file_type))
+
+    return extent
 
 def download_zipped_url(url):
     """
@@ -159,13 +201,6 @@ def main():
     p.add_argument('-dm','--dem', dest='dem',required=True,
                     help="DEM file in geotiff")
 
-
-    # p.add_argument('-lf','--landfire', dest='landfire',required=False, action="store_true",
-    #                 help="flag for what data type to use for vegetation maps")
-    #
-    # p.add_argument('-nl','--nlcd', dest='landfire',required=False, action="store_true",
-    #                 help="flag for what data type to use for vegetation maps")
-
     p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
                     help="Location to check for veg data or download vegetation data")
 
@@ -175,7 +210,7 @@ def main():
     args = p.parse_args()
 
     msg ="Basin Setup Tool {0}".format("0.1.0")
-    m = "="*len(msg)
+    m = "="*(len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')
     out.msg(m,'header')
@@ -201,7 +236,7 @@ def main():
                     'dense conifer':['Evergreen closed tree canopy','conifer']}
 
 
-#==================== Check Inputs ======================= #
+#==================== Check Inputs/ Setup ======================= #
 
     # Check and setup for an output dir, downloads dir, and temp dir
     required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
@@ -313,21 +348,10 @@ def main():
 
     # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
-    basin_shp_info = check_output(['ogrinfo','-al',images['shapefile']['path']])
-    parse_list = basin_shp_info.split('\n')
+    extent = parse_extent(images['shapefile']['path'])
 
     # Parse the desired projection
     proj = images['shapefile']['path'].split('.')[0]+'.prj'
-
-    # Parse extents from basin info
-    for l in parse_list:
-        if 'extent' in l.lower():
-            k,v = l.split(':')
-            parseable = ''.join( c for c in v if  c not in ' ()\n')
-            parseable = parseable.replace('-',',')
-            extent = [i for i in parseable.split(',')]
-            #out.dbg(extent)
-            break
 
     #Create a tiff of the mask from shapefile then conver to netcdf
     images['mask']['path'] = os.path.join(TEMP,'mask.tiff')
@@ -372,10 +396,14 @@ def main():
 
     #Building the final netcdf
     out.msg("\nCreating final output for netcdf...")
-    x = np.arange(float(extent[0]), float(extent[2]),float(args.cell_size),dtype=float)
-    y = np.arange(float(extent[1]),float(extent[3]),float(args.cell_size),dtype=float)
-    #HACK
-    #y = y[0:-1]
+
+    #Setup the extent using the files we just generated. The extent is decided oddly
+    #In gdal so it was tough to generate the extents manually, this way we let
+    # gdal managae it.
+    extent = parse_extent(CLIPPED)
+    x = np.arange(int(extent[0]),int(extent[2]),int(args.cell_size))
+    y = np.arange(int(extent[1]),int(extent[3]),int(args.cell_size))
+
 
     out.dbg('Output netCDF file is {0}X{1}'.format(x.shape[0],y.shape[0]))
     TOPO_PATH = os.path.join(required_dirs['output'],'topo.nc')
@@ -505,13 +533,16 @@ def main():
     for k,height in height_map.items():
             ind = veg_height==k
             #Randomized
-            rand = np.random.rand(*veg_height[ind].shape)
-            final_veg_height[ind] = (rand* height[1]) + height[0]
+            # rand = np.random.rand(*veg_height[ind].shape)
+            # final_veg_height[ind] = (rand* height[1]) + height[0]
 
             #Max
             #final_veg_height[ind] = max(height)
             #count += len(ind)
 
+            #Avg
+            final_veg_height[ind] = np.mean(height)
+            count += len(ind)
     #Reassign to the NetCDF and finish
     topo.variables['veg_height'][:] = final_veg_height
     topo.close()
