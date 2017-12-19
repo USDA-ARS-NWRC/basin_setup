@@ -9,7 +9,7 @@ SMRF_ and AWSM_ simulations. The tool outputs a single netcdf file containing:
 
 * Basin mask
 * Basin DEM
-* Basin Vegetation type (From NLCD)
+* Basin Vegetation type (From Landfire)
 * Basin Vegetation Height (From Landfire)
 * Basin Vegetation Tau
 * Basin Vegetation K
@@ -26,7 +26,7 @@ INSTALL
 
 To begin the install for basin_setup, ensure that GDAL is compiled from source. 
 Note: Do not install the python library for GDAL but rather the command line utiltiies.
-To compile from source follow the instructions provided at :
+To compile from source follow the instructions provided at:
 
 http://trac.osgeo.org/gdal/wiki/BuildHints
 
@@ -54,7 +54,7 @@ so that you changes to the source will be used without having to reinstall
 USAGE
 -----
 To use basin_setup you only need a shapefile of your basins boundary and a dem that contains the 
-the extents of the shapefile. **It is required that the shapefile is in UTM.**. The projection of
+the extents of the shapefile. **It is required that the shapefile is in UTM.** The projection of
 the DEM wil be converted to that of the shapefile.
 
 To use basin_setup at it's simplest form, just provide a shapefile and dem:

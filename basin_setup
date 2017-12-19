@@ -527,7 +527,6 @@ def main():
                 elif description in ['Developed-Upland Deciduous Forest','Developed-Upland Mixed Forest','Developed - Medium Intensity']:
                     height_range = [0,5]
                 elif description in ['Developed-Upland Shrubland','NASS-Vineyard']:
-                    ind = veg_height==k
                     height_range = [0,2]
                 elif description in ['Developed-Upland Herbaceous','NASS-Wheat']:
                     height_range = [0,1]
@@ -537,6 +536,8 @@ def main():
 
     #Reassign random height values or max values
     for k,height in height_map.items():
+            ind = veg_height==k
+
             #Randomized
             # rand = np.random.rand(*veg_height[ind].shape)
             # final_veg_height[ind] = (rand* height[1]) + height[0]
