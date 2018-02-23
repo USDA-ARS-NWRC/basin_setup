@@ -186,114 +186,78 @@ def  convert_shapefile(fname,out_f):
         # a.wait()
         # os.remove(fname)
 
-def main():
+def setup_and_check(required_dirs,basin_shapefile,dem):
+        """
+        Check the arguments that were provided and provides some of the directory
+        structure for the setup.
 
-    # Parge command line arguments
-    p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
+        Args:
+            required_dirs: dictionary of directories to be used
+            basin_shapefile: path to shape file of the basin outline
+            dem: path to the dem that the shapefile would exist in.
 
-    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=True,
-                    help="Path to shapefile that defines the basin")
+        Return:
+            images: dictionary of paths relevant to the final products.
+        """
+        # Setup a workspace
+        TEMP = required_dirs['temp']
 
-    p.add_argument('-c','--cell_size', dest='cell_size',required=False, default=50,
-                    help="Pixel size to use for the basin in meters")
+        # Filename and paths and potential sources
+        images={'dem':{'path':None,'source':None},
+                'shapefile':{'path':None,'source':None},
+                'mask':{'path':None,'source':None,'short_name':'mask'},
+                'vegetation type':{'path':None,'source':None,'map':None,'short_name':'veg_type'},
+                'vegetation height':{'path':None,'source':None,'map':None,'short_name':'veg_height'},
+                'vegetation k':{'path':None,'source':None,'short_name':'veg_k'},
+                'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
+                'maxus':{'path':None,'source':None}}
 
-    p.add_argument('-dm','--dem', dest='dem',required=True,
-                    help="DEM file in geotiff")
+        #Only accept .shp for now
+        if basin_shapefile.split('.')[-1] != 'shp':
+            images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
+            fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
+            images['shapefile']['path'] = os.path.join(TEMP,fname+'.shp')
+            convert_shapefile(basin_shapefile,images['shapefile']['path'])
 
-    p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
-                    help="Location to check for veg data or download vegetation data")
-
-    p.add_argument('-o','--output', dest='output',required=False, default='./output',
-                    help="Location to output data")
-
-    args = p.parse_args()
-
-    msg ="Basin Setup Tool {0}".format("0.1.0")
-    m = "="*(len(msg)+1)
-    out.msg(m,'header')
-    out.msg(msg,'header')
-    out.msg(m,'header')
-
-    #Vegetation Tau and K table from Link and Marks 1999
-    # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract
-    tau = {'open':1.0,
-           'deciduous':0.44,
-           'mixed conifer and deciduous':0.30,
-           'medium conifer':0.20,
-           'dense conifer':0.16}
-    mu = {'open':0.0,
-           'deciduous':0.025,
-           'mixed conifer and deciduous':0.033,
-           'medium conifer':0.040,
-           'dense conifer':0.074}
-
-    # Keywords for landfire data sets
-    veg_keywords = {'open':['Sparsely vegetated','graminoid'],
-                    'deciduous':['Deciduous open tree canopy'],
-                    'mixed conifer and deciduous':['Mixed evergreen-deciduous shrubland'],
-                    'medium conifer':['Mixed evergreen-deciduous open tree canopy'],
-                    'dense conifer':['Evergreen closed tree canopy','conifer']}
-
-
-#==================== Check Inputs/ Setup ======================= #
-
-    # Check and setup for an output dir, downloads dir, and temp dir
-    required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
-
-    # Setup a workspace
-    TEMP = required_dirs['temp']
-
-    # Filename and paths and potential sources
-    images={'dem':{'path':None,'source':None},
-            'shapefile':{'path':None,'source':None},
-            'mask':{'path':None,'source':None,'short_name':'mask'},
-            'vegetation type':{'path':None,'source':None,'map':None,'short_name':'veg_type'},
-            'vegetation height':{'path':None,'source':None,'map':None,'short_name':'veg_height'},
-            'vegetation k':{'path':None,'source':None,'short_name':'veg_k'},
-            'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
-            'maxus':{'path':None,'source':None}}
-
-    #Only accept .shp for now
-    if args.basin_shapefile.split('.')[-1] != 'shp':
-        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
-        fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
-        images['shapefile']['path'] = os.path.join(TEMP,fname+'.shp')
-        convert_shapefile(args.basin_shapefile,images['shapefile']['path'])
-
-    else:
-        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
-
-    # Populate Images for non downloaded files
-    images['dem']['path'] = os.path.abspath(os.path.expanduser(args.dem))
-
-    # Populate images for downloaded sources
-    images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
-    images['vegetation height']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
-    images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt','hdr.adf')
-    images['vegetation height']['path'] = os.path.join(required_dirs['downloads'],'US_140EVH_12052016','Grid','us_140evh', 'hdr.adf')
-
-    #Make directories and create setup
-    for k,d in required_dirs.items():
-        full = os.path.abspath(os.path.expanduser(d))
-
-        if not os.path.isdir(os.path.dirname(full)):
-            raise IOError("Path to vegetation data/download directory does not exist.\n %s" % full)
-
-        if k != 'downloads':
-            if os.path.isdir(full):
-                out.warn("{0} folder exists, potential to overwrite non-downloaded files!".format(k))
-
-            else:
-                out.msg("Making folder...")
-                os.mkdir(os.path.abspath(full))
         else:
-            if os.path.isdir(full):
-                out.respond("{0} folder found!".format(k))
-            else:
-                out.msg("Making {0} folder...".format(k))
-                os.mkdir(full)
+            images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
 
-    #==================== Downloads and Checking ======================= #
+        # Populate Images for non downloaded files
+        images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
+
+        # Populate images for downloaded sources
+        images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
+        images['vegetation height']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
+        images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt','hdr.adf')
+        images['vegetation height']['path'] = os.path.join(required_dirs['downloads'],'US_140EVH_12052016','Grid','us_140evh', 'hdr.adf')
+
+        #Make directories and create setup
+        for k,d in required_dirs.items():
+            full = os.path.abspath(os.path.expanduser(d))
+
+            if not os.path.isdir(os.path.dirname(full)):
+                raise IOError("Path to vegetation data/download directory does not exist.\n %s" % full)
+
+            if k != 'downloads':
+                if os.path.isdir(full):
+                    out.warn("{0} folder exists, potential to overwrite non-downloaded files!".format(k))
+
+                else:
+                    out.msg("Making folder...")
+                    os.mkdir(os.path.abspath(full))
+            else:
+                if os.path.isdir(full):
+                    out.respond("{0} folder found!".format(k))
+                else:
+                    out.msg("Making {0} folder...".format(k))
+                    os.mkdir(full)
+        return images
+
+def check_and_download(images,required_dirs):
+    """
+    Checks for veg type and height data
+    """
+
     for image_name in ['vegetation type', 'vegetation height']:
         info = images[image_name]
         info['path'] = os.path.abspath(os.path.expanduser(info['path']))
@@ -341,10 +305,9 @@ def main():
         if info['map'] == None:
             out.error("Could not find {0} map!".format(image_name))
             sys.exit()
+    return images
 
-
-    #==================== Processing ======================= #
-
+def process(images,TEMP,cell_size):
     # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
     extent = parse_extent(images['shapefile']['path'])
@@ -354,7 +317,7 @@ def main():
 
     #Create a tiff of the mask from shapefile then conver to netcdf
     images['mask']['path'] = os.path.join(TEMP,'mask.tiff')
-    z = Popen(['gdal_rasterize', '-tr',str(args.cell_size), str(args.cell_size),
+    z = Popen(['gdal_rasterize', '-tr',str(cell_size), str(cell_size),
                '-te', extent[0],extent[1],extent[2],extent[3],
                '-burn','1', '-ot','int', images['shapefile']['path'],
                 images['mask']['path']],stdout=PIPE)
@@ -380,8 +343,8 @@ def main():
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
         p = Popen(['gdalwarp','-t_srs', proj,'-te', extent[0],extent[1],
-                    extent[2],extent[3], '-tr',str(args.cell_size),
-                    str(args.cell_size),'-overwrite', img['path'], CLIPPED],
+                    extent[2],extent[3], '-tr',str(cell_size),
+                    str(cell_size),'-overwrite', img['path'], CLIPPED],
                     stdout=PIPE)
 
         p.wait()
@@ -393,19 +356,24 @@ def main():
         images[name]['path'] = NC
         s.wait()
 
+    extent = parse_extent(CLIPPED)
+
+    return images, extent
+
+
+def create_netcdf(images,extent,cell_size,output_dir):
+    """
+    Create the initial netcdf and then writes the all images
+    """
     #Building the final netcdf
     out.msg("\nCreating final output for netcdf...")
-
     #Setup the extent using the files we just generated. The extent is decided oddly
     #In gdal so it was tough to generate the extents manually, this way we let
     # gdal managae it.
-    extent = parse_extent(CLIPPED)
-    x = np.arange(int(extent[0]),int(extent[2]),int(args.cell_size))
-    y = np.arange(int(extent[1]),int(extent[3]),int(args.cell_size))
-
-
+    x = np.arange(int(extent[0]),int(extent[2]),int(cell_size))
+    y = np.arange(int(extent[1]),int(extent[3]),int(cell_size))
     out.dbg('Output netCDF file is {0}X{1}'.format(x.shape[0],y.shape[0]))
-    TOPO_PATH = os.path.join(required_dirs['output'],'topo.nc')
+    TOPO_PATH = os.path.join(output_dir,'topo.nc')
     topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
 
     #Add modification note
@@ -421,6 +389,7 @@ def main():
     topo.createVariable('x', 'f', 'x')
 
     # the y variable attributes
+    topo.variables['y'][:] = y
     topo.variables['y'].setncattr(
             'units',
             'meters')
@@ -432,6 +401,7 @@ def main():
             'y coordinate')
 
     # the x variable attributes
+    topo.variables['x'][:] = x
     topo.variables['x'].setncattr(
             'units',
             'meters')
@@ -465,9 +435,38 @@ def main():
                     raise(e)
                 d.close()
 
+    # define some global attributes
+    fmt = '%Y-%m-%d %H:%M:%S'
+    topo.setncattr_string('Conventions', 'CF-1.6')
+    topo.setncattr_string('dateCreated', datetime.now().strftime(fmt))
+    topo.setncattr_string('title', 'Topo Images for SMRF/AWSM')
+    topo.setncattr_string('history', '[{}] Create netCDF4 file'.format(datetime.now().strftime(fmt)))
+    topo.setncattr_string('institution',
+            'USDA Agricultural Research Service, Northwest Watershed Research Center')
+    return topo
 
-    #==================== Post-Processing ======================= #
-    #CALCULATE TAU AND K
+
+def calculate_tau_and_k(topo,images,height_method = 'average'):
+    #Vegetation Tau and K table from Link and Marks 1999
+    # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract
+    tau = {'open':1.0,
+           'deciduous':0.44,
+           'mixed conifer and deciduous':0.30,
+           'medium conifer':0.20,
+           'dense conifer':0.16}
+    mu = {'open':0.0,
+           'deciduous':0.025,
+           'mixed conifer and deciduous':0.033,
+           'medium conifer':0.040,
+           'dense conifer':0.074}
+
+    # Keywords for landfire data sets
+    veg_keywords = {'open':['Sparsely vegetated','graminoid'],
+                    'deciduous':['Deciduous open tree canopy'],
+                    'mixed conifer and deciduous':['Mixed evergreen-deciduous shrubland'],
+                    'medium conifer':['Mixed evergreen-deciduous open tree canopy'],
+                    'dense conifer':['Evergreen closed tree canopy','conifer']}
+
     out.msg('Calculating veg_tau and veg_k...')
 
     #Open veg tyep data set convert to an array and creat empty vars to populate
@@ -532,26 +531,77 @@ def main():
                     height_range = [0,1]
         height_map[row['VALUE']] = height_range
 
-    count = 0
-
     #Reassign random height values or max values
     for k,height in height_map.items():
             ind = veg_height==k
 
-            #Randomized
-            # rand = np.random.rand(*veg_height[ind].shape)
-            # final_veg_height[ind] = (rand* height[1]) + height[0]
+            if height_method == 'randomized':
+                rand = np.random.rand(*veg_height[ind].shape)
+                final_veg_height[ind] = (rand* height[1]) + height[0]
 
-            #Max
-            #final_veg_height[ind] = max(height)
-            #count += len(ind)
+            elif height_method  == ' max':
+                final_veg_height[ind] = max(height)
 
             #Avg
-            if len(height) == 2:
-                final_veg_height[ind] = np.mean(height)
-                count += len(ind)
+            elif height_method == 'average':
+                if len(height) == 2:
+                    final_veg_height[ind] = np.mean(height)
+            else:
+                raise ValueError("Height method not recognized. please use max,randomized,or average")
+
     #Reassign to the NetCDF and finish
     topo.variables['veg_height'][:] = final_veg_height
+    return topo
+
+def main():
+
+    # Parge command line arguments
+    p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
+
+    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=True,
+                    help="Path to shapefile that defines the basin")
+
+    p.add_argument('-c','--cell_size', dest='cell_size',required=False, default=50,
+                    help="Pixel size to use for the basin in meters")
+
+    p.add_argument('-dm','--dem', dest='dem',required=True,
+                    help="DEM file in geotiff")
+
+    p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
+                    help="Location to check for veg data or download vegetation data")
+
+    p.add_argument('-o','--output', dest='output',required=False, default='./output',
+                    help="Location to output data")
+
+    args = p.parse_args()
+
+    msg ="Basin Setup Tool {0}".format("0.1.0")
+    m = "="*(len(msg)+1)
+    out.msg(m,'header')
+    out.msg(msg,'header')
+    out.msg(m,'header')
+
+
+    #==================== Check Inputs/ Setup ======================= #
+    # Check and setup for an output dir, downloads dir, and temp dir
+    required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
+    TEMP = required_dirs['temp']
+    images = setup_and_check(required_dirs,args.basin_shapefile,args.dem)
+
+    #==================== Downloads and Checking ======================= #
+    images = check_and_download(images,required_dirs)
+
+
+    #==================== Processing ======================= #
+    images,extent = process(images,TEMP,args.cell_size)
+
+
+    #==================== Post-Processing ======================= #
+    topo = create_netcdf(images,extent,args.cell_size,required_dirs['output'])
+
+    #CALCULATE TAU AND K
+    topo = calculate_tau_and_k(topo,images)
+
     topo.close()
 
     #Clean up
