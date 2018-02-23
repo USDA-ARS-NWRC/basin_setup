@@ -307,18 +307,35 @@ def check_and_download(images,required_dirs):
             sys.exit()
     return images
 
-def process(images,TEMP,cell_size):
+def process(images,TEMP,cell_size,pad):
     # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
+
+
     extent = parse_extent(images['shapefile']['path'])
 
+    #Pad the extents
+    padding = int(cell_size)+int(pad)
+    padded_extent = []
+    for i,e in enumerate(extent):
+
+        #Extent format is bottom left upper right
+        z = float(e)
+        if i<2:
+            z -= padding
+        else:
+            z+=padding
+        padded_extent.append(z)
+
+    extent = padded_extent
+    s_extent = [str(e) for e in extent]
     # Parse the desired projection
     proj = images['shapefile']['path'].split('.')[0]+'.prj'
 
     #Create a tiff of the mask from shapefile then conver to netcdf
     images['mask']['path'] = os.path.join(TEMP,'mask.tiff')
     z = Popen(['gdal_rasterize', '-tr',str(cell_size), str(cell_size),
-               '-te', extent[0],extent[1],extent[2],extent[3],
+               '-te', s_extent[0],s_extent[1],s_extent[2],s_extent[3],
                '-burn','1', '-ot','int', images['shapefile']['path'],
                 images['mask']['path']],stdout=PIPE)
     z.wait()
@@ -342,8 +359,8 @@ def process(images,TEMP,cell_size):
         CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
-        p = Popen(['gdalwarp','-t_srs', proj,'-te', extent[0],extent[1],
-                    extent[2],extent[3], '-tr',str(cell_size),
+        p = Popen(['gdalwarp','-t_srs', proj,'-te', s_extent[0],s_extent[1],
+                    s_extent[2],s_extent[3], '-tr',str(cell_size),
                     str(cell_size),'-overwrite', img['path'], CLIPPED],
                     stdout=PIPE)
 
@@ -356,7 +373,9 @@ def process(images,TEMP,cell_size):
         images[name]['path'] = NC
         s.wait()
 
-    extent = parse_extent(CLIPPED)
+        #Use the gdal generate image to line up the extents better
+        extent = parse_extent(CLIPPED)
+
 
     return images, extent
 
@@ -446,7 +465,20 @@ def create_netcdf(images,extent,cell_size,output_dir):
     return topo
 
 
-def calculate_tau_and_k(topo,images,height_method = 'average'):
+def calculate_height_tau_k(topo,images,height_method = 'average'):
+    """
+    Calculates the images for veg height, veg tau and veg K and adds them  to
+    the netcdf.
+
+    Args:
+        topo: NetCDF Dataset object containing variables for veh_height,veg_tau,
+              and veg_k
+        images: dictionary containing the paths for each image
+        height_method: Determines the way veg_height is calculated given the veg
+                       height data. Each method is using the range provided.
+                       Options are average, max, randomized
+    """
+
     #Vegetation Tau and K table from Link and Marks 1999
     # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract
     tau = {'open':1.0,
@@ -573,6 +605,12 @@ def main():
     p.add_argument('-o','--output', dest='output',required=False, default='./output',
                     help="Location to output data")
 
+    p.add_argument('-p','--point', dest='point',required=False, default=None,
+                    help='Center of location to setup "point" model')
+
+    p.add_argument('-pd','--pad', dest='pad',required=False, default=5,
+                    help="Number of cells to add on to the domain from the "
+                         "extents of the basin.")
     args = p.parse_args()
 
     msg ="Basin Setup Tool {0}".format("0.1.0")
@@ -593,14 +631,14 @@ def main():
 
 
     #==================== Processing ======================= #
-    images,extent = process(images,TEMP,args.cell_size)
+    images,extent = process(images,TEMP,args.cell_size,args.pad)
 
 
     #==================== Post-Processing ======================= #
     topo = create_netcdf(images,extent,args.cell_size,required_dirs['output'])
 
     #CALCULATE TAU AND K
-    topo = calculate_tau_and_k(topo,images)
+    topo = calculate_height_tau_k(topo,images)
 
     topo.close()
 
