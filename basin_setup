@@ -14,10 +14,12 @@ import numpy as np
 import pandas as pd
 from shutil import copyfile,rmtree
 import zipfile
-
+import urllib
+import shapefile
 init()
 
 DEBUG = True
+
 
 class Messages():
     def __init__(self):
@@ -26,6 +28,7 @@ class Messages():
                         'ok': Fore.GREEN,
                         'normal': Style.NORMAL+Fore.WHITE,
                         'header': Style.BRIGHT}
+
     def build_msg(self,str_msg,context_str=None):
         """
         Constructs the desired strings for color and Style
@@ -84,6 +87,7 @@ class Messages():
 
 out = Messages()
 
+
 def parse_extent(fname):
     """
     Uses ogr to parse the information of some GIS file and returns a dict of the
@@ -126,20 +130,20 @@ def parse_extent(fname):
 
     return extent
 
+
 def download_zipped_url(url):
     """
     Downloads a url that is expected to be a zipped folder.
     """
-
     r = requests.get(url, stream=True)
     z = zipfile.ZipFile(StringIO.StringIO(r.content))
     z.extractall('~/Downloads')
 
+
 def  convert_shapefile(fname,out_f):
     """
-    Handles various shapefile scenario
-    Given multuple shapefiles coming in convert and output a shapefile
-    to out_f
+    Handles various shapefile scenario given multuple shapefiles coming in
+    convert and output a shapefile to out_f
 
     Args:
         fname: String file path
@@ -181,10 +185,18 @@ def  convert_shapefile(fname,out_f):
     #For the mean time we need to do this until we figure out how to over come converting from lat long to utm
     if ext !='shp':
         raise IOError("Please use shapfiles only in UTM")
-        # out.msg("Converting {0} to shapefile...".format(ext))
-        # a = Popen(['ogr2ogr','-overwrite','-f','ESRI shapefile',out_f,fname],stdout=PIPE, stderr=PIPE)
-        # a.wait()
-        # os.remove(fname)
+
+
+def getWKT_PRJ (epsg_code):
+    """
+    Get the projection information for the points based on the EPSG code.
+    Code copied and pasted from https://glenbambrick.com/2016/01/09/csv-to-shapefile-with-pyshp/
+    """
+    wkt = urllib.urlopen("http://spatialreference.org/ref/epsg/{0}/prettywkt/".format(epsg_code))
+    remove_spaces = wkt.read().replace(" ","")
+    output = remove_spaces.replace("\n", "")
+    return output
+
 
 def setup_and_check(required_dirs,basin_shapefile,dem):
         """
@@ -212,15 +224,6 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
                 'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
                 'maxus':{'path':None,'source':None}}
 
-        #Only accept .shp for now
-        if basin_shapefile.split('.')[-1] != 'shp':
-            images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
-            fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
-            images['shapefile']['path'] = os.path.join(TEMP,fname+'.shp')
-            convert_shapefile(basin_shapefile,images['shapefile']['path'])
-
-        else:
-            images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
 
         # Populate Images for non downloaded files
         images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
@@ -252,6 +255,74 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
                     out.msg("Making {0} folder...".format(k))
                     os.mkdir(full)
         return images
+
+
+def setup_point(images,point, cell_size,temp, pad, epsg_code):
+    """
+    Creates a shapefile that is exactly the 4 corners of a single point for
+    making 'point' runs.
+
+    Args:
+        images: dictionary containing the image paths.
+        point: a tuple containing x,y in utm
+        cell_size: Pixel size
+        temp: temporary folder for working files,
+        pad: extra cells to keep for the point run
+    """
+    xs = []
+    ys = []
+    point = [float(p) for p in point.split(',')]
+    cell_size = int(cell_size)
+    padding = cell_size*int(pad)
+    points = []
+
+    x0 = point[0] - cell_size/2 - padding
+    y0 = point[1] - cell_size/2 - padding
+    x1 = point[0] + cell_size/2 + padding
+    y1 = point[1] + cell_size/2 + padding
+
+    points.append((x0,y0)) #Bottom left
+    points.append((x0,y1)) #Upper left
+    points.append((x1,y1)) #Upper Right
+    points.append((x1,y0)) #Bottom Right
+
+    #Write the points to a csv
+    name = "points"
+    SHP = os.path.join(temp,'{0}.shp'.format(name))
+    PRJ = os.path.join(temp,'{0}.prj'.format(name))
+    images['shapefile']['path'] = SHP
+
+    point_shp = shapefile.Writer(shapefile.POINT)
+    #Require every point has geometry
+    point_shp.autobalance = 1
+    #Create a csv containing the four corners of a point
+    for pt in points:
+        point_shp.point(pt[0],pt[1])
+    point_shp.save(SHP)
+
+    epsg = getWKT_PRJ(epsg_code)
+    with open(PRJ,'w') as f:
+        f.write(epsg)
+        f.close()
+
+    return images
+
+def check_shp_file(images):
+    """
+    Require a shapefile and make a full path for either point or basin areas
+    """
+    basin_shapefile = images['shapefile']['path']
+    #Only accept .shp for now
+    if basin_shapefile.split('.')[-1] != 'shp':
+        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
+        fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
+        images['shapefile']['path'] = os.path.join(TEMP,fname+'.shp')
+        convert_shapefile(basin_shapefile,images['shapefile']['path'])
+
+    else:
+        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
+    return images
+
 
 def check_and_download(images,required_dirs):
     """
@@ -307,7 +378,23 @@ def check_and_download(images,required_dirs):
             sys.exit()
     return images
 
+
 def process(images,TEMP,cell_size,pad):
+    """
+    Creates the mask image, veg_type, height and dem images,
+    reprojects them to the proejction of the basin_shapefile and converts them
+    to individual netcdf files
+
+    Args:
+        images:dictionary containing paths for each image
+        TEMP: temporary work dir
+        cell_size: Desired cell size for the images.
+        pad: Number of cells to add to an image from the extent of the basin_shapefile
+
+    Returns:
+        images:dictionary containing the path to the latest image for each key.
+        extent: The list of the bottom left and upper right image extents plus padding
+    """
     # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
 
@@ -375,7 +462,6 @@ def process(images,TEMP,cell_size,pad):
 
         #Use the gdal generate image to line up the extents better
         extent = parse_extent(CLIPPED)
-
 
     return images, extent
 
@@ -590,14 +676,14 @@ def main():
     # Parge command line arguments
     p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
 
-    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=True,
+    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=False,
                     help="Path to shapefile that defines the basin")
 
     p.add_argument('-c','--cell_size', dest='cell_size',required=False, default=50,
                     help="Pixel size to use for the basin in meters")
 
     p.add_argument('-dm','--dem', dest='dem',required=True,
-                    help="DEM file in geotiff")
+                    help="Digital elevation map file in geotiff")
 
     p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
                     help="Location to check for veg data or download vegetation data")
@@ -611,6 +697,12 @@ def main():
     p.add_argument('-pd','--pad', dest='pad',required=False, default=5,
                     help="Number of cells to add on to the domain from the "
                          "extents of the basin.")
+
+    p.add_argument('-u','--uniform', dest='uniform',action='store_true',
+                    help="Specifies whether for point runs to use a uniform"
+                          "elevation and veg values in the 'point' domain")
+    p.add_argument('-e','--epsg', dest='epsg', help="epsg code for the point"
+                  "run, see http://spatialreference.org/ref/epsg/ for options")
     args = p.parse_args()
 
     msg ="Basin Setup Tool {0}".format("0.1.0")
@@ -622,16 +714,24 @@ def main():
 
     #==================== Check Inputs/ Setup ======================= #
     # Check and setup for an output dir, downloads dir, and temp dir
-    required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.join(args.output,'temp')}
+    required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.abspath(os.path.join(args.output,'temp'))}
     TEMP = required_dirs['temp']
     images = setup_and_check(required_dirs,args.basin_shapefile,args.dem)
+    pad = int(args.pad)
+    #================OPTIONAL POINT MODEL SETUP ======================== #
+    if args.point != None:
+        images = setup_point(images,args.point,args.cell_size,TEMP,pad,args.epsg)
+        pad = 0
+
+    images = check_shp_file(images)
+
 
     #==================== Downloads and Checking ======================= #
     images = check_and_download(images,required_dirs)
 
 
     #==================== Processing ======================= #
-    images,extent = process(images,TEMP,args.cell_size,args.pad)
+    images,extent = process(images,TEMP,args.cell_size,pad)
 
 
     #==================== Post-Processing ======================= #
@@ -647,5 +747,6 @@ def main():
     out.msg('\nRequested output written to:\n{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
     out.msg("Basin setup files complete!")
     rmtree(required_dirs['temp'])
+
 if __name__ == '__main__':
     main()
