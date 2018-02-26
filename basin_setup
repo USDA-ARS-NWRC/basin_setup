@@ -294,7 +294,6 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
                 'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
                 'maxus':{'path':None,'source':None}}
 
-
         if is_float(dem):
             #Single float value provided
             images['dem']['path'] = float(dem)
@@ -390,7 +389,8 @@ def check_shp_file(images):
     Require a shapefile and make a full path for either point or basin areas
     """
     basin_shapefile = images['shapefile']['path']
-    #Only accept .shp for now
+
+    # Only accept .shp for now
     if basin_shapefile.split('.')[-1] != 'shp':
         images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
         fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
@@ -628,9 +628,9 @@ def create_netcdf(images,extent,cell_size,output_dir):
 
             topo.createVariable(short_name, 'f',('y','x'))
             topo.variables[short_name].setncattr('long_name',name)
-            if name == 'dem':
-                if is_float(image['path']):
-                    topo.variables[short_name][:] = image['path']
+
+            if is_float(image['path']):
+                topo.variables[short_name][:] = image['path']
 
             #paths
             elif image['path'] != None and os.path.isfile(image['path']):
@@ -856,14 +856,17 @@ def main():
     required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.abspath(os.path.join(args.output,'temp'))}
     TEMP = required_dirs['temp']
     images = setup_and_check(required_dirs, args.basin_shapefile, args.dem)
-    pad = int(args.pad)
 
+    pad = int(args.pad)
     #--------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point != None:
         out.msg("Point model setup requested!")
         images = setup_point(images, args.point, args.cell_size, TEMP,pad, args.epsg)
         #For point setup the only padding should be around the center pixel
         pad = 0
+    else:
+        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
+
 
     images = check_shp_file(images)
 
