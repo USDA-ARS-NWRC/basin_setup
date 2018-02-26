@@ -16,6 +16,8 @@ from shutil import copyfile,rmtree
 import zipfile
 import urllib
 import shapefile
+from shapely import geometry
+
 init()
 
 DEBUG = True
@@ -86,6 +88,68 @@ class Messages():
         print('\t'+final_msg)
 
 out = Messages()
+
+
+def shapely_to_pyshp(shapelygeom):
+    """
+    Convert shapely objects to be used by shapefile
+    Adapted from https://gis.stackexchange.com/a/86738/110039
+    """
+
+    try:
+        shapelytogeojson = shapely.geometry.mapping
+    except:
+        import shapely.geometry
+        shapelytogeojson = shapely.geometry.mapping
+    geoj = shapelytogeojson(shapelygeom)
+    # create empty pyshp shape
+    record = shapefile._Shape()
+    # set shapetype
+    if geoj["type"] == "Null":
+        pyshptype = 0
+    elif geoj["type"] == "Point":
+        pyshptype = 1
+    elif geoj["type"] == "LineString":
+        pyshptype = 3
+    elif geoj["type"] == "Polygon":
+        pyshptype = 5
+    elif geoj["type"] == "MultiPoint":
+        pyshptype = 8
+    elif geoj["type"] == "MultiLineString":
+        pyshptype = 3
+    elif geoj["type"] == "MultiPolygon":
+        pyshptype = 5
+    record.shapeType = pyshptype
+    # set points and parts
+    if geoj["type"] == "Point":
+        record.points = geoj["coordinates"]
+        record.parts = [0]
+    elif geoj["type"] in ("MultiPoint","Linestring"):
+        record.points = geoj["coordinates"]
+        record.parts = [0]
+    elif geoj["type"] == "Polygon":
+        index = 0
+        points = []
+        parts = []
+        for eachmulti in geoj["coordinates"]:
+            points.extend(eachmulti)
+            parts.append(index)
+            index += len(eachmulti)
+        record.points = points
+        record.parts = parts
+    elif geoj["type"] in ("MultiPolygon", "MultiLineString"):
+        index = 0
+        points = []
+        parts = []
+        for polygon in geoj["coordinates"]:
+            for part in polygon:
+                points.extend(part)
+                parts.append(index)
+                index += len(part)
+        record.points = points
+        record.parts = parts
+
+    return record
 
 
 def parse_extent(fname):
@@ -275,12 +339,11 @@ def setup_point(images,point, cell_size,temp, pad, epsg_code):
     cell_size = int(cell_size)
     padding = cell_size*int(pad)
     points = []
-
-    x0 = point[0] - cell_size/2 - padding
-    y0 = point[1] - cell_size/2 - padding
-    x1 = point[0] + cell_size/2 + padding
-    y1 = point[1] + cell_size/2 + padding
-
+    half_width = cell_size/2
+    x0 = point[0] - half_width - padding
+    y0 = point[1] - half_width - padding
+    x1 = point[0] + half_width + padding
+    y1 = point[1] + half_width + padding
     points.append((x0,y0)) #Bottom left
     points.append((x0,y1)) #Upper left
     points.append((x1,y1)) #Upper Right
@@ -291,21 +354,26 @@ def setup_point(images,point, cell_size,temp, pad, epsg_code):
     SHP = os.path.join(temp,'{0}.shp'.format(name))
     PRJ = os.path.join(temp,'{0}.prj'.format(name))
     images['shapefile']['path'] = SHP
+    poly = geometry.Polygon(points)
 
-    point_shp = shapefile.Writer(shapefile.POINT)
-    #Require every point has geometry
-    point_shp.autobalance = 1
-    #Create a csv containing the four corners of a point
-    for pt in points:
-        point_shp.point(pt[0],pt[1])
-    point_shp.save(SHP)
+    point_shp = geometry.Polygon(points)
+    shp_writer = shapefile.Writer()
+    shp_writer.field("outline")
 
+    converted_shape = shapely_to_pyshp(point_shp)
+    shp_writer._shapes.append(converted_shape)
+    shp_writer.record(["outline"])
+
+    shp_writer.save(SHP)
+
+    #Apply the EPSG code
     epsg = getWKT_PRJ(epsg_code)
     with open(PRJ,'w') as f:
         f.write(epsg)
         f.close()
 
     return images
+
 
 def check_shp_file(images):
     """
@@ -402,7 +470,7 @@ def process(images,TEMP,cell_size,pad):
     extent = parse_extent(images['shapefile']['path'])
 
     #Pad the extents
-    padding = int(cell_size)+int(pad)
+    padding = int(cell_size)*int(pad)
     padded_extent = []
     for i,e in enumerate(extent):
 
@@ -424,7 +492,7 @@ def process(images,TEMP,cell_size,pad):
     z = Popen(['gdal_rasterize', '-tr',str(cell_size), str(cell_size),
                '-te', s_extent[0],s_extent[1],s_extent[2],s_extent[3],
                '-burn','1', '-ot','int', images['shapefile']['path'],
-                images['mask']['path']],stdout=PIPE)
+                images['mask']['path']], stdout=PIPE)
     z.wait()
 
     NC = os.path.abspath(os.path.join(TEMP,'clipped_mask.nc'))
@@ -469,15 +537,29 @@ def process(images,TEMP,cell_size,pad):
 def create_netcdf(images,extent,cell_size,output_dir):
     """
     Create the initial netcdf and then writes the all images
+
+    Args:
+        images: dictionary containing the latest paths to various images
+        extent: The final extent required
+        output_dir: Output location for results
+
+    Returns:
+        topo: a netcdf dataset object populated with necessary variables
     """
     #Building the final netcdf
     out.msg("\nCreating final output for netcdf...")
     #Setup the extent using the files we just generated. The extent is decided oddly
     #In gdal so it was tough to generate the extents manually, this way we let
     # gdal managae it.
-    x = np.arange(int(extent[0]),int(extent[2]),int(cell_size))
-    y = np.arange(int(extent[1]),int(extent[3]),int(cell_size))
-    out.dbg('Output netCDF file is {0}X{1}'.format(x.shape[0],y.shape[0]))
+    extent = [int(e) for e in extent]
+    x = np.arange(extent[0],extent[2],int(cell_size))
+    y = np.arange(extent[1], extent[3],int(cell_size))
+
+    out.respond("Output Netcdf setup is:\n\t {0} x {1} pixels"
+            "\n\t {2} x {3} meters"
+            "\n\t Bottom Left Coordinates {4},{5}"
+            "\n\t Upper Right Coordinates {6},{7}\n".format(x.shape[0],y.shape[0],extent[2]-extent[0], extent[3] - extent[1], extent[0],extent[1],extent[2],extent[3]))
+
     TOPO_PATH = os.path.join(output_dir,'topo.nc')
     topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
 
@@ -520,7 +602,7 @@ def create_netcdf(images,extent,cell_size,output_dir):
     #Cycle through and add/generate all the images that go into the topo.nc
     for name, image in images.items():
         if name not in ['shapefile','maxus']:
-            out.msg("Adding variable {0}".format(name))
+            out.respond("Adding variable {0}".format(name))
 
             if 'short_name' in image.keys():
                 short_name = image['short_name']
@@ -671,6 +753,43 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     topo.variables['veg_height'][:] = final_veg_height
     return topo
 
+def make_uniform(topo,approach = 'middle'):
+    """
+    Takes a data set and recalculates the values based on the approach.
+    Particularly useful for setting up point models
+
+    Args:
+        topo: An existing netcdf dataset object with variables.
+        approach: Specifies options for make values uniform options:
+                  middle, average, max, min.
+    Return:
+        topo: modified netcdf dataset with uniform data
+    """
+    for var in topo.variables:
+        if var not in ['x','y','mask']:
+            values = topo.variables[var][:]
+
+            if approach == 'middle':
+                x_mid = int(len(values[:,0])/2)
+                y_mid = int(len(values[0,:])/2)
+                value = values[y_mid,x_mid]
+
+            elif approach == 'average':
+                value = np.average(values)
+
+            elif approach == 'min':
+                value = np.min(values)
+
+            elif approach == 'max':
+                value = np.max(values)
+
+            else:
+                raise ValueError("{0} not an accetable option, options are middle, average, min, and max")
+
+            topo.variables[var][:] = value
+
+    return topo
+
 def main():
 
     # Parge command line arguments
@@ -711,42 +830,44 @@ def main():
     out.msg(msg,'header')
     out.msg(m,'header')
 
-
     #==================== Check Inputs/ Setup ======================= #
     # Check and setup for an output dir, downloads dir, and temp dir
     required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.abspath(os.path.join(args.output,'temp'))}
     TEMP = required_dirs['temp']
-    images = setup_and_check(required_dirs,args.basin_shapefile,args.dem)
+    images = setup_and_check(required_dirs, args.basin_shapefile, args.dem)
     pad = int(args.pad)
-    #================OPTIONAL POINT MODEL SETUP ======================== #
+
+    #--------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point != None:
-        images = setup_point(images,args.point,args.cell_size,TEMP,pad,args.epsg)
+        out.msg("Point model setup requested!")
+        images = setup_point(images, args.point, args.cell_size, TEMP,pad, args.epsg)
+        #For point setup the only padding should be around the center pixel
         pad = 0
 
     images = check_shp_file(images)
 
-
     #==================== Downloads and Checking ======================= #
-    images = check_and_download(images,required_dirs)
-
+    images = check_and_download(images, required_dirs)
 
     #==================== Processing ======================= #
-    images,extent = process(images,TEMP,args.cell_size,pad)
-
+    images,extent = process(images, TEMP, args.cell_size,pad)
 
     #==================== Post-Processing ======================= #
-    topo = create_netcdf(images,extent,args.cell_size,required_dirs['output'])
+    topo = create_netcdf(images,extent, args.cell_size, required_dirs['output'])
+    topo = calculate_height_tau_k(topo,images) # CALCULATE TAU AND K
 
-    #CALCULATE TAU AND K
-    topo = calculate_height_tau_k(topo,images)
+    if args.point != None and args.uniform:
+        out.warn("Using uniform flag, all outputted values will the be equal to the center pixel")
+        topo = make_uniform(topo,approach = 'middle')
 
     topo.close()
 
     #Clean up
     out.msg('Cleaning up temporary files.')
-    out.msg('\nRequested output written to:\n{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
-    out.msg("Basin setup files complete!")
-    rmtree(required_dirs['temp'])
+    out.msg('\nRequested output written to:')
+    out.respond('{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
+    out.msg("Basin setup files complete!\n")
+    #rmtree(required_dirs['temp'])
 
 if __name__ == '__main__':
     main()
