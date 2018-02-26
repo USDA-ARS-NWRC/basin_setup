@@ -89,6 +89,12 @@ class Messages():
 
 out = Messages()
 
+def is_float(str_val):
+    try:
+        float(str_val)
+        return True
+    except:
+        return False
 
 def shapely_to_pyshp(shapelygeom):
     """
@@ -289,8 +295,12 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
                 'maxus':{'path':None,'source':None}}
 
 
-        # Populate Images for non downloaded files
-        images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
+        if is_float(dem):
+            #Single float value provided
+            images['dem']['path'] = float(dem)
+        else:
+            # Populate Images for non downloaded files\
+            images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
 
         # Populate images for downloaded sources
         images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
@@ -500,8 +510,15 @@ def process(images,TEMP,cell_size,pad):
     s.wait()
     images['mask']['path'] = NC
 
+
+    #Is user passes an float then don't process the image
+    if is_float(images['dem']['path']):
+        process_names = ['vegetation height','vegetation type']
+    else:
+        process_names = ['vegetation height','vegetation type', 'dem']
+
     # Reproject and clip according to the basin mask
-    for name in ['vegetation height','vegetation type', 'dem']:
+    for name in process_names:
         img = images[name]
 
         #Get data loaded in
@@ -611,8 +628,12 @@ def create_netcdf(images,extent,cell_size,output_dir):
 
             topo.createVariable(short_name, 'f',('y','x'))
             topo.variables[short_name].setncattr('long_name',name)
+            if name == 'dem':
+                if is_float(image['path']):
+                    topo.variables[short_name][:] = image['path']
 
-            if image['path'] != None and os.path.isfile(image['path']):
+            #paths
+            elif image['path'] != None and os.path.isfile(image['path']):
                 d = Dataset(image['path'],'r')
                 try:
                     topo.variables[short_name][:] = d.variables['Band1'][:]
@@ -802,7 +823,7 @@ def main():
                     help="Pixel size to use for the basin in meters")
 
     p.add_argument('-dm','--dem', dest='dem',required=True,
-                    help="Digital elevation map file in geotiff")
+                    help="Digital elevation map file in geotiff or a single value for point models")
 
     p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
                     help="Location to check for veg data or download vegetation data")
