@@ -32,14 +32,20 @@ http://trac.osgeo.org/gdal/wiki/BuildHints
 
 Once GDAL is installed, install the python requirements using pip:
 
+.. code-block:: bash
+
 	$ pip install -r requirements.txt
 
 Finally to install basin_setup for commandline use use:
+
+.. code-block:: bash
 
 	$ sudo make install
 
 If you want to develop on basin_setup use the following command to install the utility
 so that you changes to the source will be used without having to reinstall
+
+.. code-block:: bash
 
 	$ sudo make develop
 
@@ -54,11 +60,15 @@ To use basin_setup at it's simplest form, just provide a shapefile and dem:
 
 **Easiest Use**
 
+.. code-block:: bash
+
 	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif
 
 To specify the cell size use the  cellsize flag which is specified in meters, if it is not used the default is 50m:
 
 **Custom Cell Size**
+
+.. code-block:: bash
 
 	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif --cell_size 10
 
@@ -72,6 +82,8 @@ a point model for Reynolds Mountain East's snow pillow site.
 
 **Easiest Use**
 
+.. code-block:: bash
+
 	$  basin_setup -p 519976,4768323 -dm ASTGTM2_N43W117_dem.tif --epsg 2153
 
 Note: Untilt this code is improved the user must provided the EPSG code so the
@@ -83,6 +95,8 @@ variables. This is done by using the uniform flag.
 
 **Uniform Data**
 
+.. code-block:: bash
+
 	$  basin_setup -p 519976,4768323 -dm ASTGTM2_N43W117_dem.tif --epsg 2153 --uniform
 
 Which simply picks the middle cell and applies it everywhere.  On this same idea
@@ -90,5 +104,7 @@ the DEM can be provided as a single value. So the user can choose a different el
 than what an image can provide. E.g.
 
 **Custom DEM**
+
+.. code-block:: bash
 
 	$  basin_setup -p 519976,4768323 -dm 1000 --epsg 2153 --uniform
