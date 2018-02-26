@@ -50,8 +50,8 @@ so that you changes to the source will be used without having to reinstall
 	$ sudo make develop
 
 
-USAGE
------
+GENERAL USAGE
+-------------
 To use basin_setup you only need a shapefile of your basins boundary and a dem that contains the
 the extents of the shapefile. **It is required that the shapefile is in UTM.** The projection of
 the DEM wil be converted to that of the shapefile.
@@ -72,7 +72,8 @@ To specify the cell size use the  cellsize flag which is specified in meters, if
 
 	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif --cell_size 10
 
-### Point Models
+Point Models
+------------
 It is possible to create what our group considers a point model. The goal here
 is to create all the files necessary to run in SMRF/AWSM without having to
 change the SMRF/AWSM code to test the modeling system on a point. This means
