@@ -891,7 +891,7 @@ def main():
     out.msg('\nRequested output written to:')
     out.respond('{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
     out.msg("Basin setup files complete!\n")
-    #rmtree(required_dirs['temp'])
+    rmtree(required_dirs['temp'])
 
 if __name__ == '__main__':
     main()
