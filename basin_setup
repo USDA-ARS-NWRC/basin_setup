@@ -845,7 +845,7 @@ def main():
                   "run, see http://spatialreference.org/ref/epsg/ for options")
     args = p.parse_args()
 
-    msg ="Basin Setup Tool {0}".format("0.1.0")
+    msg ="Basin Setup Tool {0}".format("0.2.0")
     m = "="*(len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')

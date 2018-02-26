@@ -1,4 +1,4 @@
-BASIN SETUP TOOL v0.1.0
+BASIN SETUP TOOL v0.2.0
 =======================
 The basin setup tool is a python script designed to create the required inputs for running
 SMRF_ and AWSM_ simulations. The tool outputs a single netcdf file containing:
