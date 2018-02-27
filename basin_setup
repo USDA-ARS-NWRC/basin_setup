@@ -876,7 +876,7 @@ def main():
     p.add_argument('-hl','--hill', dest='hill', action='store_true',help='For point models drops all cells except the center cell by 1mm')
     args = p.parse_args()
 
-    msg ="Basin Setup Tool {0}".format("0.2.0")
+    msg ="Basin Setup Tool {0}".format("0.2.1")
     m = "="*(len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')
