@@ -297,6 +297,7 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
         if is_float(dem):
             #Single float value provided
             images['dem']['path'] = float(dem)
+
         else:
             # Populate Images for non downloaded files\
             images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
@@ -330,7 +331,7 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
         return images
 
 
-def setup_point(images,point, cell_size,temp, pad, epsg_code):
+def setup_point(images,point, cell_size, temp, pad, epsg_code):
     """
     Creates a shapefile that is exactly the 4 corners of a single point for
     making 'point' runs.
@@ -372,7 +373,6 @@ def setup_point(images,point, cell_size,temp, pad, epsg_code):
     converted_shape = shapely_to_pyshp(point_shp)
     shp_writer._shapes.append(converted_shape)
     shp_writer.record(["outline"])
-
     shp_writer.save(SHP)
 
     #Apply the EPSG code
@@ -630,6 +630,7 @@ def create_netcdf(images,extent,cell_size,output_dir):
             topo.variables[short_name].setncattr('long_name',name)
 
             if is_float(image['path']):
+
                 topo.variables[short_name][:] = image['path']
 
             #paths
@@ -774,7 +775,30 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     topo.variables['veg_height'][:] = final_veg_height
     return topo
 
-def make_uniform(topo,approach = 'middle'):
+
+def make_hill(topo,dem_var='dem', lower = 1.0):
+    """
+    Modifies the dem by lowering the area around point models by the amount set in lower.
+
+    Args:
+        topo: Open Netcdf dataset containing the dem_var
+        dem_var: The name of the dem variable in the dataset.
+        lower: The amount in meters to lower the surround area.
+    Returns:
+        topo: An open Netcdfafter being modified.
+    """
+
+    x_mid = int(len(topo.variables[dem_var][:,0])/2)
+    y_mid = int(len(topo.variables[dem_var][0,:])/2)
+    out.warn("Creating a hill like 'point model' by lowering the surrounding area by {0}m".format(lower))
+    removal = lower*np.ones(np.shape(topo.variables[dem_var]))
+    removal[y_mid,x_mid] = 0
+    topo.variables[dem_var][:] = topo.variables[dem_var][:]-removal
+
+    return topo
+
+
+def make_uniform(topo,approach = 'middle', hill = False):
     """
     Takes a data set and recalculates the values based on the approach.
     Particularly useful for setting up point models
@@ -783,16 +807,21 @@ def make_uniform(topo,approach = 'middle'):
         topo: An existing netcdf dataset object with variables.
         approach: Specifies options for make values uniform options:
                   middle, average, max, min.
+        hill: For point models lower all cells except center by 1mm
+
     Return:
         topo: modified netcdf dataset with uniform data
+
     """
+    x_mid = int(len(topo.variables['dem'][:,0])/2)
+    y_mid = int(len(topo.variables['dem'][0,:])/2)
+
     for var in topo.variables:
+
         if var not in ['x','y','mask']:
             values = topo.variables[var][:]
 
             if approach == 'middle':
-                x_mid = int(len(values[:,0])/2)
-                y_mid = int(len(values[0,:])/2)
                 value = values[y_mid,x_mid]
 
             elif approach == 'average':
@@ -843,6 +872,8 @@ def main():
                           "elevation and veg values in the 'point' domain")
     p.add_argument('-e','--epsg', dest='epsg', help="epsg code for the point"
                   "run, see http://spatialreference.org/ref/epsg/ for options")
+
+    p.add_argument('-hl','--hill', dest='hill', action='store_true',help='For point models drops all cells except the center cell by 1mm')
     args = p.parse_args()
 
     msg ="Basin Setup Tool {0}".format("0.2.0")
@@ -880,9 +911,13 @@ def main():
     topo = create_netcdf(images,extent, args.cell_size, required_dirs['output'])
     topo = calculate_height_tau_k(topo,images) # CALCULATE TAU AND K
 
-    if args.point != None and args.uniform:
-        out.warn("Using uniform flag, all outputted values will the be equal to the center pixel")
-        topo = make_uniform(topo,approach = 'middle')
+    if args.point != None:
+        if args.uniform:
+            out.warn("Using uniform flag, all outputted values will the be equal to the center pixel")
+            topo = make_uniform(topo, approach='middle')
+
+        if args.hill:
+            topo = make_hill(topo,dem_var='dem')
 
     topo.close()
 

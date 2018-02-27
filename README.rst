@@ -87,7 +87,7 @@ a point model for Reynolds Mountain East's snow pillow site.
 
 	$  basin_setup -p 519976,4768323 -dm ASTGTM2_N43W117_dem.tif --epsg 2153
 
-Note: Untilt this code is improved the user must provided the EPSG code so the
+Note: Until this code is improved the user must provided the EPSG code so the
 projection information can be obtained. If you are not sure what your EPSG is
 use this link to find it. http://spatialreference.org/ref/epsg/
 
