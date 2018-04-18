@@ -72,6 +72,20 @@ To specify the cell size use the  cellsize flag which is specified in meters, if
 
 	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif --cell_size 10
 
+**Switching Arracy Origin**
+
+Occasionally an image will have the correct coordinates and orientation but its array will have a different origin than expected.
+This can happen when alternating between raster images and other data sets. For example, using the commands above will produce 
+successful topo.nc for SMRF and will display correctly when using something like ncview (which considers the x and y data inputted).
+However if you were to simply plot with imshow from matplotlib that data you will find it is upside down. This is because of a difference
+in array origins. To flip this use the flip flag which flips the y axis data and the images over the x-axis resulting images 
+correctly oriented in ncview and imshow. 
+
+.. code-block:: bash
+
+	$  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif --flip
+
+
 Point Models
 ------------
 It is possible to create what our group considers a point model. The goal here

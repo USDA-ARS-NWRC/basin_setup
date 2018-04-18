@@ -17,7 +17,8 @@ import zipfile
 import urllib
 import shapefile
 from shapely import geometry
-
+import matplotlib.pyplot as plt
+# Initialize colors
 init()
 
 DEBUG = True
@@ -483,7 +484,6 @@ def process(images,TEMP,cell_size,pad):
     padding = int(cell_size)*int(pad)
     padded_extent = []
     for i,e in enumerate(extent):
-
         #Extent format is bottom left upper right
         z = float(e)
         if i<2:
@@ -547,7 +547,6 @@ def process(images,TEMP,cell_size,pad):
 
         #Use the gdal generate image to line up the extents better
         extent = parse_extent(CLIPPED)
-
     return images, extent
 
 
@@ -560,24 +559,33 @@ def create_netcdf(images,extent,cell_size,output_dir):
         extent: The final extent required
         output_dir: Output location for results
 
+
     Returns:
         topo: a netcdf dataset object populated with necessary variables
     """
     #Building the final netcdf
     out.msg("\nCreating final output for netcdf...")
-    #Setup the extent using the files we just generated. The extent is decided oddly
-    #In gdal so it was tough to generate the extents manually, this way we let
+
+    # Setup the extent using the files we just generated. The extent is decided oddly
+    # In gdal so it was tough to generate the extents manually, this way we let
     # gdal managae it.
-    extent = [int(e) for e in extent]
-    x = np.arange(extent[0],extent[2],int(cell_size))
-    y = np.arange(extent[1], extent[3],int(cell_size))
+    extent = [float(e) for e in extent]
+    x = np.arange(extent[0], extent[2], int(cell_size))
+    y = np.arange(extent[1], extent[3], int(cell_size))
 
     out.respond("Output Netcdf setup is:\n\t {0} x {1} pixels"
             "\n\t {2} x {3} meters"
-            "\n\t Bottom Left Coordinates {4},{5}"
-            "\n\t Upper Right Coordinates {6},{7}\n".format(x.shape[0],y.shape[0],extent[2]-extent[0], extent[3] - extent[1], extent[0],extent[1],extent[2],extent[3]))
+            "\n\t Bottom Left Coordinates {4}, {5}"
+            "\n\t Upper Right Coordinates {6}, {7}\n".format(x.shape[0],
+                                                         y.shape[0],
+                                                         extent[2] - extent[0],
+                                                         extent[3] - extent[1],
+                                                         extent[0],
+                                                         extent[1],
+                                                         extent[2],
+                                                         extent[3]))
 
-    TOPO_PATH = os.path.join(output_dir,'topo.nc')
+    TOPO_PATH = os.path.join(output_dir, 'topo.nc')
     topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
 
     #Add modification note
@@ -585,15 +593,16 @@ def create_netcdf(images,extent,cell_size,output_dir):
         datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     setattr(topo, 'last_modified', h)
 
-    #Add dimensions, variables and such
+    # Add dimensions, variables and such
     topo.createDimension('y', y.shape[0])
     topo.createDimension('x', x.shape[0])
 
     topo.createVariable('y', 'f', 'y')
     topo.createVariable('x', 'f', 'x')
 
-    # the y variable attributes
+    # The y variable attributes
     topo.variables['y'][:] = y
+
     topo.variables['y'].setncattr(
             'units',
             'meters')
@@ -604,7 +613,7 @@ def create_netcdf(images,extent,cell_size,output_dir):
             'long_name',
             'y coordinate')
 
-    # the x variable attributes
+    # The x variable attributes
     topo.variables['x'][:] = x
     topo.variables['x'].setncattr(
             'units',
@@ -616,7 +625,7 @@ def create_netcdf(images,extent,cell_size,output_dir):
             'long_name',
             'x coordinate')
 
-    #Cycle through and add/generate all the images that go into the topo.nc
+    # Cycle through and add/generate all the images that go into the topo.nc
     for name, image in images.items():
         if name not in ['shapefile','maxus']:
             out.respond("Adding variable {0}".format(name))
@@ -630,21 +639,21 @@ def create_netcdf(images,extent,cell_size,output_dir):
             topo.variables[short_name].setncattr('long_name',name)
 
             if is_float(image['path']):
-
                 topo.variables[short_name][:] = image['path']
 
-            #paths
+            # paths
             elif image['path'] != None and os.path.isfile(image['path']):
                 d = Dataset(image['path'],'r')
                 try:
                     topo.variables[short_name][:] = d.variables['Band1'][:]
+
                 except Exception as e:
-                    print short_name
-                    #print(d.variables)
+                    print("{0} ERROR".format(short_name))
                     raise(e)
+
                 d.close()
 
-    # define some global attributes
+    # Define some global attributes
     fmt = '%Y-%m-%d %H:%M:%S'
     topo.setncattr_string('Conventions', 'CF-1.6')
     topo.setncattr_string('dateCreated', datetime.now().strftime(fmt))
@@ -661,15 +670,16 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     the netcdf.
 
     Args:
-        topo: NetCDF Dataset object containing variables for veh_height,veg_tau,
+        topo: NetCDF Dataset object containing variables for veg_height,veg_tau,
               and veg_k
         images: dictionary containing the paths for each image
         height_method: Determines the way veg_height is calculated given the veg
                        height data. Each method is using the range provided.
                        Options are average, max, randomized
+
     """
 
-    #Vegetation Tau and K table from Link and Marks 1999
+    # Vegetation Tau and K table from Link and Marks 1999
     # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract
     tau = {'open':1.0,
            'deciduous':0.44,
@@ -691,13 +701,14 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
 
     out.msg('Calculating veg_tau and veg_k...')
 
-    #Open veg tyep data set convert to an array and creat empty vars to populate
+    # Open veg tyep data set convert to an array and creat empty vars to populate
     d = Dataset(images['vegetation type']['path'],'r')
+
     veggies = np.array(d.variables['Band1'][:])
     veg_tau = np.zeros(veggies.shape)
     veg_k = np.zeros(veggies.shape)
 
-    #Get the unique values available in the array
+    # Get the unique values available in the array
     veg_values = np.unique(np.array(topo.variables['veg_type'][:]))
     d.close()
 
@@ -706,7 +717,7 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     veg_map = pd.read_csv(f)
     veg_map = veg_map.ix[veg_map['VALUE'].isin(veg_values)]
 
-    #Cycle through the key words in the table used for conversion and assign values
+    # Cycle through the key words in the table used for conversion and assign values
     for k,keywords in veg_keywords.items():
         for word in keywords:
             veg_filter = veg_map['VALUE'].ix[veg_map['EVT_SBCLS']==word]
@@ -717,10 +728,10 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     topo.variables['veg_tau'][:] = veg_tau
     topo.variables['veg_k'][:] = veg_k
 
-    #REMAP VEGETATION HEIGHT
+    # Remap Vegetation Height
     out.msg('Estimating vegetation heights...')
 
-    #Open veg heights and convert to array
+    # Open veg heights and convert to array
     d = Dataset(images['vegetation height']['path'],'r')
     veg_height = np.array(d.variables['Band1'][:])
     final_veg_height = np.zeros(veg_height.shape)
@@ -728,13 +739,13 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     height_values = np.unique(np.array(topo.variables['veg_height'][:]))
     d.close()
 
-    #Open the key provided by Landfire to auto assign values in the final veg height
+    # Open the key provided by Landfire to auto assign values in final veg height
     f = images['vegetation height']['map']
     height_key = pd.read_csv(f)
     height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
     height_map = {}
 
-    #Parse the veg height ranges and create a dictionary for converting
+    # Parse the veg height ranges and create a dictionary for converting
     for i,row in height_key.iterrows():
         description = row['CLASSNAMES']
         height_range = []
@@ -743,17 +754,21 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
                 height_range.append(float(word))
             except:
                 #Exceptions to veg heights not provided with a height that are guessed
-                if description in ['Sparse Vegetation Height','NASS-Row Crop',' NASS-Close Grown Crop']:
+                if description in ['Sparse Vegetation Height','NASS-Row Crop',
+                                   ' NASS-Close Grown Crop']:
                     height_range = [0,0.1]
-                elif description in ['Developed-Upland Deciduous Forest','Developed-Upland Mixed Forest','Developed - Medium Intensity']:
+                elif description in ['Developed-Upland Deciduous Forest',
+                                     'Developed-Upland Mixed Forest',
+                                     'Developed - Medium Intensity']:
                     height_range = [0,5]
+
                 elif description in ['Developed-Upland Shrubland','NASS-Vineyard']:
                     height_range = [0,2]
                 elif description in ['Developed-Upland Herbaceous','NASS-Wheat']:
                     height_range = [0,1]
         height_map[row['VALUE']] = height_range
 
-    #Reassign random height values or max values
+    # Reassign height values using random, averagin or maximum
     for k,height in height_map.items():
             ind = veg_height==k
 
@@ -840,6 +855,20 @@ def make_uniform(topo,approach = 'middle', hill = False):
 
     return topo
 
+def flip_image(topo):
+    """
+    Flips the image data over the x-axis and flips the y data
+
+    Args:
+        topo: open netcdf dataset with all the variables
+    Returns:
+        topo: an open netcdf dataset with flipped image
+    """
+    for var in topo.variables:
+        if var != 'x':
+            topo.variables[var][:] = np.flipud(topo.variables[var][:])
+    return topo
+
 def main():
 
     # Parge command line arguments
@@ -873,7 +902,16 @@ def main():
     p.add_argument('-e','--epsg', dest='epsg', help="epsg code for the point"
                   "run, see http://spatialreference.org/ref/epsg/ for options")
 
-    p.add_argument('-hl','--hill', dest='hill', action='store_true',help='For point models drops all cells except the center cell by 1mm')
+    p.add_argument('-dbg','--debug', dest='debug',action='store_true',
+                    help="Debug flag prints out more info and doesn't delete the working folder")
+
+    p.add_argument('-hl','--hill', dest='hill', action='store_true',
+                    help='For point models drops all cells except the center'
+                          'cell by 1mm')
+
+    p.add_argument('-fl','--flip', dest='flip', action='store_true',
+                                   help='Flip arrays across the x axis')
+
     args = p.parse_args()
 
     msg ="Basin Setup Tool {0}".format("0.2.1")
@@ -889,11 +927,12 @@ def main():
     images = setup_and_check(required_dirs, args.basin_shapefile, args.dem)
 
     pad = int(args.pad)
+
     #--------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point != None:
         out.msg("Point model setup requested!")
         images = setup_point(images, args.point, args.cell_size, TEMP,pad, args.epsg)
-        #For point setup the only padding should be around the center pixel
+        # For point setup the only padding should be around the center pixel
         pad = 0
     else:
         images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
@@ -913,20 +952,29 @@ def main():
 
     if args.point != None:
         if args.uniform:
-            out.warn("Using uniform flag, all outputted values will the be equal to the center pixel")
+            out.warn("Using uniform flag, all outputted values will the be"
+                     " equal to the center pixel")
+
             topo = make_uniform(topo, approach='middle')
 
         if args.hill:
             topo = make_hill(topo,dem_var='dem')
 
+    # Flip the image over the x axis if requested
+    if args.flip:
+        out.msg("Flipping images...")
+        topo = flip_image(topo)
+
     topo.close()
 
-    #Clean up
-    out.msg('Cleaning up temporary files.')
     out.msg('\nRequested output written to:')
     out.respond('{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
     out.msg("Basin setup files complete!\n")
-    rmtree(required_dirs['temp'])
+
+    if not args.debug:
+       #Clean up
+       out.msg('Cleaning up temporary files.')
+       rmtree(required_dirs['temp'])
 
 if __name__ == '__main__':
     main()
