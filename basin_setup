@@ -712,7 +712,7 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     veg_values = np.unique(np.array(topo.variables['veg_type'][:]))
     d.close()
 
-    #Open the key provided by Landfire to auto assign values in Tau and K
+    # Open the key provided by Landfire to auto assign values in Tau and K
     f = images['vegetation type']['map']
     veg_map = pd.read_csv(f)
     veg_map = veg_map.ix[veg_map['VALUE'].isin(veg_values)]
@@ -745,15 +745,20 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
     height_map = {}
 
+    veg_map['HEIGHT'] = [np.NaN for i in range(len(veg_map.index))]
+
     # Parse the veg height ranges and create a dictionary for converting
     for i,row in height_key.iterrows():
         description = row['CLASSNAMES']
         height_range = []
         for word in description.split(' '):
+
+            # Attempt to provide a value if it converts
             try:
                 height_range.append(float(word))
             except:
-                #Exceptions to veg heights not provided with a height that are guessed
+
+                # Exceptions to veg heights not provided with a height that are guessed
                 if description in ['Sparse Vegetation Height','NASS-Row Crop',
                                    ' NASS-Close Grown Crop']:
                     height_range = [0,0.1]
@@ -764,14 +769,16 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
 
                 elif description in ['Developed-Upland Shrubland','NASS-Vineyard']:
                     height_range = [0,2]
+
                 elif description in ['Developed-Upland Herbaceous','NASS-Wheat']:
                     height_range = [0,1]
+
         height_map[row['VALUE']] = height_range
 
-    # Reassign height values using random, averagin or maximum
+    # Reassign height values using random, averaging or maximum
     for k,height in height_map.items():
             ind = veg_height==k
-
+            print(k,height)
             if height_method == 'randomized':
                 rand = np.random.rand(*veg_height[ind].shape)
                 final_veg_height[ind] = (rand* height[1]) + height[0]
@@ -783,11 +790,23 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
             elif height_method == 'average':
                 if len(height) == 2:
                     final_veg_height[ind] = np.mean(height)
+                    try:
+                        ind = veg_map['EVT_GP'] == k
+                        veg_map['HEIGHT'].loc[ind] = np.mean(height)
+                    except Exception as e:
+                        print(e)
+                        print("Entry not found {0} in veg map!".format(k))
             else:
                 raise ValueError("Height method not recognized. please use max,randomized,or average")
 
-    #Reassign to the NetCDF and finish
+    # Reassign to the NetCDF and finish
     topo.variables['veg_height'][:] = final_veg_height
+
+    #Output a map for SMRF/AWSM USERS
+    veg_map = veg_map.sort_values(by='HEIGHT')
+    veg_map[['VALUE','HEIGHT','CLASSNAME']].to_csv('./veg_map.csv')
+
+    # Output Veg Info
     return topo
 
 

@@ -20,8 +20,8 @@ INSTALL
 
 **Prequisites**:
 
-* GDAL 2.2.0
-* Python 2.7.13
+* GDAL 2.3.1
+* Python>=3.5
 * pip 9.0.1
 
 To begin the install for basin_setup, ensure that GDAL is compiled from source.
