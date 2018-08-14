@@ -102,3 +102,4 @@ ENV/
 
 #Result in examples
 examples/*/output
+examples/*/*.csv
