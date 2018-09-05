@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import requests
 import zipfile
-import StringIO
+import io
 import os
 import sys
 import threading
@@ -17,7 +17,7 @@ import zipfile
 import urllib
 import shapefile
 from shapely import geometry
-import matplotlib.pyplot as plt
+
 # Initialize colors
 init()
 
@@ -172,8 +172,10 @@ def parse_extent(fname):
     """
     file_type = fname.split('.')[-1]
     if file_type == 'shp':
-        basin_shp_info = check_output(['ogrinfo','-al',fname])
+        basin_shp_info = check_output(['ogrinfo','-al',fname],
+                                      universal_newlines=True)
         parse_list = basin_shp_info.split('\n')
+
         # Parse extents from basin info
         for l in parse_list:
             if 'extent' in l.lower():
@@ -207,7 +209,7 @@ def download_zipped_url(url):
     Downloads a url that is expected to be a zipped folder.
     """
     r = requests.get(url, stream=True)
-    z = zipfile.ZipFile(StringIO.StringIO(r.content))
+    z = zipfile.ZipFile(io.BytesIO(r.content))
     z.extractall('~/Downloads')
 
 
@@ -891,7 +893,8 @@ def flip_image(topo):
 def main():
 
     # Parge command line arguments
-    p = argparse.ArgumentParser(description='Setup a new basin for SMRF. Creates all the required files.')
+    p = argparse.ArgumentParser(description='Setup a new basin for SMRF/AWSM.'
+                                            ' Creates all the required files.')
 
     p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=False,
                     help="Path to shapefile that defines the basin")
