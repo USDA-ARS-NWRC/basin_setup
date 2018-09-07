@@ -988,7 +988,7 @@ def main():
 
     args = p.parse_args()
 
-    msg ="Basin Setup Tool {0}".format("0.2.3")
+    msg ="Basin Setup Tool {0}".format("0.3.0")
     m = "="*(len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')
