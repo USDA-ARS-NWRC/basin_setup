@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import argparse
 import requests
 import zipfile
@@ -185,8 +186,10 @@ def parse_extent(fname):
                 extent = [i for i in parseable.split(',')]
                 out.dbg(extent)
                 break
+
     elif file_type == 'tif':
-        basin_shp_info = check_output(['gdalinfo',fname])
+        basin_shp_info = check_output(['gdalinfo',fname],
+                                      universal_newlines=True)
         parse_list = basin_shp_info.split('\n')
         extent = []
         for l in parse_list:
@@ -194,12 +197,14 @@ def parse_extent(fname):
                  for w in l.split(' '):
                      try:
                          if len(extent) <=4:
-                             parseable = ''.join( c for c in w if  c not in ' ,()\n')
+                             parseable = \
+                             ''.join( c for c in w if  c not in ' ,()\n')
                              extent.append(float(parseable))
                      except:
                         pass
     else:
-        raise IOError("File type .{0} not recoginizeable for parsing extent".format(file_type))
+        raise IOError("File type .{0} not recoginizeable for parsing extent"
+                      "".format(file_type))
 
     return extent
 
@@ -255,7 +260,8 @@ def  convert_shapefile(fname,out_f):
                     out.respond('KML found!{0}'.format(fname))
                     break
 
-    #For the mean time we need to do this until we figure out how to over come converting from lat long to utm
+    # For the mean time we need to do this until we figure out how to over come
+    # converting from lat long to utm
     if ext !='shp':
         raise IOError("Please use shapfiles only in UTM")
 
@@ -263,10 +269,13 @@ def  convert_shapefile(fname,out_f):
 def getWKT_PRJ (epsg_code):
     """
     Get the projection information for the points based on the EPSG code.
-    Code copied and pasted from https://glenbambrick.com/2016/01/09/csv-to-shapefile-with-pyshp/
+    Code copied and pasted from
+    https://glenbambrick.com/2016/01/09/csv-to-shapefile-with-pyshp/
     """
-    wkt = urllib.urlopen("http://spatialreference.org/ref/epsg/{0}/prettywkt/".format(epsg_code))
-    remove_spaces = wkt.read().replace(" ","")
+    wkt = urllib.urlopen("http://spatialreference.org/ref/epsg/{0}"
+                         "/prettywkt/".format(epsg_code))
+
+    remove_spaces = wkt.read().replace(" ", "")
     output = remove_spaces.replace("\n", "")
     return output
 
@@ -291,10 +300,13 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
         images={'dem':{'path':None,'source':None},
                 'shapefile':{'path':None,'source':None},
                 'mask':{'path':None,'source':None,'short_name':'mask'},
-                'vegetation type':{'path':None,'source':None,'map':None,'short_name':'veg_type'},
-                'vegetation height':{'path':None,'source':None,'map':None,'short_name':'veg_height'},
+                'vegetation type':{'path':None,'source':None,'map':None,
+                                   'short_name':'veg_type'},
+                'vegetation height':{'path':None,'source':None,'map':None,
+                                     'short_name':'veg_height'},
                 'vegetation k':{'path':None,'source':None,'short_name':'veg_k'},
-                'vegetation tau':{'path':None,'source':None,'short_name':'veg_tau'},
+                'vegetation tau':{'path':None,'source':None,
+                                  'short_name':'veg_tau'},
                 'maxus':{'path':None,'source':None}}
 
         if is_float(dem):
@@ -306,21 +318,37 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
             images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
 
         # Populate images for downloaded sources
-        images['vegetation type']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
-        images['vegetation height']['source'] = 'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
-        images['vegetation type']['path'] = os.path.join(required_dirs['downloads'],'US_140EVT_04252017','Grid','us_140evt','hdr.adf')
-        images['vegetation height']['path'] = os.path.join(required_dirs['downloads'],'US_140EVH_12052016','Grid','us_140evh', 'hdr.adf')
+        images['vegetation type']['source'] = \
+        'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
 
-        #Make directories and create setup
+        images['vegetation height']['source'] = \
+        'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
+
+        images['vegetation type']['path'] = \
+                                        os.path.join(required_dirs['downloads'],
+                                                    'US_140EVT_04252017',
+                                                    'Grid','us_140evt',
+                                                    'hdr.adf')
+
+        images['vegetation height']['path'] = \
+                                        os.path.join(required_dirs['downloads'],
+                                                     'US_140EVH_12052016',
+                                                     'Grid',
+                                                     'us_140evh',
+                                                     'hdr.adf')
+
+        # Make directories and create setup
         for k,d in required_dirs.items():
             full = os.path.abspath(os.path.expanduser(d))
 
             if not os.path.isdir(os.path.dirname(full)):
-                raise IOError("Path to vegetation data/download directory does not exist.\n %s" % full)
+                raise IOError("Path to vegetation data/download directory does"
+                              " not exist.\n %s" % full)
 
             if k != 'downloads':
                 if os.path.isdir(full):
-                    out.warn("{0} folder exists, potential to overwrite non-downloaded files!".format(k))
+                    out.warn("{0} folder exists, potential to overwrite"
+                             " non-downloaded files!".format(k))
 
                 else:
                     out.msg("Making folder...")
@@ -395,19 +423,29 @@ def check_shp_file(images):
 
     # Only accept .shp for now
     if basin_shapefile.split('.')[-1] != 'shp':
-        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
+        images['shapefile']['path'] = \
+                            os.path.abspath(os.path.expanduser(basin_shapefile))
+
         fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
         images['shapefile']['path'] = os.path.join(TEMP,fname+'.shp')
         convert_shapefile(basin_shapefile,images['shapefile']['path'])
 
     else:
-        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(basin_shapefile))
+        images['shapefile']['path'] = \
+                            os.path.abspath(os.path.expanduser(basin_shapefile))
     return images
 
 
 def check_and_download(images,required_dirs):
     """
     Checks for veg type and height data
+
+    args:
+        images: dictionary containing sources, filenames, and other attributes
+        required_dirs: dictionary of directories that are required
+
+    returns:
+        images: a modified dictionary of the original dicitonary
     """
 
     for image_name in ['vegetation type', 'vegetation height']:
@@ -415,7 +453,8 @@ def check_and_download(images,required_dirs):
         info['path'] = os.path.abspath(os.path.expanduser(info['path']))
         images[image_name] = info
 
-        out.msg("Checking for {0} data in {1}...".format(image_name, required_dirs['downloads']))
+        out.msg("Checking for {0} data in {1}...".format(image_name,
+                                                    required_dirs['downloads']))
 
         #Cycle through all the downloads
         out.msg("Looking for: \n%s " % info['path'])
@@ -470,7 +509,7 @@ def process(images,TEMP,cell_size,pad):
         images:dictionary containing paths for each image
         TEMP: temporary work dir
         cell_size: Desired cell size for the images.
-        pad: Number of cells to add to an image from the extent of the basin_shapefile
+        pad: Number of cells to add to an image from the extent of the shapefile
 
     Returns:
         images:dictionary containing the path to the latest image for each key.
@@ -486,7 +525,7 @@ def process(images,TEMP,cell_size,pad):
     padding = int(cell_size)*int(pad)
     padded_extent = []
     for i,e in enumerate(extent):
-        #Extent format is bottom left upper right
+        # Extent format is bottom left upper right
         z = float(e)
         if i<2:
             z -= padding
@@ -526,7 +565,8 @@ def process(images,TEMP,cell_size,pad):
         #Get data loaded in
         out.msg("Getting {0} image info...".format(name))
 
-        img_info = check_output(['gdalinfo',img['path']])
+        img_info = check_output(['gdalinfo',img['path']],
+                                universal_newlines=True)
 
         fname = name.replace(' ', '_')
 
@@ -894,45 +934,58 @@ def main():
 
     # Parge command line arguments
     p = argparse.ArgumentParser(description='Setup a new basin for SMRF/AWSM.'
-                                            ' Creates all the required files.')
+                                ' Creates all the required static files'
+                                ' required for running a basin. The output is a'
+                                ' topo.nc containing: dem, mask, veg height,'
+                                ' veg type, veg tau, and veg k')
 
-    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',required=False,
-                    help="Path to shapefile that defines the basin")
+    p.add_argument('-f','--basin_shapefile', dest='basin_shapefile',
+                    required=False,
+                    help="Path to shapefile that defines the basin in UTM "
+                    " projection")
 
-    p.add_argument('-c','--cell_size', dest='cell_size',required=False, default=50,
-                    help="Pixel size to use for the basin in meters")
+    p.add_argument('-c','--cell_size', dest='cell_size', required=False,
+                    default=50,
+                    help="Pixel size to use for the basin in meters,"
+                         " Default: 50m")
 
-    p.add_argument('-dm','--dem', dest='dem',required=True,
-                    help="Digital elevation map file in geotiff or a single value for point models")
+    p.add_argument('-dm','--dem', dest='dem', required=True,
+                    help="Digital elevation map file in geotiff or a single "
+                    " value for point models")
 
-    p.add_argument('-d','--download', dest='download',required=False, default='~/Downloads',
-                    help="Location to check for veg data or download vegetation data")
+    p.add_argument('-d','--download', dest='download', required=False,
+                    default='~/Downloads',
+                    help="Location to check for veg data or download vegetation"
+                         " data, default: ~/Downloads")
 
-    p.add_argument('-o','--output', dest='output',required=False, default='./output',
+    p.add_argument('-o','--output', dest='output', required=False,
+                    default='./output',
                     help="Location to output data")
 
-    p.add_argument('-p','--point', dest='point',required=False, default=None,
+    p.add_argument('-p','--point', dest='point', required=False, default=None,
                     help='Center of location to setup "point" model')
 
-    p.add_argument('-pd','--pad', dest='pad',required=False, default=5,
+    p.add_argument('-pd','--pad', dest='pad', required=False, default=5,
                     help="Number of cells to add on to the domain from the "
-                         "extents of the basin.")
+                         "extents of the basin, default: 5")
 
-    p.add_argument('-u','--uniform', dest='uniform',action='store_true',
+    p.add_argument('-u','--uniform', dest='uniform', action='store_true',
                     help="Specifies whether for point runs to use a uniform"
                           "elevation and veg values in the 'point' domain")
-    p.add_argument('-e','--epsg', dest='epsg', help="epsg code for the point"
-                  "run, see http://spatialreference.org/ref/epsg/ for options")
 
-    p.add_argument('-dbg','--debug', dest='debug',action='store_true',
-                    help="Debug flag prints out more info and doesn't delete the working folder")
+    p.add_argument('-e','--epsg', dest='epsg', help="epsg code for the point"
+                  " run, see http://spatialreference.org/ref/epsg/ for options")
+
+    p.add_argument('-dbg','--debug', dest='debug', action='store_true',
+                    help="Debug flag prints out more info and doesn't delete"
+                         " the working folder")
 
     p.add_argument('-hl','--hill', dest='hill', action='store_true',
                     help='For point models drops all cells except the center'
-                          'cell by 1mm')
+                         'cell by 1mm')
 
-    p.add_argument('-fl','--flip', dest='flip', action='store_true',
-                                   help='Flip arrays across the x axis')
+    p.add_argument('-fl','--noflip', dest='noflip', action='store_true',
+                                   help='Do not flip arrays across the x axis')
 
     args = p.parse_args()
 
@@ -942,9 +995,15 @@ def main():
     out.msg(msg,'header')
     out.msg(m,'header')
 
-    #==================== Check Inputs/ Setup ======================= #
+    #===========================================================================
+    # Check Inputs/ Setup
+    #===========================================================================
+
     # Check and setup for an output dir, downloads dir, and temp dir
-    required_dirs={'output':args.output,'downloads':args.download,'temp':os.path.abspath(os.path.join(args.output,'temp'))}
+    required_dirs={'output':args.output,
+                   'downloads':args.download,
+                   'temp':os.path.abspath(os.path.join(args.output,'temp'))}
+
     TEMP = required_dirs['temp']
     images = setup_and_check(required_dirs, args.basin_shapefile, args.dem)
 
@@ -962,13 +1021,19 @@ def main():
 
     images = check_shp_file(images)
 
-    #==================== Downloads and Checking ======================= #
+    #===========================================================================
+    # Downloads and Checking
+    #===========================================================================
     images = check_and_download(images, required_dirs)
 
-    #==================== Processing ======================= #
+    #===========================================================================
+    # Processing
+    #===========================================================================
     images,extent = process(images, TEMP, args.cell_size,pad)
 
-    #==================== Post-Processing ======================= #
+    #===========================================================================
+    # Post Processing
+    #===========================================================================
     topo = create_netcdf(images,extent, args.cell_size, required_dirs['output'])
     topo = calculate_height_tau_k(topo,images) # CALCULATE TAU AND K
 
@@ -980,10 +1045,10 @@ def main():
             topo = make_uniform(topo, approach='middle')
 
         if args.hill:
-            topo = make_hill(topo,dem_var='dem')
+            topo = make_hill(topo, dem_var='dem')
 
     # Flip the image over the x axis if requested
-    if args.flip:
+    if not args.noflip:
         out.msg("Flipping images...")
         topo = flip_image(topo)
 
@@ -994,7 +1059,7 @@ def main():
     out.msg("Basin setup files complete!\n")
 
     if not args.debug:
-       #Clean up
+       # Clean up
        out.msg('Cleaning up temporary files.')
        rmtree(required_dirs['temp'])
 
