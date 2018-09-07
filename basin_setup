@@ -820,7 +820,6 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     # Reassign height values using random, averaging or maximum
     for k,height in height_map.items():
             ind = veg_height==k
-            print(k,height)
             if height_method == 'randomized':
                 rand = np.random.rand(*veg_height[ind].shape)
                 final_veg_height[ind] = (rand* height[1]) + height[0]
