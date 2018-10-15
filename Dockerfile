@@ -1,11 +1,10 @@
 # Basin Setup requires GDAL
-FROM geographica/gdal2:2.3.1
+FROM geographica/gdal2:2.3.2
 
 MAINTAINER Micah Johnson <micah.johnson150@gmail.com>
 
 
-RUN apt-get update -y && apt-get install -y \
-    python3-pip 
+RUN apt-get install -y python3-pip 
 
 
 # Copy over everything
