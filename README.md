@@ -59,8 +59,7 @@ be converted to that of the shapefile.
 To use basin\_setup at it's simplest form, just provide a shapefile and
 dem:
 
-**Easiest
-Use**
+**Easiest Use**
 
 ```
 $  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif

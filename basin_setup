@@ -39,7 +39,8 @@ class Messages():
 
         Args;
             str_msg: String the user wants to output
-            context_str: type of print style and color, key associated with self.context
+            context_str: type of print style and color, key associated with
+                         self.context
         Returns:
             final_msg: Str containing the desired colors and styles
         """
@@ -91,12 +92,14 @@ class Messages():
 
 out = Messages()
 
+
 def is_float(str_val):
     try:
         float(str_val)
         return True
     except:
         return False
+
 
 def shapely_to_pyshp(shapelygeom):
     """
@@ -427,8 +430,8 @@ def check_shp_file(images):
                             os.path.abspath(os.path.expanduser(basin_shapefile))
 
         fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
-        images['shapefile']['path'] = os.path.join(TEMP,fname+'.shp')
-        convert_shapefile(basin_shapefile,images['shapefile']['path'])
+        images['shapefile']['path'] = os.path.join(TEMP, fname + '.shp')
+        convert_shapefile(basin_shapefile, images['shapefile']['path'])
 
     else:
         images['shapefile']['path'] = \
@@ -490,7 +493,8 @@ def check_and_download(images,required_dirs):
                 # Looking for the only csv
                 if f.split('.')[-1] == 'csv':
                     info['map'] = os.path.join(root,f)
-                    out.respond('{0} map found!\n\t{1}'.format(image_name,info['map']))
+                    out.respond('{0} map found!\n\t{1}'.format(image_name,
+                                                               info['map']))
                     break
 
         if info['map'] == None:
@@ -513,7 +517,8 @@ def process(images,TEMP,cell_size,pad):
 
     Returns:
         images:dictionary containing the path to the latest image for each key.
-        extent: The list of the bottom left and upper right image extents plus padding
+        extent: The list of the bottom left and upper right image extents plus
+                padding
     """
     # General info for basin shape file
     out.msg("Retrieving basin outline info...\n")
@@ -547,7 +552,8 @@ def process(images,TEMP,cell_size,pad):
     z.wait()
 
     NC = os.path.abspath(os.path.join(TEMP,'clipped_mask.nc'))
-    s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images['mask']['path'],NC],stdout=PIPE)
+    s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images['mask']['path'],
+                                                         NC],stdout=PIPE)
     s.wait()
     images['mask']['path'] = NC
 
@@ -570,7 +576,8 @@ def process(images,TEMP,cell_size,pad):
 
         fname = name.replace(' ', '_')
 
-        CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'.format(fname)))
+        CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif''
+                                                    ''.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
         p = Popen(['gdalwarp','-t_srs', proj,'-te', s_extent[0],s_extent[1],
@@ -583,7 +590,8 @@ def process(images,TEMP,cell_size,pad):
         # Convert to Netcdf
         out.msg("Converting {0} to NetCDF...".format(name))
         NC = CLIPPED.split('.')[0]+'.nc'
-        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', CLIPPED,NC],stdout=PIPE)
+        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', CLIPPED,NC],
+                                                             stdout=PIPE)
         images[name]['path'] = NC
         s.wait()
 
@@ -608,9 +616,9 @@ def create_netcdf(images,extent,cell_size,output_dir):
     #Building the final netcdf
     out.msg("\nCreating final output for netcdf...")
 
-    # Setup the extent using the files we just generated. The extent is decided oddly
-    # In gdal so it was tough to generate the extents manually, this way we let
-    # gdal managae it.
+    # Setup the extent using the files we just generated. The extent is decided
+    # oddly in gdal so it was tough to generate the extents manually, this way we
+    # let gdal managae it.
     extent = [float(e) for e in extent]
     x = np.arange(extent[0], extent[2], int(cell_size))
     y = np.arange(extent[1], extent[3], int(cell_size))
@@ -690,7 +698,7 @@ def create_netcdf(images,extent,cell_size,output_dir):
                     topo.variables[short_name][:] = d.variables['Band1'][:]
 
                 except Exception as e:
-                    print("{0} ERROR".format(short_name))
+                    out.error("{0}".format(short_name))
                     raise(e)
 
                 d.close()
@@ -699,10 +707,12 @@ def create_netcdf(images,extent,cell_size,output_dir):
     fmt = '%Y-%m-%d %H:%M:%S'
     topo.setncattr_string('Conventions', 'CF-1.6')
     topo.setncattr_string('dateCreated', datetime.now().strftime(fmt))
-    topo.setncattr_string('title', 'Topo Images for SMRF/AWSM')
-    topo.setncattr_string('history', '[{}] Create netCDF4 file'.format(datetime.now().strftime(fmt)))
+    topo.setncattr_string('Title', 'Topographic Images for SMRF/AWSM')
+    topo.setncattr_string('history', '[{}] Create netCDF4 file'
+                          ''.format(datetime.now().strftime(fmt)))
     topo.setncattr_string('institution',
-            'USDA Agricultural Research Service, Northwest Watershed Research Center')
+            'USDA Agricultural Research Service, Northwest Watershed Research'
+            ' Center')
     return topo
 
 
@@ -735,15 +745,16 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
            'dense conifer':0.074}
 
     # Keywords for landfire data sets
-    veg_keywords = {'open':['Sparsely vegetated','graminoid'],
-                    'deciduous':['Deciduous open tree canopy'],
-                    'mixed conifer and deciduous':['Mixed evergreen-deciduous shrubland'],
-                    'medium conifer':['Mixed evergreen-deciduous open tree canopy'],
-                    'dense conifer':['Evergreen closed tree canopy','conifer']}
+    veg_keywords = \
+        {'open':['Sparsely vegetated','graminoid'],
+         'deciduous':['Deciduous open tree canopy'],
+         'mixed conifer and deciduous':['Mixed evergreen-deciduous shrubland'],
+         'medium conifer':['Mixed evergreen-deciduous open tree canopy'],
+         'dense conifer':['Evergreen closed tree canopy','conifer']}
 
     out.msg('Calculating veg_tau and veg_k...')
 
-    # Open veg tyep data set convert to an array and creat empty vars to populate
+    # Open veg type data set to create empty vars to populate
     d = Dataset(images['vegetation type']['path'],'r')
 
     veggies = np.array(d.variables['Band1'][:])
@@ -759,7 +770,7 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     veg_map = pd.read_csv(f)
     veg_map = veg_map.ix[veg_map['VALUE'].isin(veg_values)]
 
-    # Cycle through the key words in the table used for conversion and assign values
+    # Cycle through the key words in the table used for conversion/assign values
     for k,keywords in veg_keywords.items():
         for word in keywords:
             veg_filter = veg_map['VALUE'].ix[veg_map['EVT_SBCLS']==word]
@@ -781,7 +792,7 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     height_values = np.unique(np.array(topo.variables['veg_height'][:]))
     d.close()
 
-    # Open the key provided by Landfire to auto assign values in final veg height
+    # Open the key provided by Landfire to assign values in final veg height
     f = images['vegetation height']['map']
     height_key = pd.read_csv(f)
     height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
@@ -800,7 +811,7 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
                 height_range.append(float(word))
             except:
 
-                # Exceptions to veg heights not provided with a height that are guessed
+                # Exceptions to veg heights not provided with a height
                 if description in ['Sparse Vegetation Height','NASS-Row Crop',
                                    ' NASS-Close Grown Crop']:
                     height_range = [0,0.1]
@@ -835,10 +846,11 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
                         ind = veg_map['EVT_GP'] == k
                         veg_map['HEIGHT'].loc[ind] = np.mean(height)
                     except Exception as e:
-                        print(e)
-                        print("Entry not found {0} in veg map!".format(k))
+                        out.error(e)
+                        out.error("Entry not found {0} in veg map!".format(k))
             else:
-                raise ValueError("Height method not recognized. please use max,randomized,or average")
+                raise ValueError("Height method not recognized. please use max,"
+                                 " randomized,or average")
 
     # Reassign to the NetCDF and finish
     topo.variables['veg_height'][:] = final_veg_height
@@ -853,7 +865,8 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
 
 def make_hill(topo,dem_var='dem', lower = 1.0):
     """
-    Modifies the dem by lowering the area around point models by the amount set in lower.
+    Modifies the dem by lowering the area around point models by the amount set
+    in lower.
 
     Args:
         topo: Open Netcdf dataset containing the dem_var
@@ -865,7 +878,8 @@ def make_hill(topo,dem_var='dem', lower = 1.0):
 
     x_mid = int(len(topo.variables[dem_var][:,0])/2)
     y_mid = int(len(topo.variables[dem_var][0,:])/2)
-    out.warn("Creating a hill like 'point model' by lowering the surrounding area by {0}m".format(lower))
+    out.warn("Creating a hill like 'point model' by lowering the surrounding"
+             " area by {0}m".format(lower))
     removal = lower*np.ones(np.shape(topo.variables[dem_var]))
     removal[y_mid,x_mid] = 0
     topo.variables[dem_var][:] = topo.variables[dem_var][:]-removal
@@ -909,7 +923,8 @@ def make_uniform(topo,approach = 'middle', hill = False):
                 value = np.max(values)
 
             else:
-                raise ValueError("{0} not an accetable option, options are middle, average, min, and max")
+                raise ValueError("{0} not an accetable option, options are "
+                                 "middle, average, min, and max")
 
             topo.variables[var][:] = value
 
@@ -928,6 +943,133 @@ def flip_image(topo):
         if var != 'x':
             topo.variables[var][:] = np.flipud(topo.variables[var][:])
     return topo
+
+
+def strip_chars(edit_str, bad_chars='[(){}<>,"_]=\nns'):
+    """
+    Written to strip out unwanted chars from the proj strings received
+    back from the URL for the EPSG requests.
+
+    Args:
+        edit_str: String containing unwanted chars
+        bad_chars: String of chars to be removed
+
+    Returns:
+        result: The edit_str without any of the chars in bad_chars
+    """
+
+    result = ''.join([s for s in edit_str if s not in bad_chars])
+    return result
+
+
+def gather_utm_meta(epsg_str,epsg):
+    """
+    Use if the EPSG data is associated to UTM
+    Gathers the data and returns a dictionary of data and attributes that need
+    to be added to the netcdf based on
+    https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/reference/StandardCoordinateTransforms.html
+
+    Args:
+        epsg_str: String received from the epsg request.
+        epsg: The EPSG number associated with the request
+
+    Returns:
+        map_meta: dictionary of UTM projection data to be added to the netcdf
+    """
+    meta = epsg_str.lower()
+
+    map_meta = {
+                    "grid_mapping_name": "universal_transverse_mercator",
+                    "utm_zone_number": None,
+                    "semi_major_axis": None,
+                    "inverse_flattening": None,
+                    'spatial_ref':epsg_str,
+                    "_CoordinateTransformType": "Projection",
+                    "_CoordinateAxisTypes": "GeoX GeoY"}
+
+    # Assign the zone number
+    zone_str = meta.split('zone')[1]
+    map_meta['utm_zone_number'] = float((strip_chars(zone_str.split(',')[0])).strip()[-2:])
+
+    # Assign the semi_major_axis
+    axis_string = meta.split('spheroid')[1]
+    map_meta['semi_major_axis'] = float(axis_string.split(',')[1])
+
+    # Assing the flattening
+    map_meta["inverse_flattening"] = float(strip_chars(axis_string.split(',')[2]))
+
+    return map_meta
+
+
+def add_proj(nc_obj,epsg):
+    """
+    Adds the appropriate attributes to the netcdf for managing projection info
+
+    Args:
+        nc_obj: netCDF4 dataset object needing the projection information
+        epsg:   projection information to be added
+
+    Returns:
+        nc_obj: the netcdf object modified
+    """
+
+    # function to generate .prj file information using spatialreference.org
+    # access projection information
+    try:
+        wkt = urlopen("http://spatialreference.org/ref/epsg/{0}/prettywkt/".format(epsg))
+    except:
+        wkt = urlopen("http://spatialreference.org/ref/sr-org/{0}/prettywkt/".format(epsg))
+
+    # remove spaces between charachters
+    remove_spaces = ((wkt.read()).decode('utf-8')).replace(" ","")
+    # Add in the variable for holding coordinate system info
+    map_meta = parse_wkt(remove_spaces,epsg)
+
+    nc_obj.createVariable("UTM_Projection","S1")
+    nc_obj["UTM_Projection"].setncatts(map_meta)
+
+    for name,var in nc_obj.variables.items():
+
+        # Assume all 2D+ vars are the same projection
+        if 'x' in var.dimensions and 'y' in var.dimensions:
+            out.msg("Adding coordinate system info to {0}".format(name))
+            nc_obj[name].setncatts({"grid_mapping":"UTM_Projection"})
+
+        elif name.lower() in ['x','y']:
+            # Set a standard name, which is required for recognizing projections
+            nc_obj[name].setncatts({"standard_name":"projection_{}_coordinate"
+            "".format(name.lower())})
+            # Set the units
+            nc_obj[name].setncatts({"units":"meters"
+            "".format(name.lower())})
+
+
+    return nc_obj
+
+
+def parse_wkt(epsg_string,epsg):
+    """
+    Processes the epsg string returned from the URL request.
+
+    Args:
+        epsg_str: String received from the epsg request.
+        epsg: The EPSG number associated with the request
+
+    Returns:
+        map_meta: dictionary of projection data to be added to the netcdf
+    """
+    map_meta = {}
+    wkt_data = (epsg_string.lower()).split(',')
+
+    # Add more projection parsers here
+    if 'utm' in epsg_string.lower():
+        map_meta = gather_utm_meta(epsg_string,epsg)
+
+    out.respond(" Meta information to be added...\n")
+    for k,v in map_meta.items():
+        out.respond(k,repr(v))
+    return map_meta
+
 
 def main():
 
@@ -1011,11 +1153,13 @@ def main():
     #--------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point != None:
         out.msg("Point model setup requested!")
-        images = setup_point(images, args.point, args.cell_size, TEMP,pad, args.epsg)
+        images = setup_point(images, args.point, args.cell_size, TEMP, pad,
+                                                                      args.epsg)
         # For point setup the only padding should be around the center pixel
         pad = 0
     else:
-        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(args.basin_shapefile))
+        images['shapefile']['path'] = os.path.abspath(os.path.expanduser(
+                                                      args.basin_shapefile))
 
 
     images = check_shp_file(images)
@@ -1028,14 +1172,15 @@ def main():
     #===========================================================================
     # Processing
     #===========================================================================
-    images,extent = process(images, TEMP, args.cell_size,pad)
+    images, extent = process(images, TEMP, args.cell_size,pad)
 
     #===========================================================================
     # Post Processing
     #===========================================================================
     topo = create_netcdf(images,extent, args.cell_size, required_dirs['output'])
-    topo = calculate_height_tau_k(topo,images) # CALCULATE TAU AND K
+    topo = calculate_height_tau_k(topo,images) # Calculates TAU and K
 
+    # Making a point
     if args.point != None:
         if args.uniform:
             out.warn("Using uniform flag, all outputted values will the be"
@@ -1046,7 +1191,7 @@ def main():
         if args.hill:
             topo = make_hill(topo, dem_var='dem')
 
-    # Flip the image over the x axis if requested
+    # Don't Flip the image over the x axis if it is not requested
     if not args.noflip:
         out.msg("Flipping images...")
         topo = flip_image(topo)
@@ -1057,8 +1202,8 @@ def main():
     out.respond('{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
     out.msg("Basin setup files complete!\n")
 
+    # Don't Clean up if we are debugging so we can look at the steps
     if not args.debug:
-       # Clean up
        out.msg('Cleaning up temporary files.')
        rmtree(required_dirs['temp'])
 
