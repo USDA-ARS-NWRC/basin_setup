@@ -25,7 +25,7 @@ init()
 
 DEBUG = True
 
-BASIN_SETUP_VERSION = '0.3.0'
+BASIN_SETUP_VERSION = '0.4.0'
 
 class Messages():
     def __init__(self):
