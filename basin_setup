@@ -18,12 +18,14 @@ import zipfile
 import urllib
 import shapefile
 from shapely import geometry
+from urllib.request import urlopen
 
 # Initialize colors
 init()
 
 DEBUG = True
 
+BASIN_SETUP_VERSION = '0.3.0'
 
 class Messages():
     def __init__(self):
@@ -68,29 +70,158 @@ class Messages():
 
     def msg(self,str_msg,context_str=None):
         final_msg = self.build_msg(str_msg,context_str)
-        print('\n'+final_msg)
+        print('\n' + final_msg)
 
     def dbg(self,str_msg,context_str=None):
         final_msg = self.build_msg('[DEBUG]: ','header')
         final_msg+=self._structure_msg(str_msg)
         final_msg = self.build_msg(final_msg,context_str)
-        print('\n'+final_msg)
+        print('\n' + final_msg)
 
     def warn(self,str_msg):
         final_msg = self.build_msg('[WARNING]: ','header')
         final_msg = self.build_msg(final_msg+str_msg, 'warning')
-        print('\n'+final_msg)
+        print('\n' + final_msg)
 
     def error(self,str_msg):
         final_msg = self.build_msg('[ERROR]: ','header')
         final_msg = self.build_msg(final_msg+str_msg,'error')
-        print('\n'+final_msg)
+        print('\n' + final_msg)
 
     def respond(self,str_msg):
+        """
+        Messages acting like a confirmation to the user and in response to the
+        previous message
+        """
         final_msg = self.build_msg(str_msg, 'ok')
-        print('\t'+final_msg)
+        print('\t' + final_msg)
 
 out = Messages()
+
+
+def strip_chars(edit_str, bad_chars='[(){}<>,"_]=\nns'):
+    """
+    Written to strip out unwanted chars from the proj strings received
+    back from the URL for the EPSG requests.
+
+    Args:
+        edit_str: String containing unwanted chars
+        bad_chars: String of chars to be removed
+
+    Returns:
+        result: The edit_str without any of the chars in bad_chars
+    """
+
+    result = ''.join([s for s in edit_str if s not in bad_chars])
+    return result
+
+
+def gather_utm_meta(epsg_str,epsg):
+    """
+    Use if the EPSG data is associated to UTM
+    Gathers the data and returns a dictionary of data and attributes that need
+    to be added to the netcdf based on
+    https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/reference/StandardCoordinateTransforms.html
+
+    Args:
+        epsg_str: String received from the epsg request.
+        epsg: The EPSG number associated with the request
+
+    Returns:
+        map_meta: dictionary of UTM projection data to be added to the netcdf
+    """
+    meta = epsg_str.lower()
+
+    map_meta = {
+                    "grid_mapping_name": "universal_transverse_mercator",
+                    "utm_zone_number": None,
+                    "semi_major_axis": None,
+                    "inverse_flattening": None,
+                    'spatial_ref':epsg_str,
+                    "_CoordinateTransformType": "Projection",
+                    "_CoordinateAxisTypes": "GeoX GeoY"}
+
+    # Assign the zone number
+    zone_str = meta.split('zone')[1]
+    map_meta['utm_zone_number'] = float((strip_chars(zone_str.split(',')[0])).strip()[-2:])
+
+    # Assign the semi_major_axis
+    axis_string = meta.split('spheroid')[1]
+    map_meta['semi_major_axis'] = float(axis_string.split(',')[1])
+
+    # Assing the flattening
+    map_meta["inverse_flattening"] = float(strip_chars(axis_string.split(',')[2]))
+
+    return map_meta
+
+
+def add_proj(nc_obj,epsg):
+    """
+    Adds the appropriate attributes to the netcdf for managing projection info
+
+    Args:
+        nc_obj: netCDF4 dataset object needing the projection information
+        epsg:   projection information to be added
+
+    Returns:
+        nc_obj: the netcdf object modified
+    """
+
+    # function to generate .prj file information using spatialreference.org
+    # access projection information
+    try:
+        wkt = urlopen("http://spatialreference.org/ref/epsg/{0}/prettywkt/".format(epsg))
+    except:
+        wkt = urlopen("http://spatialreference.org/ref/sr-org/{0}/prettywkt/".format(epsg))
+
+    # remove spaces between charachters
+    remove_spaces = ((wkt.read()).decode('utf-8')).replace(" ","")
+
+    # Add in the variable for holding coordinate system info
+    map_meta = parse_wkt(remove_spaces,epsg)
+    nc_obj.createVariable("projection","S1")
+    nc_obj["projection"].setncatts(map_meta)
+
+    for name,var in nc_obj.variables.items():
+
+        # Assume all 2D+ vars are the same projection
+        if 'x' in var.dimensions and 'y' in var.dimensions:
+            out.msg("Adding coordinate system info to {0}".format(name))
+            nc_obj[name].setncatts({"grid_mapping":"projection"})
+
+        elif name.lower() in ['x','y']:
+            # Set a standard name, which is required for recognizing projections
+            nc_obj[name].setncatts({"standard_name":"projection_{}_coordinate"
+            "".format(name.lower())})
+
+            # Set the units
+            nc_obj[name].setncatts({"units":"meters".format(name.lower())})
+
+    return nc_obj
+
+
+def parse_wkt(epsg_string,epsg):
+    """
+    Processes the epsg string returned from the URL request.
+
+    Args:
+        epsg_str: String received from the epsg request.
+        epsg: The EPSG number associated with the request
+
+    Returns:
+        map_meta: dictionary of projection data to be added to the netcdf
+    """
+    map_meta = {}
+    wkt_data = (epsg_string.lower()).split(',')
+
+    # Add more projection parsers here
+    if 'utm' in epsg_string.lower():
+        map_meta = gather_utm_meta(epsg_string,epsg)
+
+    out.msg("Projection information to be added:")
+    for k,v in map_meta.items():
+        out.respond("{}: {}".format(k,repr(v)))
+    return map_meta
 
 
 def is_float(str_val):
@@ -176,7 +307,7 @@ def parse_extent(fname):
     """
     file_type = fname.split('.')[-1]
     if file_type == 'shp':
-        basin_shp_info = check_output(['ogrinfo','-al',fname],
+        basin_shp_info = check_output(['ogrinfo','-al', fname],
                                       universal_newlines=True)
         parse_list = basin_shp_info.split('\n')
 
@@ -221,10 +352,10 @@ def download_zipped_url(url):
     z.extractall('~/Downloads')
 
 
-def  convert_shapefile(fname,out_f):
+def convert_shapefile(fname,out_f):
     """
-    Handles various shapefile scenario given multuple shapefiles coming in
-    convert and output a shapefile to out_f
+    Handles various shapefile filetype scenario and output a shapefile to out_f
+    in the correct file format
 
     Args:
         fname: String file path
@@ -233,14 +364,14 @@ def  convert_shapefile(fname,out_f):
     fname = os.path.abspath(os.path.expanduser(fname))
 
     if os.path.isfile(fname):
-        name,ext = fname.split('.')
+        name, ext = fname.split('.')
         out_dir = os.path.dirname(name)
         name = os.path.basename(name)
 
     else:
         raise IOError('File {0} does not exist')
 
-    #Zipped KML file
+    # Zipped KML file
     if ext == 'kmz':
         out.msg("KMZ (Compressed KML) file provided, unzipping...")
         #Copy to a zip
@@ -266,7 +397,7 @@ def  convert_shapefile(fname,out_f):
     # For the mean time we need to do this until we figure out how to over come
     # converting from lat long to utm
     if ext !='shp':
-        raise IOError("Please use shapfiles only in UTM")
+        raise IOError("Please use shapfiles")
 
 
 def getWKT_PRJ (epsg_code):
@@ -300,17 +431,17 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
         TEMP = required_dirs['temp']
 
         # Filename and paths and potential sources
-        images={'dem':{'path':None,'source':None},
-                'shapefile':{'path':None,'source':None},
-                'mask':{'path':None,'source':None,'short_name':'mask'},
-                'vegetation type':{'path':None,'source':None,'map':None,
+        images = {'dem':{'path':None,'source':None},
+                  'shapefile':{'path':None,'source':None, 'epsg':None},
+                  'mask':{'path':None,'source':None,'short_name':'mask'},
+                  'vegetation type':{'path':None,'source':None,'map':None,
                                    'short_name':'veg_type'},
-                'vegetation height':{'path':None,'source':None,'map':None,
+                  'vegetation height':{'path':None,'source':None,'map':None,
                                      'short_name':'veg_height'},
-                'vegetation k':{'path':None,'source':None,'short_name':'veg_k'},
-                'vegetation tau':{'path':None,'source':None,
+                  'vegetation k':{'path':None,'source':None,'short_name':'veg_k'},
+                  'vegetation tau':{'path':None,'source':None,
                                   'short_name':'veg_tau'},
-                'maxus':{'path':None,'source':None}}
+                  'maxus':{'path':None,'source':None}}
 
         if is_float(dem):
             #Single float value provided
@@ -365,7 +496,7 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
         return images
 
 
-def setup_point(images,point, cell_size, temp, pad, epsg_code):
+def setup_point(images, point, cell_size, temp, pad, epsg_code):
     """
     Creates a shapefile that is exactly the 4 corners of a single point for
     making 'point' runs.
@@ -388,12 +519,12 @@ def setup_point(images,point, cell_size, temp, pad, epsg_code):
     y0 = point[1] - half_width - padding
     x1 = point[0] + half_width + padding
     y1 = point[1] + half_width + padding
-    points.append((x0,y0)) #Bottom left
-    points.append((x0,y1)) #Upper left
-    points.append((x1,y1)) #Upper Right
-    points.append((x1,y0)) #Bottom Right
+    points.append((x0,y0)) # Bottom left
+    points.append((x0,y1)) # Upper left
+    points.append((x1,y1)) # Upper Right
+    points.append((x1,y0)) # Bottom Right
 
-    #Write the points to a csv
+    # Write the points to a csv
     name = "points"
     SHP = os.path.join(temp,'{0}.shp'.format(name))
     PRJ = os.path.join(temp,'{0}.prj'.format(name))
@@ -409,7 +540,7 @@ def setup_point(images,point, cell_size, temp, pad, epsg_code):
     shp_writer.record(["outline"])
     shp_writer.save(SHP)
 
-    #Apply the EPSG code
+    # Apply the EPSG code
     epsg = getWKT_PRJ(epsg_code)
     with open(PRJ,'w') as f:
         f.write(epsg)
@@ -418,10 +549,17 @@ def setup_point(images,point, cell_size, temp, pad, epsg_code):
     return images
 
 
-def check_shp_file(images):
+def check_shp_file(images, epsg=None, temp=None):
     """
     Require a shapefile and make a full path for either point or basin areas
+    Args:
+        images: dictionary containing paths and information on the images used
+        epsg: Desired projection code
+        temp: Work directory for temporary files
+    Returns:
+        images: a dictionary to modified paths for images in progress
     """
+    out.dbg("Checking Basin Shapefile...")
     basin_shapefile = images['shapefile']['path']
 
     # Only accept .shp for now
@@ -430,12 +568,36 @@ def check_shp_file(images):
                             os.path.abspath(os.path.expanduser(basin_shapefile))
 
         fname = (os.path.basename(images['shapefile']['path'])).split('.')[0]
-        images['shapefile']['path'] = os.path.join(TEMP, fname + '.shp')
+        images['shapefile']['path'] = os.path.join(temp, fname + '.shp')
         convert_shapefile(basin_shapefile, images['shapefile']['path'])
 
     else:
         images['shapefile']['path'] = \
                             os.path.abspath(os.path.expanduser(basin_shapefile))
+
+    # Change projection info if it is provided
+    if epsg != None:
+        out.msg("Reprojecting shapefile...")
+        # Rename the resulting file
+        newfile = os.path.basename(images['shapefile']['path'])
+        newfile = os.path.join(temp, newfile.split('.')[0]+"_epsg_{}.shp"
+                                      "".format(epsg))
+        cmd_args = ['ogr2ogr','-t_srs','EPSG:{}'.format(epsg), newfile,
+                                                    images['shapefile']['path']]
+        check_output(cmd_args, universal_newlines=True)
+        images['shapefile']['path'] = newfile
+        images['shapefile']['epsg'] = epsg
+    else:
+        out.msg("Attempting to determine the EPSG value of shapefile...")
+        basin_shp_info = check_output(['ogrinfo','-al',
+                                      images['shapefile']['path']],
+                                      universal_newlines=True)
+        basin_info = basin_shp_info.split('\n')
+        epsg_info = [auth for auth in basin_info if "epsg" in auth.lower()]
+        epsg = strip_chars(epsg_info[-1].split(',')[-1])
+        out.respond("EPSG = {}".format(epsg))
+        images['shapefile']['epsg'] = epsg
+
     return images
 
 
@@ -450,13 +612,13 @@ def check_and_download(images,required_dirs):
     returns:
         images: a modified dictionary of the original dicitonary
     """
-
+    out.dbg("Checking file paths and downloads...")
     for image_name in ['vegetation type', 'vegetation height']:
         info = images[image_name]
         info['path'] = os.path.abspath(os.path.expanduser(info['path']))
         images[image_name] = info
 
-        out.msg("Checking for {0} data in {1}...".format(image_name,
+        out.msg("Checking for {0} data in:\n\t{1}".format(image_name,
                                                     required_dirs['downloads']))
 
         #Cycle through all the downloads
@@ -503,7 +665,7 @@ def check_and_download(images,required_dirs):
     return images
 
 
-def process(images,TEMP,cell_size,pad):
+def process(images, TEMP, cell_size, pad, epsg=None):
     """
     Creates the mask image, veg_type, height and dem images,
     reprojects them to the proejction of the basin_shapefile and converts them
@@ -520,10 +682,8 @@ def process(images,TEMP,cell_size,pad):
         extent: The list of the bottom left and upper right image extents plus
                 padding
     """
-    # General info for basin shape file
+    # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
-
-
     extent = parse_extent(images['shapefile']['path'])
 
     #Pad the extents
@@ -540,7 +700,8 @@ def process(images,TEMP,cell_size,pad):
 
     extent = padded_extent
     s_extent = [str(e) for e in extent]
-    # Parse the desired projection
+
+    # Recover projection info
     proj = images['shapefile']['path'].split('.')[0]+'.prj'
 
     #Create a tiff of the mask from shapefile then conver to netcdf
@@ -576,7 +737,7 @@ def process(images,TEMP,cell_size,pad):
 
         fname = name.replace(' ', '_')
 
-        CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif''
+        CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'
                                                     ''.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
@@ -600,7 +761,7 @@ def process(images,TEMP,cell_size,pad):
     return images, extent
 
 
-def create_netcdf(images,extent,cell_size,output_dir):
+def create_netcdf(images, extent, cell_size, output_dir):
     """
     Create the initial netcdf and then writes the all images
 
@@ -678,7 +839,7 @@ def create_netcdf(images,extent,cell_size,output_dir):
     # Cycle through and add/generate all the images that go into the topo.nc
     for name, image in images.items():
         if name not in ['shapefile','maxus']:
-            out.respond("Adding variable {0}".format(name))
+            out.respond("Adding {0}".format(name))
 
             if 'short_name' in image.keys():
                 short_name = image['short_name']
@@ -708,11 +869,15 @@ def create_netcdf(images,extent,cell_size,output_dir):
     topo.setncattr_string('Conventions', 'CF-1.6')
     topo.setncattr_string('dateCreated', datetime.now().strftime(fmt))
     topo.setncattr_string('Title', 'Topographic Images for SMRF/AWSM')
-    topo.setncattr_string('history', '[{}] Create netCDF4 file'
-                          ''.format(datetime.now().strftime(fmt)))
+    topo.setncattr_string('history', '[{}] Create netCDF4 file using '
+                                     'Basin Setup v{}'
+                                     ''.format(datetime.now().strftime(fmt),
+                                               BASIN_SETUP_VERSION))
     topo.setncattr_string('institution',
             'USDA Agricultural Research Service, Northwest Watershed Research'
             ' Center')
+
+    topo = add_proj(topo, images['shapefile']['epsg'])
     return topo
 
 
@@ -930,6 +1095,7 @@ def make_uniform(topo,approach = 'middle', hill = False):
 
     return topo
 
+
 def flip_image(topo):
     """
     Flips the image data over the x-axis and flips the y data
@@ -940,135 +1106,9 @@ def flip_image(topo):
         topo: an open netcdf dataset with flipped image
     """
     for var in topo.variables:
-        if var != 'x':
+        if var not in ['x','projection'] :
             topo.variables[var][:] = np.flipud(topo.variables[var][:])
     return topo
-
-
-def strip_chars(edit_str, bad_chars='[(){}<>,"_]=\nns'):
-    """
-    Written to strip out unwanted chars from the proj strings received
-    back from the URL for the EPSG requests.
-
-    Args:
-        edit_str: String containing unwanted chars
-        bad_chars: String of chars to be removed
-
-    Returns:
-        result: The edit_str without any of the chars in bad_chars
-    """
-
-    result = ''.join([s for s in edit_str if s not in bad_chars])
-    return result
-
-
-def gather_utm_meta(epsg_str,epsg):
-    """
-    Use if the EPSG data is associated to UTM
-    Gathers the data and returns a dictionary of data and attributes that need
-    to be added to the netcdf based on
-    https://www.unidata.ucar.edu/software/thredds/current/netcdf-java/reference/StandardCoordinateTransforms.html
-
-    Args:
-        epsg_str: String received from the epsg request.
-        epsg: The EPSG number associated with the request
-
-    Returns:
-        map_meta: dictionary of UTM projection data to be added to the netcdf
-    """
-    meta = epsg_str.lower()
-
-    map_meta = {
-                    "grid_mapping_name": "universal_transverse_mercator",
-                    "utm_zone_number": None,
-                    "semi_major_axis": None,
-                    "inverse_flattening": None,
-                    'spatial_ref':epsg_str,
-                    "_CoordinateTransformType": "Projection",
-                    "_CoordinateAxisTypes": "GeoX GeoY"}
-
-    # Assign the zone number
-    zone_str = meta.split('zone')[1]
-    map_meta['utm_zone_number'] = float((strip_chars(zone_str.split(',')[0])).strip()[-2:])
-
-    # Assign the semi_major_axis
-    axis_string = meta.split('spheroid')[1]
-    map_meta['semi_major_axis'] = float(axis_string.split(',')[1])
-
-    # Assing the flattening
-    map_meta["inverse_flattening"] = float(strip_chars(axis_string.split(',')[2]))
-
-    return map_meta
-
-
-def add_proj(nc_obj,epsg):
-    """
-    Adds the appropriate attributes to the netcdf for managing projection info
-
-    Args:
-        nc_obj: netCDF4 dataset object needing the projection information
-        epsg:   projection information to be added
-
-    Returns:
-        nc_obj: the netcdf object modified
-    """
-
-    # function to generate .prj file information using spatialreference.org
-    # access projection information
-    try:
-        wkt = urlopen("http://spatialreference.org/ref/epsg/{0}/prettywkt/".format(epsg))
-    except:
-        wkt = urlopen("http://spatialreference.org/ref/sr-org/{0}/prettywkt/".format(epsg))
-
-    # remove spaces between charachters
-    remove_spaces = ((wkt.read()).decode('utf-8')).replace(" ","")
-    # Add in the variable for holding coordinate system info
-    map_meta = parse_wkt(remove_spaces,epsg)
-
-    nc_obj.createVariable("UTM_Projection","S1")
-    nc_obj["UTM_Projection"].setncatts(map_meta)
-
-    for name,var in nc_obj.variables.items():
-
-        # Assume all 2D+ vars are the same projection
-        if 'x' in var.dimensions and 'y' in var.dimensions:
-            out.msg("Adding coordinate system info to {0}".format(name))
-            nc_obj[name].setncatts({"grid_mapping":"UTM_Projection"})
-
-        elif name.lower() in ['x','y']:
-            # Set a standard name, which is required for recognizing projections
-            nc_obj[name].setncatts({"standard_name":"projection_{}_coordinate"
-            "".format(name.lower())})
-            # Set the units
-            nc_obj[name].setncatts({"units":"meters"
-            "".format(name.lower())})
-
-
-    return nc_obj
-
-
-def parse_wkt(epsg_string,epsg):
-    """
-    Processes the epsg string returned from the URL request.
-
-    Args:
-        epsg_str: String received from the epsg request.
-        epsg: The EPSG number associated with the request
-
-    Returns:
-        map_meta: dictionary of projection data to be added to the netcdf
-    """
-    map_meta = {}
-    wkt_data = (epsg_string.lower()).split(',')
-
-    # Add more projection parsers here
-    if 'utm' in epsg_string.lower():
-        map_meta = gather_utm_meta(epsg_string,epsg)
-
-    out.respond(" Meta information to be added...\n")
-    for k,v in map_meta.items():
-        out.respond(k,repr(v))
-    return map_meta
 
 
 def main():
@@ -1130,8 +1170,9 @@ def main():
 
     args = p.parse_args()
 
-    msg ="Basin Setup Tool {0}".format("0.3.0")
-    m = "="*(len(msg)+1)
+    # Print a nice header
+    msg ="Basin Setup Tool {0}".format(BASIN_SETUP_VERSION)
+    m = "="*(2*len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')
     out.msg(m,'header')
@@ -1148,6 +1189,7 @@ def main():
     TEMP = required_dirs['temp']
     images = setup_and_check(required_dirs, args.basin_shapefile, args.dem)
 
+    # DEM Cell padding
     pad = int(args.pad)
 
     #--------- OPTIONAL POINT MODEL SETUP ---------- #
@@ -1162,7 +1204,7 @@ def main():
                                                       args.basin_shapefile))
 
 
-    images = check_shp_file(images)
+    images = check_shp_file(images, epsg=args.epsg, temp=TEMP)
 
     #===========================================================================
     # Downloads and Checking
@@ -1177,8 +1219,8 @@ def main():
     #===========================================================================
     # Post Processing
     #===========================================================================
-    topo = create_netcdf(images,extent, args.cell_size, required_dirs['output'])
-    topo = calculate_height_tau_k(topo,images) # Calculates TAU and K
+    topo = create_netcdf(images, extent, args.cell_size, required_dirs['output'])
+    topo = calculate_height_tau_k(topo, images) # Calculates TAU and K
 
     # Making a point
     if args.point != None:
@@ -1199,7 +1241,7 @@ def main():
     topo.close()
 
     out.msg('\nRequested output written to:')
-    out.respond('{0}'.format(os.path.join(required_dirs['output'],'topo.nc')))
+    out.respond('{0}'.format(os.path.join(required_dirs['output'], 'topo.nc')))
     out.msg("Basin setup files complete!\n")
 
     # Don't Clean up if we are debugging so we can look at the steps
