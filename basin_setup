@@ -853,7 +853,15 @@ def create_netcdf(images, extent, cell_size, output_dir):
             else:
                 short_name = name
 
-            topo.createVariable(short_name, 'f',('y','x'))
+            # Data reduction
+            if short_name in ['mask']:
+                dtype = 'u1' # U-BYTE
+            elif short_name in ['veg_type']:
+                dtype = 'u4' # U-INT 32 bit
+            else:
+                dtype = 'f'
+
+            topo.createVariable(short_name, dtype,('y','x'))
             topo.variables[short_name].setncattr('long_name',name)
 
             if is_float(image['path']):
