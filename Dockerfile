@@ -14,11 +14,12 @@ RUN mkdir -p /code \
 COPY . /code/basin_setup/
 
 RUN cd /code/basin_setup \
-    && make install \
     && python3 -m pip install --upgrade pip \
     && python3 -m pip install setuptools wheel \
     && python3 -m pip install -r requirements.txt
 
+RUN cd /code/basin_setup \
+    && make install
 
 ####################################################
 # Create a shared data volume

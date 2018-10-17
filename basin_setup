@@ -23,8 +23,7 @@ from urllib.request import urlopen
 # Initialize colors
 init()
 
-DEBUG = True
-
+DEBUG=False
 BASIN_SETUP_VERSION = '0.4.0'
 
 class Messages():
@@ -73,10 +72,14 @@ class Messages():
         print('\n' + final_msg)
 
     def dbg(self,str_msg,context_str=None):
-        final_msg = self.build_msg('[DEBUG]: ','header')
-        final_msg+=self._structure_msg(str_msg)
-        final_msg = self.build_msg(final_msg,context_str)
-        print('\n' + final_msg)
+        """
+        Messages designed for debugging set by a global variable DEBUG
+        """
+        if DEBUG:
+            final_msg = self.build_msg('[DEBUG]: ','header')
+            final_msg += self._structure_msg(str_msg)
+            final_msg = self.build_msg(final_msg,context_str)
+            print('\n' + final_msg)
 
     def warn(self,str_msg):
         final_msg = self.build_msg('[WARNING]: ','header')
@@ -166,7 +169,7 @@ def add_proj(nc_obj,epsg):
     Returns:
         nc_obj: the netcdf object modified
     """
-
+    out.msg("Retrieving projection information...")
     # function to generate .prj file information using spatialreference.org
     # access projection information
     try:
@@ -181,12 +184,11 @@ def add_proj(nc_obj,epsg):
     map_meta = parse_wkt(remove_spaces,epsg)
     nc_obj.createVariable("projection","S1")
     nc_obj["projection"].setncatts(map_meta)
-
+    out.msg("Adding coordinate system info to:")
     for name,var in nc_obj.variables.items():
-
+        out.respond(name)
         # Assume all 2D+ vars are the same projection
         if 'x' in var.dimensions and 'y' in var.dimensions:
-            out.msg("Adding coordinate system info to {0}".format(name))
             nc_obj[name].setncatts({"grid_mapping":"projection"})
 
         elif name.lower() in ['x','y']:
@@ -672,19 +674,22 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     to individual netcdf files
 
     Args:
-        images:dictionary containing paths for each image
+        images: dictionary containing paths for each image
         TEMP: temporary work dir
         cell_size: Desired cell size for the images.
         pad: Number of cells to add to an image from the extent of the shapefile
 
     Returns:
-        images:dictionary containing the path to the latest image for each key.
+        images: dictionary containing the path to the latest image for each key.
         extent: The list of the bottom left and upper right image extents plus
                 padding
     """
+    out_of_bounds = False
+
     # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
     extent = parse_extent(images['shapefile']['path'])
+    dem_extent = parse_extent(images['dem']['path'])
 
     #Pad the extents
     padding = int(cell_size)*int(pad)
@@ -692,10 +697,11 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     for i,e in enumerate(extent):
         # Extent format is bottom left upper right
         z = float(e)
-        if i<2:
+        if i < 2:
             z -= padding
         else:
             z+=padding
+
         padded_extent.append(z)
 
     extent = padded_extent
@@ -704,7 +710,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     # Recover projection info
     proj = images['shapefile']['path'].split('.')[0]+'.prj'
 
-    #Create a tiff of the mask from shapefile then conver to netcdf
+    # Create a tiff of the mask from shapefile then convert to netcdf
     images['mask']['path'] = os.path.join(TEMP,'mask.tiff')
     z = Popen(['gdal_rasterize', '-tr',str(cell_size), str(cell_size),
                '-te', s_extent[0],s_extent[1],s_extent[2],s_extent[3],
@@ -719,7 +725,8 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     images['mask']['path'] = NC
 
 
-    #Is user passes an float then don't process the image
+    # If user passes an float then don't process the image, were probably
+    # using a point model
     if is_float(images['dem']['path']):
         process_names = ['vegetation height','vegetation type']
     else:
@@ -859,8 +866,16 @@ def create_netcdf(images, extent, cell_size, output_dir):
                     topo.variables[short_name][:] = d.variables['Band1'][:]
 
                 except Exception as e:
-                    out.error("{0}".format(short_name))
-                    raise(e)
+
+                    if short_name=='dem':
+                        out.error("{}\n\nThis maybe caused by the default padding"
+                        " creating extents bigger than the original DEM image."
+                        "\nTry decreasing the padding using the --pad or -pd"
+                        " flag.\n".format(str(e)))
+                        sys.exit()
+
+                    else:
+                        raise(e)
 
                 d.close()
 
@@ -881,7 +896,7 @@ def create_netcdf(images, extent, cell_size, output_dir):
     return topo
 
 
-def calculate_height_tau_k(topo,images,height_method = 'average'):
+def calculate_height_tau_k(topo, images, height_method='average'):
     """
     Calculates the images for veg height, veg tau and veg K and adds them  to
     the netcdf.
@@ -932,8 +947,9 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
 
     # Open the key provided by Landfire to auto assign values in Tau and K
     f = images['vegetation type']['map']
-    veg_map = pd.read_csv(f)
-    veg_map = veg_map.ix[veg_map['VALUE'].isin(veg_values)]
+    vm = pd.read_csv(f)
+    ind = vm['VALUE'].isin(veg_values)
+    veg_map = vm.loc[ind,vm.columns]
 
     # Cycle through the key words in the table used for conversion/assign values
     for k,keywords in veg_keywords.items():
@@ -960,13 +976,13 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
     # Open the key provided by Landfire to assign values in final veg height
     f = images['vegetation height']['map']
     height_key = pd.read_csv(f)
-    height_key = height_key.ix[height_key['VALUE'].isin(height_values)]
+    height_key_unique = height_key[height_key['VALUE'].isin(height_values)]
     height_map = {}
 
     veg_map['HEIGHT'] = [np.NaN for i in range(len(veg_map.index))]
 
     # Parse the veg height ranges and create a dictionary for converting
-    for i,row in height_key.iterrows():
+    for i,row in height_key_unique.iterrows():
         description = row['CLASSNAMES']
         height_range = []
         for word in description.split(' '):
@@ -1000,7 +1016,7 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
                 rand = np.random.rand(*veg_height[ind].shape)
                 final_veg_height[ind] = (rand* height[1]) + height[0]
 
-            elif height_method  == ' max':
+            elif height_method  == 'max':
                 final_veg_height[ind] = max(height)
 
             #Avg
@@ -1009,9 +1025,10 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
                     final_veg_height[ind] = np.mean(height)
                     try:
                         ind = veg_map['EVT_GP'] == k
-                        veg_map['HEIGHT'].loc[ind] = np.mean(height)
+                        veg_map.loc[ind,'HEIGHT'] = np.mean(height)
+
                     except Exception as e:
-                        out.error(e)
+                        out.error(str(e))
                         out.error("Entry not found {0} in veg map!".format(k))
             else:
                 raise ValueError("Height method not recognized. please use max,"
@@ -1022,7 +1039,9 @@ def calculate_height_tau_k(topo,images,height_method = 'average'):
 
     #Output a map for SMRF/AWSM USERS
     veg_map = veg_map.sort_values(by='HEIGHT')
-    veg_map[['VALUE','HEIGHT','CLASSNAME']].to_csv('./veg_map.csv')
+    output_dir = os.path.dirname(topo.filepath(encoding='utf-8'))
+    veg_map[['VALUE','HEIGHT','CLASSNAME']].to_csv(
+                                         os.path.join(output_dir,'veg_map.csv'))
 
     # Output Veg Info
     return topo
@@ -1167,8 +1186,10 @@ def main():
 
     p.add_argument('-fl','--noflip', dest='noflip', action='store_true',
                                    help='Do not flip arrays across the x axis')
-
     args = p.parse_args()
+    global DEBUG
+    DEBUG = args.debug
+
 
     # Print a nice header
     msg ="Basin Setup Tool {0}".format(BASIN_SETUP_VERSION)
@@ -1245,7 +1266,7 @@ def main():
     out.msg("Basin setup files complete!\n")
 
     # Don't Clean up if we are debugging so we can look at the steps
-    if not args.debug:
+    if not DEBUG:
        out.msg('Cleaning up temporary files.')
        rmtree(required_dirs['temp'])
 
