@@ -513,8 +513,15 @@ def setup_point(images, point, cell_size, temp, pad, epsg_code):
     xs = []
     ys = []
     point = [float(p) for p in point.split(',')]
+
+    # Check for asymetric padding request in a point model.
+
+    if len(set(pad)) != 1:
+        out.error("Asymetric padding is not allowed for point models!\npadding"
+                  " = {}".format(pad))
+
     cell_size = int(cell_size)
-    padding = cell_size*int(pad)
+    padding = cell_size*int(pad[0])
     points = []
     half_width = cell_size/2
     x0 = point[0] - half_width - padding
@@ -677,7 +684,8 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         images: dictionary containing paths for each image
         TEMP: temporary work dir
         cell_size: Desired cell size for the images.
-        pad: Number of cells to add to an image from the extent of the shapefile
+        pad: list of number of cells to add to an image from the extent of the
+             shapefile, format = [ LEFT, RIGHT, BOTTOM, TOP]
 
     Returns:
         images: dictionary containing the path to the latest image for each key.
@@ -692,17 +700,14 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     dem_extent = parse_extent(images['dem']['path'])
 
     #Pad the extents
-    padding = int(cell_size)*int(pad)
+    padding = [int(cell_size)*int(p) for p in pad]
     padded_extent = []
-    for i,e in enumerate(extent):
-        # Extent format is bottom left upper right
-        z = float(e)
-        if i < 2:
-            z -= padding
-        else:
-            z+=padding
-
-        padded_extent.append(z)
+    extent = [float(e) for e in extent]
+    # Allows for custom padding
+    padded_extent.append(extent[0] - padding[0]) # Left
+    padded_extent.append(extent[1] - padding[2]) # Bottom
+    padded_extent.append(extent[2] + padding[1])  # Right
+    padded_extent.append(extent[3] + padding[3])  # Top
 
     extent = padded_extent
     s_extent = [str(e) for e in extent]
@@ -1174,8 +1179,12 @@ def main():
                     help='Center of location to setup "point" model')
 
     p.add_argument('-pd','--pad', dest='pad', required=False, default=5,
-                    help="Number of cells to add on to the domain from the "
-                         "extents of the basin, default: 5")
+                    help="Number of cells to add on to the domain from the"
+                         " extents of the basin shapfile, default: 5")
+
+    p.add_argument('-apd','--asym_pad', dest='apad', nargs=4, required=False,
+                    help="Number of cells to add on to the domain for each"
+                         " side. Format is [Left, Right, Top, Bottom]")
 
     p.add_argument('-u','--uniform', dest='uniform', action='store_true',
                     help="Specifies whether for point runs to use a uniform"
@@ -1195,9 +1204,10 @@ def main():
     p.add_argument('-fl','--noflip', dest='noflip', action='store_true',
                                    help='Do not flip arrays across the x axis')
     args = p.parse_args()
+
+    # Global debug variable
     global DEBUG
     DEBUG = args.debug
-
 
     # Print a nice header
     msg ="Basin Setup Tool {0}".format(BASIN_SETUP_VERSION)
@@ -1211,7 +1221,7 @@ def main():
     #===========================================================================
 
     # Check and setup for an output dir, downloads dir, and temp dir
-    required_dirs={'output':args.output,
+    required_dirs = {'output':args.output,
                    'downloads':args.download,
                    'temp':os.path.abspath(os.path.join(args.output,'temp'))}
 
@@ -1220,6 +1230,11 @@ def main():
 
     # DEM Cell padding
     pad = int(args.pad)
+    # No asymetric padding provided
+    if args.apad == None:
+        pad = [ pad for i in range(4)]
+    else:
+        pad = [int(i) for i in args.apad]
 
     #--------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point != None:
