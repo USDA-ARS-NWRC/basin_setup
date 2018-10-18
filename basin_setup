@@ -705,7 +705,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     extent = [float(e) for e in extent]
     # Allows for custom padding
     padded_extent.append(extent[0] - padding[0]) # Left
-    padded_extent.append(extent[1] - padding[2]) # Bottom
+    padded_extent.append(extent[1] - padding[1]) # Bottom
     padded_extent.append(extent[2] + padding[1])  # Right
     padded_extent.append(extent[3] + padding[3])  # Top
 
@@ -881,7 +881,7 @@ def create_netcdf(images, extent, cell_size, output_dir):
                 except Exception as e:
 
                     if short_name=='dem':
-                        out.error("{}\n\nThis maybe caused by the default padding"
+                        out.error("{}\n\nHint: This maybe caused by the default padding"
                         " creating extents bigger than the original DEM image."
                         "\nTry decreasing the padding using the --pad or -pd"
                         " flag.\n".format(str(e)))
