@@ -162,13 +162,12 @@ def get_docker_bash(cmd,nthreads=None):
         cmd: string command that you would run in side of a terminal without mpi
         nthreads: Number of cores to use for mpiexec
     """
-    # Docker has to entrypoint on the command and th args passed to the image
-    args = cmd.split(' ')
-
-
     # Added in threaded business
     if nthreads != None:
         cmd = 'mpiexec -n {0} --allow-run-as-root '.format(nthreads) + cmd
+
+    # Docker has to entrypoint on the command and th args passed to the image
+    args = cmd.split(' ')
 
     # make entrypoint take in the tau commands call
     action = ('docker run --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
@@ -518,8 +517,12 @@ def main():
                     help="Boolean Flag that determines whether to run the "
                          "script from the beginning or assume that the flow "
                          "accumulation has been completed once")
-
+    p.add_argument("-db","--debug", dest="debug",
+                    required=False, action='store_true')
     args = p.parse_args()
+    # Global debug variable
+    global DEBUG
+    DEBUG = args.debug
 
     # Print a nice header
     msg ="Basin Delineation Tool v{0}".format(BASIN_SETUP_VERSION)
