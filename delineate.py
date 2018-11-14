@@ -170,7 +170,7 @@ def get_docker_bash(cmd,nthreads=None):
     args = cmd.split(' ')
 
     # make entrypoint take in the tau commands call
-    action = ('docker run --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
+    action = ('docker run --user $UID --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
               ' quay.io/wikiwatershed/taudem {1}').format(args[0],
                                                           " ".join(args[1:]))
 
