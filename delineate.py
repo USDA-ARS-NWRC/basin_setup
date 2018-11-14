@@ -9,6 +9,7 @@ import sys
 from colorama import init, Fore, Back, Style
 
 DEBUG=False
+BASIN_SETUP_VERSION = '0.4.2'
 
 
 class Messages():
@@ -101,11 +102,13 @@ def check_path(filename, outfile=False):
     folder = os.path.dirname(filename)
 
     if outfile==True and not os.path.isdir(folder):
-        out.error("Directory provided for output location does not exist!\nMissing----->{}".format(filename))
+        out.error("Directory provided for output location does not exist!"
+                  "\nMissing----->{}".format(filename))
         sys.exit()
 
     if not outfile and not os.path.isfile(filename):
-        out.error("Input file does not exist!\nMissing----->{}".format(filename))
+        out.error("Input file does not exist!\nMissing----->{}"
+        "".format(filename))
         sys.exit()
 
 
@@ -154,6 +157,10 @@ def run_cmd(cmd):
 def get_docker_bash(cmd,nthreads=None):
     """
     Returns the string command for running in a docker.
+
+    Args:
+        cmd: string command that you would run in side of a terminal without mpi
+        nthreads: Number of cores to use for mpiexec
     """
     # Docker has to entrypoint on the command and th args passed to the image
     args = cmd.split(' ')
@@ -165,7 +172,8 @@ def get_docker_bash(cmd,nthreads=None):
 
     # make entrypoint take in the tau commands call
     action = ('docker run --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
-              ' quay.io/wikiwatershed/taudem {1}').format(args[0]," ".join(args[1:]))
+              ' quay.io/wikiwatershed/taudem {1}').format(args[0],
+                                                          " ".join(args[1:]))
 
     return action
 
@@ -178,6 +186,8 @@ def pitremove(demfile, outfile=None, nthreads=None):
     Args:
         demfile: Path to tif of the DEM.
         outfile: Path to write the pit filled DEM.
+        nthreads: Number of cores to use for mpiexec
+
     """
     out.msg("Removing Pits from DEM...")
 
@@ -202,6 +212,7 @@ def calcD8Flow(filled_dem, d8dir_file=None, d8slope_file=None, nthreads=None):
         filled_dem: Path to tif of the pit filled DEM.
         d8dir_file: Path to write the D8 flow direction.
         d8slope_file: Path to write the D8 flow slope.
+        nthreads: Number of cores to use for mpiexec
     """
 
     out.msg("Calculating D8 flow direction...")
@@ -226,6 +237,7 @@ def calcD8DrainageArea(d8flowdir, areaD8_out=None, nthreads=None):
     Args:
         d8flowdir: Path to the D8 Flow direction image
         areaD8_out: Path to output the Drainage area image
+        nthreads: Number of cores to use for mpiexec
     """
     check_path(d8flowdir)
     check_path(areaD8_out,outfile=True)
@@ -244,6 +256,7 @@ def defineStreamsByThreshold(areaD8, threshold_streams_out=None, threshold=100,
         areaD8: Path to the D8 Drainage area image
         threshold_streams_out: Path to output the thresholded image
         threshold: threshold value to recategorize the data
+        nthreads: Number of cores to use for mpiexec
     """
     out.msg("Performing stream estimation using threshold of {0}".format(threshold))
     check_path(areaD8)
@@ -260,14 +273,15 @@ def outlets_2_streams(d8flowdir, threshold_streams, pour_points,
                                                    new_pour_points=None,
                                                    nthreads=None):
     """
-    STEP #5  Move Outlets to Streams, so as to move the catchment outlet point on one of
-    the DEM cells identified by TauDEM as belonging to the stream network
+    STEP #5  Move Outlets to Streams, so as to move the catchment outlet point
+    on one of the DEM cells identified by TauDEM as belonging to the stream network
 
     Args:
         d8flowdir: Path to the D8 Flow direction image
         threshold_streams: Path to output the thresholded stream image
         pour_points: Path to pour point locations in a list
         new_pour_points: Path to output the new list of points
+        nthreads: Number of cores to use for mpiexec
     """
 
     check_path(d8flowdir)
@@ -293,7 +307,9 @@ def calcD8DrainageAreaBasin(d8flowdir, basin_outlets_moved, areaD8_out=None,
     Args:
         d8flowdir: Path to the D8 Flow direction image
         basin_outlets_moved: all pour points that have been moved to the stream
-        areaD8_out: Path to output the Drainage area image that utilize all the points
+        areaD8_out: Path to output the Drainage area image that utilize all the
+                    points
+        nthreads: Number of cores to use for mpiexec
 
     """
     out.msg("Calculating drainage area using pour points...")
@@ -312,19 +328,21 @@ def delineate_streams(dem, d8flowdir, basin_drain_area, threshold_streams,
                       coordfile=None, netfile=None, wfile=None, nthreads=None):
     """
     STEP #8 Stream Reach And Watershed
-
-    Original cmd
-        streamnet -fel topo_50m_fel.tif
-                      -p topo_50m_d8flowdir.tif
-                      -ad8 topo_50m_aread8_allweirs.tif
-                      -src topo_50m_thres100_tollgate.tif
-                      -ord tollgate_stream_orderfile_100.tif
-                      -tree tollgate_treefile_100.dat
-                      -coord tollgate_coordfile_100.dat
-                      -net tollgate_netfile_100.shp
-                      -o tollgate_weirs_xyz_moved.shp
-                      -w tollgate_wfile_100.tif
+    Args:
+        dem: path to a filled dem image
+        d8flowdir: path to the flow direction image
+        basin_drain_area: path to the flow accumulation image for the basin
+        threshold_streams: streams defintion image defined by a threshold
+        basin_outlets_moved: Path to a .bna of the pour points corrected to be
+                             on the streams.
+        stream_orderfile: Name of the file to output the stream segment order
+        treefile: Name of the file to output the subbasin flow order.
+        coordfile: Not sure what this file is
+        netfile: Name of the images to output the stream definitions.
+        wfile: Name of the image to output subbasin definitions.
+        nthreads: Number of cores to use for mpiexec
     """
+
     out.msg("Creating watersheds and stream files...")
 
     # Check path validity
@@ -354,7 +372,8 @@ def delineate_streams(dem, d8flowdir, basin_drain_area, threshold_streams,
     run_cmd(action)
 
 
-def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False, nthreads=None):
+def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
+                                                                nthreads=None):
     """
     Run TauDEM using the script Ernesto Made.... therefore we will
     ernestafy this basin.
@@ -374,8 +393,8 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False, nth
             os.mkdir(output)
 
     # Output File keys without a threshold in the filename
-    non_thresholdkeys = ['filled','flow_dir','slope','drain_area','basin_drain_area',
-                      'corrected_points']
+    non_thresholdkeys = ['filled','flow_dir','slope','drain_area',
+                      'basin_drain_area', 'corrected_points']
 
     # Output File keys WITH a threshold in the filename
     thresholdkeys = ['thresh_streams', 'thresh_basin_streams', 'order', 'tree',
@@ -475,7 +494,8 @@ def convert2ascii(infile, outfile=None):
 
 def main():
 
-    p = argparse.ArgumentParser(description='Delineate a new basin for SMRF/AWSM/Streamflow.')
+    p = argparse.ArgumentParser(description='Delineates a new basin for'
+                                ' SMRF/AWSM/Streamflow')
 
     p.add_argument("-d","--dem", dest="dem",
                     required=True,
@@ -483,15 +503,13 @@ def main():
     p.add_argument("-p","--pour", dest="pour_points",
                     required=True,
                     help="Path to a .bna of pour points")
-    p.add_argument("-bo","--basin_outlet", dest="basin_outlet",
-                    required=True,
-                    help="Path to a .bna of the basin outlet")
     p.add_argument("-o","--output", dest="output",
                     required=False,
                     help="Path to output folder")
     p.add_argument("-t","--threshold", dest="threshold",
                     nargs="+", default=[100],
-                    help="Thresholds to use for defining streams, default=100")
+                    help="List of thresholds to use for defining streams from"
+                         " the flow accumulation, default=100")
     p.add_argument("-n","--nthreads", dest="nthreads",
                     required=False,
                     help="cores to use when processing the data")
@@ -503,13 +521,21 @@ def main():
 
     args = p.parse_args()
 
+    # Print a nice header
+    msg ="Basin Delineation Tool v{0}".format(BASIN_SETUP_VERSION)
+    m = "="*(2*len(msg)+1)
+    out.msg(m,'header')
+    out.msg(msg,'header')
+    out.msg(m,'header')
+
     rerun = args.rerun
+    # Cycle through all the thresholds provided
     for i,tr in enumerate(args.threshold):
         if i > 0:
             rerun = True
 
         ernestafy(args.dem,args.pour_points, threshold=tr, rerun=rerun,
-                                                       nthreads = args.nthreads)
+                                                       nthreads=args.nthreads)
 
 if __name__ == '__main__':
     main()
