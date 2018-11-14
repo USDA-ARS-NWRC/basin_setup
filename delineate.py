@@ -9,7 +9,7 @@ import sys
 from colorama import init, Fore, Back, Style
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.5.0'
+BASIN_SETUP_VERSION = '0.6.0'
 
 
 class Messages():
