@@ -2,13 +2,16 @@ install:
 	# Install the python script to the bin
 	cp basin_setup /usr/local/bin/
 	cp delineate.py /usr/local/bin/delineate
+	cp pconvert.py /usr/local/bin/pconvert
 	chmod +x /usr/local/bin/basin_setup
 	chmod +x /usr/local/bin/delineate
+	chmod +x /usr/local/bin/pconvert
 
 uninstall:
 	# Remove the python script from the bin
 	rm /usr/local/bin/basin_setup
 	rm /usr/local/bin/delineate
+	rm /usr/local/bin/pconvert
 
 develop:
 	# Link the python script so edits are reflected in realtime
@@ -16,6 +19,8 @@ develop:
 	ln basin_setup /usr/local/bin/basin_setup
 	chmod +x delineate.py
 	ln delineate.py /usr/local/bin/delineate
+	chmod +x pconvert.py
+	ln pconvert.py /usr/local/bin/pconvert
 
 docker:
 	# Build a test docker to play with
