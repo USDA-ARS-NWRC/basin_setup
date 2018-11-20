@@ -8,6 +8,7 @@ from subprocess import Popen, PIPE, check_output,STDOUT
 import sys
 from colorama import init, Fore, Back, Style
 import time
+import geopandas as gpd
 
 DEBUG=False
 BASIN_SETUP_VERSION = '0.6.1'
@@ -364,8 +365,59 @@ def delineate_streams(dem, d8flowdir, basin_drain_area, threshold_streams,
                                                             netfile,
                                                             basin_outlets_moved,
                                                             wfile)
-    # action = get_docker_bash(CMD, nthreads=nthreads)
     run_cmd(CMD, nthreads=nthreads)
+
+
+def convert2ascii(infile, outfile=None):
+    """
+    Convert to ascii
+    """
+    check_path(infile)
+    check_path(outfile, outfile=True)
+
+    # convert wfile files to ascii
+    CMD = 'gdal_translate -of AAIGrid {0} {1}'.format(infile,outfile)
+    run_cmd(CMD, nthreads=nthreads)
+
+def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
+    """
+    Outputs the polygons of the individual subbasins to a shapfile.
+
+    Args:
+        watershed_tif: Path to a geotiff of the watersheds
+        corrected_points: Path to the corrected points used for delineation
+        output_dir: Output location used for producing files
+    """
+    # Check files
+    check_path(f)
+
+    # Polygonize creates a raster with all subbasins
+    watershed_shp = os.path.join(output_dir,'watershed.shp')
+    CMD = 'gdal_polygonize -f"ESRI SHAPEFILE" {} {}'.format(watershed_tif,basin_outline)
+    run_cmd(CMD)
+
+    # Read in and identify the names of the pour points with the subbasins
+    ptdf = gpd.read_file(corrected_points)
+
+    wdf = gpd.read_file(watershed_shp)
+
+    # Identify the name and output the individual basins
+    for nm, pt in zip(ptdf['Primary ID'].values, ptdf['geometry'].values):
+        for pol, idx in zip(wdf['geometry'].values, wdf.index):
+            if pt.within(pol):
+                #Create a new dataframe and output it
+                df = gpd.GeoDataFrame(columns = wdf.columns, crs=wdf.crs)
+                df = df.append(wdf.loc[idx])
+                out.msg("Creating the subbasin outline for {}...".format(nm))
+
+                df.to_file(os.path.join(output_dir,'{}_subbasin.shp'.format(nm)))
+
+    # Output the full basin outline
+    out.msg("Creating the entire basin outline...")
+    same = np.ones(len(wdf.index))
+    wdf['all'] = same
+    basin_outline = wdf.dissolve(by='all')
+    basin_outline.to_file(os.path.join(output_dir,'basin_outline.shp'))
 
 
 def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
@@ -394,7 +446,7 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
 
     # Output File keys WITH a threshold in the filename
     thresholdkeys = ['thresh_streams', 'thresh_basin_streams', 'order', 'tree',
-                     'coord', 'net', 'watersheds']
+                     'coord', 'net', 'watersheds','basin_outline']
 
     filekeys = non_thresholdkeys + thresholdkeys
 
@@ -474,18 +526,10 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
                        coordfile=imgs['coord'], netfile=imgs['net'],
                        wfile=imgs['watersheds'], nthreads=nthreads)
 
+    # Output the shapefiles of the watershed
+    produce_shapefiles(imgs[watersheds], imgs['corrected_points'],
+                                         output_dir=output)
 
-def convert2ascii(infile, outfile=None):
-    """
-    Convert to ascii
-    """
-    check_path(infile)
-    check_path(outfile, outfile=True)
-
-    # convert wfile files to ascii
-    CMD = 'gdal_translate -of AAIGrid {0} {1}'.format(infile,outfile)
-    #action = get_docker_bash() + CMD
-    run_cmd(CMD, nthreads=nthreads)
 
 
 def main():

@@ -34,7 +34,7 @@ class Messages():
                         'normal': Style.NORMAL+Fore.WHITE,
                         'header': Style.BRIGHT}
 
-    def build_msg(self,str_msg,context_str=None):
+    def build_msg(self, str_msg,context_str=None):
         """
         Constructs the desired strings for color and Style
 
@@ -67,11 +67,11 @@ class Messages():
 
         return a_msg
 
-    def msg(self,str_msg,context_str=None):
+    def msg(self, str_msg,context_str=None):
         final_msg = self.build_msg(str_msg,context_str)
         print('\n' + final_msg)
 
-    def dbg(self,str_msg,context_str=None):
+    def dbg(self, str_msg,context_str=None):
         """
         Messages designed for debugging set by a global variable DEBUG
         """
@@ -81,17 +81,17 @@ class Messages():
             final_msg = self.build_msg(final_msg,context_str)
             print('\n' + final_msg)
 
-    def warn(self,str_msg):
+    def warn(self, str_msg):
         final_msg = self.build_msg('[WARNING]: ','header')
         final_msg = self.build_msg(final_msg+str_msg, 'warning')
         print('\n' + final_msg)
 
-    def error(self,str_msg):
+    def error(self, str_msg):
         final_msg = self.build_msg('[ERROR]: ','header')
         final_msg = self.build_msg(final_msg+str_msg,'error')
         print('\n' + final_msg)
 
-    def respond(self,str_msg):
+    def respond(self, str_msg):
         """
         Messages acting like a confirmation to the user and in response to the
         previous message
@@ -416,7 +416,7 @@ def getWKT_PRJ (epsg_code):
     return output
 
 
-def setup_and_check(required_dirs,basin_shapefile,dem):
+def setup_and_check(required_dirs,basin_shapefile,dem,subbasins=None):
         """
         Check the arguments that were provided and provides some of the directory
         structure for the setup.
@@ -425,6 +425,7 @@ def setup_and_check(required_dirs,basin_shapefile,dem):
             required_dirs: dictionary of directories to be used
             basin_shapefile: path to shape file of the basin outline
             dem: path to the dem that the shapefile would exist in.
+            subbasins: optional list of subbasins to add subbasin filenames should be in the format of desired name _ subbasin
 
         Return:
             images: dictionary of paths relevant to the final products.
@@ -1203,6 +1204,11 @@ def main():
 
     p.add_argument('-fl','--noflip', dest='noflip', action='store_true',
                                    help='Do not flip arrays across the x axis')
+
+    p.add_argument('-sb','--subbasins', dest='subbasins', nargs='+',
+                                   help='provide a file list of subassin '
+                                        'shapefiles you want to be added as'
+                                        ' masks')
     args = p.parse_args()
 
     # Global debug variable
@@ -1226,7 +1232,8 @@ def main():
                    'temp':os.path.abspath(os.path.join(args.output,'temp'))}
 
     TEMP = required_dirs['temp']
-    images = setup_and_check(required_dirs, args.basin_shapefile, args.dem)
+    images = setup_and_check(required_dirs, args.basin_shapefile, args.dem,
+                                                                 args.subbasins)
 
     # DEM Cell padding
     pad = int(args.pad)
