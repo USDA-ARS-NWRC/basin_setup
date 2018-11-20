@@ -83,7 +83,6 @@ else:
 
 # Loop through the data
 for i,coord in enumerate(coords):
-    print(coord)
     if coord_type == 'utm':
         # Check for zone and utm are provided
         if args.zone == None:
@@ -93,18 +92,20 @@ for i,coord in enumerate(coords):
         data = utm.to_latlon(coord[0],coord[1], int(args.zone),args.letter)
 
         if args.file != None:
-            df['lat'] = data[0]
-            df['long'] = data[1]
+            df['lat'].iloc[i] = data[0]
+            df['long'].iloc[i] = data[1]
 
     elif coord_type == 'latlong':
         data = utm.from_latlon(coord[0],coord[1])
 
         if args.file != None:
-            df['x'] = data[0]
-            df['y'] = data[1]
+            df['x'].iloc[i] = data[0]
+            df['y'].iloc[i] = data[1]
 
     print(data)
 
 if args.file != None:
+    fname = 'converted_{}'.format(os.path.basename(args.file))
+    print("Outputting new file with converted coordinates to:\n{}".format(fname))
     df = df.drop(columns=matches)
-    df.to_csv('converted_{}'.format(os.path.basename(args.file)),index=False)
+    df.to_csv(fname,index=False)

@@ -7,6 +7,7 @@ import os
 from subprocess import Popen, PIPE, check_output,STDOUT
 import sys
 from colorama import init, Fore, Back, Style
+import time
 
 DEBUG=False
 BASIN_SETUP_VERSION = '0.6.1'
@@ -135,7 +136,7 @@ def rename_file(original,add_tag):
     p = path[0] + "_{}".format(add_tag) + path[-1]
 
 
-def run_cmd(cmd):
+def run_cmd(cmd, nthreads=None):
     """
     Executes the command and pipes the output to the console.
     Args:
@@ -143,15 +144,11 @@ def run_cmd(cmd):
     """
 
     out.dbg('Running {}'.format(cmd))
+    if nthreads != None:
+        cmd = 'mpiexec -n {0}'.format(nthreads) + cmd
 
     s = check_output(cmd, shell=True, universal_newlines=True)
     out.dbg(s)
-    # while True:
-    #     line = s.stdout.readline()
-    #     print(line.decode('utf-8'))
-    #     if not line:
-    #         break
-    #s.wait()
 
 
 def get_docker_bash(cmd,nthreads=None):
@@ -170,7 +167,7 @@ def get_docker_bash(cmd,nthreads=None):
     args = cmd.split(' ')
 
     # make entrypoint take in the tau commands call
-    action = ('docker run --user $UID --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
+    action = ('docker run --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
               ' quay.io/wikiwatershed/taudem {1}').format(args[0],
                                                           " ".join(args[1:]))
 
@@ -197,8 +194,8 @@ def pitremove(demfile, outfile=None, nthreads=None):
     check_path(outfile, outfile=True)
 
     CMD =  "pitremove -z {0} -fel {1}".format(demfile, outfile)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    ## action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def calcD8Flow(filled_dem, d8dir_file=None, d8slope_file=None, nthreads=None):
@@ -224,8 +221,8 @@ def calcD8Flow(filled_dem, d8dir_file=None, d8slope_file=None, nthreads=None):
     CMD = "d8flowdir -fel {0} -p {1} -sd8 {2}".format(filled_dem,
                                                          d8dir_file,
                                                          d8slope_file)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    # action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def calcD8DrainageArea(d8flowdir, areaD8_out=None, nthreads=None):
@@ -239,10 +236,10 @@ def calcD8DrainageArea(d8flowdir, areaD8_out=None, nthreads=None):
         nthreads: Number of cores to use for mpiexec
     """
     check_path(d8flowdir)
-    check_path(areaD8_out,outfile=True)
+    check_path(areaD8_out, outfile=True)
     CMD = "aread8 -p {0} -ad8 {1}".format(d8flowdir, areaD8_out)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    # action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 def defineStreamsByThreshold(areaD8, threshold_streams_out=None, threshold=100,
                                                                  nthreads=None):
@@ -264,8 +261,8 @@ def defineStreamsByThreshold(areaD8, threshold_streams_out=None, threshold=100,
     CMD = "threshold -ssa {0} -src {1} -thresh {2}".format(areaD8,
                                                          threshold_streams_out,
                                                          threshold)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    # action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def outlets_2_streams(d8flowdir, threshold_streams, pour_points,
@@ -286,14 +283,14 @@ def outlets_2_streams(d8flowdir, threshold_streams, pour_points,
     check_path(d8flowdir)
     check_path(threshold_streams)
     check_path(pour_points)
-    check_path(new_pour_points,outfile=True)
+    check_path(new_pour_points, outfile=True)
     CMD = 'moveoutletstostrm -p {0} -src {1} -o {2} -om {3}'.format(
                                                             d8flowdir,
                                                             threshold_streams,
                                                             pour_points,
                                                             new_pour_points)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    # action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def calcD8DrainageAreaBasin(d8flowdir, basin_outlets_moved, areaD8_out=None,
@@ -318,8 +315,8 @@ def calcD8DrainageAreaBasin(d8flowdir, basin_outlets_moved, areaD8_out=None,
 
     CMD = 'aread8 -p {0} -o {1} -ad8 {2}'.format(d8flowdir,basin_outlets_moved,
                                                                areaD8_out)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    # action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def delineate_streams(dem, d8flowdir, basin_drain_area, threshold_streams,
@@ -367,8 +364,8 @@ def delineate_streams(dem, d8flowdir, basin_drain_area, threshold_streams,
                                                             netfile,
                                                             basin_outlets_moved,
                                                             wfile)
-    action = get_docker_bash(CMD, nthreads=nthreads)
-    run_cmd(action)
+    # action = get_docker_bash(CMD, nthreads=nthreads)
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
@@ -483,12 +480,12 @@ def convert2ascii(infile, outfile=None):
     Convert to ascii
     """
     check_path(infile)
-    check_path(outfile,outfile=True)
+    check_path(outfile, outfile=True)
 
     # convert wfile files to ascii
     CMD = 'gdal_translate -of AAIGrid {0} {1}'.format(infile,outfile)
-    action = get_docker_bash() + CMD
-    run_cmd(action)
+    #action = get_docker_bash() + CMD
+    run_cmd(CMD, nthreads=nthreads)
 
 
 def main():
@@ -524,6 +521,8 @@ def main():
     global DEBUG
     DEBUG = args.debug
 
+    start = time.time()
+
     # Print a nice header
     msg ="Basin Delineation Tool v{0}".format(BASIN_SETUP_VERSION)
     m = "="*(2*len(msg)+1)
@@ -539,6 +538,8 @@ def main():
 
         ernestafy(args.dem,args.pour_points, threshold=tr, rerun=rerun,
                                                        nthreads=args.nthreads)
+    stop = time.time()
+    out.msg("Basin Delineation Complete. Elapsed Time {0}s".format(int(stop-start)))
 
 if __name__ == '__main__':
     main()

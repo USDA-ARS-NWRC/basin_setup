@@ -1,11 +1,23 @@
 # Basin Setup requires GDAL
-FROM geographica/gdal2:2.3.2
+FROM geographica/gdal2:2.2.3
 
 MAINTAINER Micah Johnson <micah.johnson150@gmail.com>
 
+ENV TAUDEM_HASH f927ca639a1834565a76cb3df5acbcd2909d6d0d
 
-RUN apt-get install -y python3-pip 
+ADD https://github.com/dtarb/TauDEM/archive/${TAUDEM_HASH}.tar.gz .
 
+RUN apt-get -y update && apt-get install -y mpich
+RUN apt-get install -y python3-pip && apt-get autoremove
+
+# Build taudem
+RUN tar -xzf ${TAUDEM_HASH}.tar.gz -C /usr/src \
+    && mkdir /usr/src/TauDEM-${TAUDEM_HASH}/bin \
+    && cd /usr/src/TauDEM-${TAUDEM_HASH}/src \
+    && make
+
+RUN mkdir -p /usr/local/taudem/bin && cp /usr/src/TauDEM-${TAUDEM_HASH}/bin/* /usr/local/taudem/bin/
+ENV PATH /usr/local/taudem/bin:$PATH
 
 # Copy over everything
 RUN mkdir -p /code \
