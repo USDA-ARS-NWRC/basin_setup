@@ -394,7 +394,7 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
 
     # Polygonize creates a raster with all subbasins
     watershed_shp = os.path.join(output_dir,'watersheds.shp')
-    CMD = 'gdal_polygonize -f"ESRI SHAPEFILE" {} {}'.format(watershed_tif,
+    CMD = 'gdal_polygonize.py -f "ESRI SHAPEFILE" {} {}'.format(watershed_tif,
                                                             watershed_shp)
     run_cmd(CMD)
 
