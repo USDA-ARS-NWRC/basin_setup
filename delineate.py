@@ -2,7 +2,6 @@
 
 import argparse
 import numpy as np
-import pandas as pd
 import os
 from subprocess import Popen, PIPE, check_output,STDOUT
 import sys
@@ -386,14 +385,16 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
     Args:
         watershed_tif: Path to a geotiff of the watersheds
         corrected_points: Path to the corrected points used for delineation
-        output_dir: Output location used for producing files
+        output_dir: Output location used for producing shapefiles
     """
     # Check files
-    check_path(f)
+    check_path(watershed_tif)
+    check_path(corrected_points)
 
     # Polygonize creates a raster with all subbasins
-    watershed_shp = os.path.join(output_dir,'watershed.shp')
-    CMD = 'gdal_polygonize -f"ESRI SHAPEFILE" {} {}'.format(watershed_tif,basin_outline)
+    watershed_shp = os.path.join(output_dir,'watersheds.shp')
+    CMD = 'gdal_polygonize -f"ESRI SHAPEFILE" {} {}'.format(watershed_tif,
+                                                            watershed_shp)
     run_cmd(CMD)
 
     # Read in and identify the names of the pour points with the subbasins
@@ -406,11 +407,12 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
         for pol, idx in zip(wdf['geometry'].values, wdf.index):
             if pt.within(pol):
                 #Create a new dataframe and output it
-                df = gpd.GeoDataFrame(columns = wdf.columns, crs=wdf.crs)
+                df = gpd.GeoDataFrame(columns=wdf.columns, crs=wdf.crs)
                 df = df.append(wdf.loc[idx])
                 out.msg("Creating the subbasin outline for {}...".format(nm))
 
-                df.to_file(os.path.join(output_dir,'{}_subbasin.shp'.format(nm)))
+                df.to_file(os.path.join(output_dir,'{}_subbasin.shp'
+                                                   ''.format(nm.lower())))
 
     # Output the full basin outline
     out.msg("Creating the entire basin outline...")
@@ -468,7 +470,7 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
 
     # For some reason if this file exists then it causes problems
     if os.path.isfile(imgs['net']):
-        out.msg("Removing preexisting stream network file...")
+        out.msg("Removing pre-existing stream network file...")
         os.remove(imgs['net'])
 
     # If we rerun we don't want to run steps 1-3 again
@@ -527,7 +529,7 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
                        wfile=imgs['watersheds'], nthreads=nthreads)
 
     # Output the shapefiles of the watershed
-    produce_shapefiles(imgs[watersheds], imgs['corrected_points'],
+    produce_shapefiles(imgs['watersheds'], imgs['corrected_points'],
                                          output_dir=output)
 
 

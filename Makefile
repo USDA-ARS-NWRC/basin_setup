@@ -15,6 +15,7 @@ uninstall:
 
 develop:
 	# Link the python script so edits are reflected in realtime
+	make uninstall
 	chmod +x basin_setup
 	ln basin_setup /usr/local/bin/basin_setup
 	chmod +x delineate.py
