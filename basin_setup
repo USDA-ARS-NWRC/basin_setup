@@ -769,8 +769,8 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     extent = parse_extent(images['basin outline']['path'])
     dem_extent = parse_extent(images['dem']['path'])
 
-    # Pad the extents
     padding = [int(cell_size)*int(p) for p in pad]
+    # Pad the extents
     padded_extent = []
     extent = [float(e) for e in extent]
     # Allows for custom padding
@@ -795,7 +795,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         if msk =='mask':
             shp_nm = 'basin outline'
         else:
-            shp_nm =  msk.split('mask')[0]+ "subbasin outline"
+            shp_nm =  msk.split('mask')[0] + "subbasin outline"
 
         images[msk]['path'] = os.path.join(TEMP,'{}.tif'.format(fnm))
         z = Popen(['gdal_rasterize', '-tr', str(cell_size), str(cell_size),
