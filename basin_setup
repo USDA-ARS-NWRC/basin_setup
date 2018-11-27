@@ -336,6 +336,53 @@ def shapely_to_pyshp(shapelygeom):
 
     return record
 
+def condition_extent(extent, cell_size):
+    """
+    Checks if there is a mismatch in the domain size and cell size. Expands the
+    domain so cells fit evenly.
+
+    Args:
+        extent: A list of 4 values representing the domain in bottom,left,right,top
+        cell_size: integer of the resolution
+    Returns:
+        result: a list of 4 values representing the domain with evenly fitting cells
+    """
+    result = []
+    rl_adjustment = 0.
+    tb_adjustment = 0.
+
+    # Calculate the cell modulus
+    rl_mod = (extent[2] - extent[0]) % cell_size
+    tb_mod = (extent[3] - extent[1]) % cell_size
+
+    if rl_mod > 0:
+        rl_adjustment = (cell_size - rl_mod) / 2.0
+    if tb_mod > 0:
+        tb_adjustment = (cell_size - tb_mod) / 2.0
+
+    out.dbg("Checking how well our cell size is fitted to our domain:"
+            "\t\nRight-Left modulo: {0:.2f}"
+            "\t\nTop - Bottom modulo: {1:.2f}".format(rl_mod,tb_mod))
+
+    # Adjust in both directions to maintain common center
+    result.append(extent[0] - rl_adjustment) # Left
+    result.append(extent[1] - tb_adjustment) # Bottom
+    result.append(extent[2] + rl_adjustment)  # Right
+    result.append(extent[3] + tb_adjustment)  # Top
+    rl_mod = (result[2] - result[0]) % cell_size
+    tb_mod = (result[3] - result[1]) % cell_size
+
+    if rl_adjustment != 0 or tb_adjustment != 0:
+        out.warn(" Modeling domain extents are ill fit for cell size {}."
+                 "\nExpanding to fit whole cells...".format(cell_size))
+
+        out.dbg("Checking how well our cell size is fitted to our domain:"
+                "\t\nRight-Left modulo: {0:.2f}"
+                "\t\nTop - Bottom modulo: {1:.2f}".format(rl_mod,tb_mod))
+
+    return result
+
+
 
 def parse_extent(fname):
     """
@@ -505,7 +552,7 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
                 name = sb.split('.')[0].lower()
                 name = name.replace('_outline','')
                 name = name.replace('_subbasin','')
-                name = name.replace('  ','')
+                name = name.replace('  ','') # remove any double spaces
                 name = name.replace('_',' ')
                 pth = os.path.abspath(os.path.expanduser(sb))
                 # Shapefiles
@@ -513,7 +560,7 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
                                         {'path':pth,'source':None, 'epsg':None}
                 # Images of masks
                 images['{} mask'.format(name)] = \
-                     {'path':None,'source':None,'short_name':'{}'.format(name)}
+                     {'path':None,'source':None,'short_name':'{}'.format(name+' mask')}
 
         # Populate images for downloaded sources
         images['vegetation type']['source'] = \
@@ -767,19 +814,22 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
     extent = parse_extent(images['basin outline']['path'])
-    dem_extent = parse_extent(images['dem']['path'])
 
     padding = [int(cell_size)*int(p) for p in pad]
+
     # Pad the extents
     padded_extent = []
     extent = [float(e) for e in extent]
+
     # Allows for custom padding
     padded_extent.append(extent[0] - padding[0]) # Left
     padded_extent.append(extent[1] - padding[1]) # Bottom
-    padded_extent.append(extent[2] + padding[1])  # Right
+    padded_extent.append(extent[2] + padding[2])  # Right
     padded_extent.append(extent[3] + padding[3])  # Top
 
-    extent = padded_extent
+    # Check cell size fits evenly in extent range
+    extent = condition_extent(padded_extent,int(cell_size))
+
     s_extent = [str(e) for e in extent]
 
     # Recover projection info
@@ -814,6 +864,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
 
     # If user passes an float then don't process the image, were probably
     # using a point model
+
     if is_float(images['dem']['path']):
         process_names = ['vegetation height','vegetation type']
     else:
@@ -850,8 +901,6 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         images[name]['path'] = NC
         s.wait()
 
-        #Use the gdal generate image to line up the extents better
-        extent = parse_extent(CLIPPED)
     return images, extent
 
 
@@ -881,14 +930,16 @@ def create_netcdf(images, extent, cell_size, output_dir):
     out.respond("Output Netcdf setup is:\n\t {0} x {1} pixels"
             "\n\t {2} x {3} meters"
             "\n\t Bottom Left Coordinates {4}, {5}"
-            "\n\t Upper Right Coordinates {6}, {7}\n".format(x.shape[0],
-                                                         y.shape[0],
-                                                         extent[2] - extent[0],
-                                                         extent[3] - extent[1],
-                                                         extent[0],
-                                                         extent[1],
-                                                         extent[2],
-                                                         extent[3]))
+            "\n\t Upper Right Coordinates {6}, {7}"
+            "\n\t Resolution {8}m\n".format(x.shape[0],
+                                         y.shape[0],
+                                         extent[2] - extent[0],
+                                         extent[3] - extent[1],
+                                         extent[0],
+                                         extent[1],
+                                         extent[2],
+                                         extent[3],
+                                         cell_size))
 
     TOPO_PATH = os.path.join(output_dir, 'topo.nc')
     topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
@@ -964,14 +1015,25 @@ def create_netcdf(images, extent, cell_size, output_dir):
                     topo.variables[short_name][:] = d.variables['Band1'][:]
 
                 except Exception as e:
+                    out.error("Error assigning {} to netcdf.".format(short_name))
 
                     if short_name == 'dem':
-                        out.error("{}\n\nHint: This maybe caused by the default"
+                        out.error("Size of {} is {} versus size of final topo"
+                                  " netcdf which is {}".format(short_name,
+                                           d.variables['Band1'][:].shape,
+                                           topo.variables[short_name][:].shape))
+
+                        out.msg("{}\n\nHint: This maybe caused by the default"
                         " padding creating extents bigger than the original DEM"
                         " image. \nTry decreasing the padding using the --pad"
                         " or -pd flag.\n".format(str(e)))
                         sys.exit()
 
+                    elif 'mask' in short_name:
+                        out.error("Size of {} is {} versus size of final topo"
+                                  " netcdf which is {}".format(short_name,
+                                           d.variables['Band1'][:].shape,
+                                           topo.variables[short_name][:].shape))
                     else:
                         raise(e)
 
@@ -1299,7 +1361,7 @@ def main():
     DEBUG = args.debug
 
     # Print a nice header
-    msg ="Basin Setup Tool {0}".format(BASIN_SETUP_VERSION)
+    msg ="Basin Setup Tool v{0}".format(BASIN_SETUP_VERSION)
     m = "="*(2*len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')
