@@ -10,7 +10,7 @@ import time
 import geopandas as gpd
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.7.0'
+BASIN_SETUP_VERSION = '0.7.1'
 
 
 class Messages():
