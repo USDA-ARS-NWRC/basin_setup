@@ -145,7 +145,7 @@ def run_cmd(cmd, nthreads=None):
 
     out.dbg('Running {}'.format(cmd))
     if nthreads != None:
-        cmd = 'mpiexec -n {0}'.format(nthreads) + cmd
+        cmd = 'mpiexec -n {0} '.format(nthreads) + cmd
 
     s = check_output(cmd, shell=True, universal_newlines=True)
     out.dbg(s)
