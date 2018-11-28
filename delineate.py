@@ -8,6 +8,8 @@ import sys
 from colorama import init, Fore, Back, Style
 import time
 import geopandas as gpd
+import datetime
+import shutil
 
 DEBUG=False
 BASIN_SETUP_VERSION = '0.7.2'
@@ -413,7 +415,7 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
                 out.msg("Creating the subbasin outline for {}...".format(nm))
 
                 df.to_file(os.path.join(output_dir,'{}_subbasin.shp'
-                                                   ''.format(nm.lower())))
+                           ''.format((nm.lower()).replace(' ','_'))))
 
     # Output the full basin outline
     out.msg("Creating the entire basin outline...")
@@ -422,8 +424,111 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
     basin_outline = wdf.dissolve(by='all')
     basin_outline.to_file(os.path.join(output_dir,'basin_outline.shp'))
 
+def create_readme(sysargs, output_dir):
+    """
+    Creates a readme with all the details for creating the files
+    Args:
+        sysargs: command used for generating files
+    """
+    dt = ((datetime.datetime.today()).isoformat()).split('T')[0]
+    out_str = (
+    "########################################################################\n"
+    "# BASIN DELINEATION TOOL V{0}\n"
+    "########################################################################\n"
+    "\n The files in this folder were generated on {1}.\n"
+    "This was accomplished using the following command:\n"
+    "\n$ {2}\n"
+    "\nTo get access to the source code please visit:\n"
+    "https://github.com/USDA-ARS-NWRC/basin_setup")
 
-def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
+    out_str = out_str.format(BASIN_SETUP_VERSION, dt, ' '.join(sys.argv))
+    with open(os.path.join(output_dir,'README.txt'),'w') as fp:
+        fp.write(out_str)
+        fp.close()
+
+
+def cleanup(output_dir, at_start=False):
+    """
+    Removes the temp folder and removes the following files:
+        * output/watersheds.shp
+        * output/*_subbasin.shp
+        * output/basin_outline.shp
+        * output/corrected_points.shp
+
+    Args:
+        output_dir: folder to lookin for cleanup
+        at_start: If at the beginning we cleanup a lot more files versus than at
+                  the end of a run.
+
+    """
+    out.msg("Cleaning up files...")
+
+    # Always cleanup the temp folder
+    temp = os.path.join(output_dir,'temp')
+    if os.path.isdir(temp):
+        shutil.rmtree(temp)
+
+    if at_start:
+        fnames = os.listdir(output_dir)
+
+        for f in fnames:
+            fn = os.path.join(output_dir,f)
+            if ("_subbasin." in f or "thresh" in f or "basin_outline." in f
+                or 'watersheds.' in f or 'out.' in f
+                or "corrected_points." in f):
+                out.dbg("Removing {}".format(f))
+                os.remove(fn)
+
+def confirm_norerun(non_thresholdkeys, imgs):
+    """
+    Checks if the non-thresholded files exist, if so confirm the user wants
+    to overwrite them.
+
+    Args:
+        non-thresholdedkeys: keys to check in the imgs dictionary of paths
+        imgs: Dictionary of paths to images
+    Returns
+        bool: Indicating whether we continue or not
+    """
+    out.dbg("Checking if important delineation images pre-exist...")
+
+    # Quickly check if the user wants to over write a possible rerun
+    move_forward = False
+    any_file_exists = False
+
+    for f in non_thresholdkeys:
+
+        if os.path.isfile(imgs[f]):
+            out.dbg("{} image exists!".format(f))
+            any_file_exists = True
+            out.warn("You are about to overwrite the delineation files that"
+                     " take the longest to make. \n\nAre you sure you want to"
+                     " do this? (y/n)\n")
+            answer = input()
+
+            acceptable_answer = False
+            while not acceptable_answer:
+
+                if answer.lower() == 'y':
+                    acceptable_answer = True
+                    move_forward=True
+
+                elif answer.lower() == 'n':
+                    acceptable_answer = True
+
+                else:
+                    acceptable_answer = False
+            break
+
+    # If there weren't any files then move ahead
+    if not any_file_exists:
+        move_forward = True
+        out.dbg("No pre-existing files, moving forward...")
+    return move_forward
+
+
+def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
+                                                                rerun=False,
                                                                 nthreads=None):
     """
     Run TauDEM using the script Ernesto Made.... therefore we will
@@ -432,16 +537,13 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
     Args:
         demfile: Original DEM tif.
         pour_points: Locations of the pour_points in a .bna file format
-        output: Output folder location
+        output: Output folder location, default is ./delineation
         threshold: Threshold to use, can be a list or a single value
         rerun: boolean indicating whether to avoid re-doing steps 1-3
 
     """
-    # Make sure our output folder exists
-    if output == None:
-        output = './output'
-        if not os.path.isdir(output):
-            os.mkdir(output)
+
+    create_readme(sys.argv, output)
 
     # Output File keys without a threshold in the filename
     non_thresholdkeys = ['filled','flow_dir','slope','drain_area',
@@ -460,6 +562,7 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
 
         # Add the threshold to the filename if need be
         if k in thresholdkeys:
+            base = os.path.join(temp,k)
             base += '_thresh_{}'.format(threshold)
 
         # Watchout for shapefiles
@@ -468,29 +571,33 @@ def ernestafy(demfile, pour_points, output=None, threshold=100, rerun=False,
         else:
             imgs[k] = base + '.tif'
 
-
-    # For some reason if this file exists then it causes problems
+    # This file if it already exists causes problems
     if os.path.isfile(imgs['net']):
         out.msg("Removing pre-existing stream network file...")
         os.remove(imgs['net'])
 
     # If we rerun we don't want to run steps 1-3 again
     if rerun:
-        out.warn("Performing a rerun, assuming files for flow direction and "
-                "accumulation exist...")
+        out.warn("Performing a rerun, assuming files for flow direction and"
+                " accumulation exist...")
     else:
-        # 1. Pit Remove in order to fill the pits in the DEM
-        pitremove(demfile, outfile=imgs['filled'], nthreads=nthreads)
+        move_forward = confirm_norerun(non_thresholdkeys, imgs)
+        if move_forward:
+            # 1. Pit Remove in order to fill the pits in the DEM
+            pitremove(demfile, outfile=imgs['filled'], nthreads=nthreads)
 
-        # 2. D8 Flow Directions in order to compute the flow direction in each
-        #    DEM cell
-        calcD8Flow(imgs['filled'], d8dir_file=imgs['flow_dir'],
-                                   d8slope_file=imgs['slope'],nthreads=nthreads)
+            # 2. D8 Flow Directions in order to compute the flow direction in each
+            #    DEM cell
+            calcD8Flow(imgs['filled'], d8dir_file=imgs['flow_dir'],
+                                       d8slope_file=imgs['slope'], nthreads=nthreads)
 
-        # 3. D8 Contributing Area so as to compute the drainage area in each
-        #    DEM cell
-        calcD8DrainageArea(imgs['flow_dir'], areaD8_out=imgs['drain_area'],
-                                             nthreads=nthreads)
+            # 3. D8 Contributing Area so as to compute the drainage area in each
+            #    DEM cell
+            calcD8DrainageArea(imgs['flow_dir'], areaD8_out=imgs['drain_area'],
+                                                 nthreads=nthreads)
+        else:
+            out.msg("Please use the '--rerun' flag to perform a rerun.\n")
+            sys.exit()
 
     ############################################################################
     # This section and below gets run every call. (STEPS 4-8)
@@ -578,13 +685,33 @@ def main():
     out.msg(m,'header')
 
     rerun = args.rerun
+
+    # Make sure our output folder exists
+    if args.output == None:
+        output = './delineation'
+        temp = os.path.join(output, 'temp')
+        if not os.path.isdir(output):
+            os.mkdir(output)
+        else:
+            cleanup(output, at_start=True)
+
+        if not os.path.isdir(temp):
+                os.mkdir(temp)
+
+
+
     # Cycle through all the thresholds provided
     for i,tr in enumerate(args.threshold):
         if i > 0:
             rerun = True
 
-        ernestafy(args.dem,args.pour_points, threshold=tr, rerun=rerun,
+        ernestafy(args.dem,args.pour_points, output=output, temp=temp,
+                                                       threshold=tr,
+                                                       rerun=rerun,
                                                        nthreads=args.nthreads)
+    if not args.debug:
+        cleanup(output, at_start=True)
+
     stop = time.time()
     out.msg("Basin Delineation Complete. Elapsed Time {0}s".format(int(stop-start)))
 

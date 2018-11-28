@@ -549,8 +549,9 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
                 subbasins = [subbasins]
 
             for zz,sb in enumerate(subbasins):
-                name = sb.split('.')[0].lower()
-                name = name.replace('_outline','')
+                base = os.path.basename(sb).split('.')[0].lower()
+                fname = base.replace(' ','_')
+                name = base.replace('_outline','')
                 name = name.replace('_subbasin','')
                 name = name.replace('  ','') # remove any double spaces
                 name = name.replace('_',' ')
@@ -704,7 +705,7 @@ def check_shp_file(images, epsg=None, temp=None):
             newfile = os.path.join(temp, newfile.split('.')[0]+"_epsg_{}.shp"
                                           "".format(epsg))
             cmd_args = ['ogr2ogr','-t_srs','EPSG:{}'.format(epsg), newfile,
-                                                        images[bsn]['path']]
+                                  images[bsn]['path']]
             s = check_output(cmd_args, universal_newlines=True)
             out.dbg(s)
             images[bsn]['path'] = newfile
@@ -1318,7 +1319,7 @@ def main():
                          " data, default: ~/Downloads")
 
     p.add_argument('-o','--output', dest='output', required=False,
-                    default='./output',
+                    default='./basin_setup',
                     help="Location to output data")
 
     p.add_argument('-p','--point', dest='point', required=False, default=None,
