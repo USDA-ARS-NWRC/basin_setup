@@ -102,6 +102,12 @@ class Messages():
 out = Messages()
 
 
+def proper_name(name):
+    name = name.replace('_'," ")
+    name = ' '.join([c.capitalize() for c in name.split(' ')])
+    return name
+
+
 def strip_chars(edit_str, bad_chars='[(){}<>,"_]=\nns'):
     """
     Written to strip out unwanted chars from the proj strings received
@@ -556,12 +562,15 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
                 name = name.replace('  ','') # remove any double spaces
                 name = name.replace('_',' ')
                 pth = os.path.abspath(os.path.expanduser(sb))
+                # Capitalize the first letter
+                name = proper_name(name)
                 # Shapefiles
-                images['{} subbasin outline'.format(name)] = \
+                images['{} subbasin'.format(name)] = \
                                         {'path':pth,'source':None, 'epsg':None}
                 # Images of masks
                 images['{} mask'.format(name)] = \
-                     {'path':None,'source':None,'short_name':'{}'.format(name+' mask')}
+                     {'path':None,'source':None,'short_name':'{}'
+                                                    ''.format(name + ' mask')}
 
         # Populate images for downloaded sources
         images['vegetation type']['source'] = \
@@ -846,7 +855,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         if msk =='mask':
             shp_nm = 'basin outline'
         else:
-            shp_nm =  msk.split('mask')[0] + "subbasin outline"
+            shp_nm =  msk.split('mask')[0]+"subbasin"
 
         images[msk]['path'] = os.path.join(TEMP,'{}.tif'.format(fnm))
         z = Popen(['gdal_rasterize', '-tr', str(cell_size), str(cell_size),
@@ -905,7 +914,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     return images, extent
 
 
-def create_netcdf(images, extent, cell_size, output_dir):
+def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
     """
     Create the initial netcdf and then writes the all images
 
@@ -913,6 +922,7 @@ def create_netcdf(images, extent, cell_size, output_dir):
         images: dictionary containing the latest paths to various images
         extent: The final extent required
         output_dir: Output location for results
+        basin_name: Name for the basin
 
 
     Returns:
@@ -995,16 +1005,25 @@ def create_netcdf(images, extent, cell_size, output_dir):
             else:
                 short_name = name
 
-            # Data reduction
+            long_name = name
+
+            # Data reduction and names
             if 'mask' in short_name:
                 dtype = 'u1' # U-BYTE
+                if short_name=='mask':
+                    if short_name == 'mask':
+                        long_name = proper_name(basin_name)
+                else:
+                    long_name = name.replace(' mask','')
+
             elif short_name in ['veg_type']:
                 dtype = 'u4' # U-INT 32 bit
+
             else:
                 dtype = 'f'
 
             topo.createVariable(short_name, dtype,('y','x'))
-            topo.variables[short_name].setncattr('long_name',name)
+            topo.variables[short_name].setncattr('long_name', long_name)
 
             if is_float(image['path']):
                 topo.variables[short_name][:] = image['path']
@@ -1355,6 +1374,9 @@ def main():
                                    help='provide a file list of subassin '
                                         'shapefiles you want to be added as'
                                         ' masks')
+    p.add_argument('-bn','--basin_name', dest='basin_name', nargs='+',
+                                   help='provide a long name for the basin'
+                                   ' total mask')
     args = p.parse_args()
 
     # Global debug variable
@@ -1416,7 +1438,13 @@ def main():
     #===========================================================================
     # Post Processing
     #===========================================================================
-    topo = create_netcdf(images, extent, args.cell_size, required_dirs['output'])
+    if args.basin_name != None:
+        basin_name = " ".join(args.basin_name)
+    else:
+        basin_name = None
+
+    topo = create_netcdf(images, extent, args.cell_size, required_dirs['output']
+                                                       , basin_name)
     topo = calculate_height_tau_k(topo, images) # Calculates TAU and K
     topo = add_proj(topo, images['basin outline']['epsg'],images['dem']['path'])
 
