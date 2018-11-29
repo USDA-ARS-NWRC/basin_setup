@@ -1071,6 +1071,7 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
     topo.setncattr_string('institution',
             'USDA Agricultural Research Service, Northwest Watershed Research'
             ' Center')
+    topo.setncattr_string('generation_command', '{}'.format(" ".join(sys.argv)))
 
     return topo
 

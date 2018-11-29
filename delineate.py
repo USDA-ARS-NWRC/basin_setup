@@ -710,7 +710,7 @@ def main():
                                                        rerun=rerun,
                                                        nthreads=args.nthreads)
     if not args.debug:
-        cleanup(output, at_start=True)
+        cleanup(output, at_start=False)
 
     stop = time.time()
     out.msg("Basin Delineation Complete. Elapsed Time {0}s".format(int(stop-start)))
