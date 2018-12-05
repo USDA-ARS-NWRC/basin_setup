@@ -366,7 +366,7 @@ def condition_extent(extent, cell_size):
     if tb_mod > 0:
         tb_adjustment = (cell_size - tb_mod) / 2.0
 
-    out.dbg("Checking how well our cell size is fitted to our domain:"
+    out.dbg("Checking how well the cell size is fitted to the domain:"
             "\t\nRight-Left modulo: {0:.2f}"
             "\t\nTop - Bottom modulo: {1:.2f}".format(rl_mod,tb_mod))
 
@@ -820,12 +820,12 @@ def process(images, TEMP, cell_size, pad, epsg=None):
                 padding
     """
     out_of_bounds = False
-
+    cell_size = int(cell_size)
     # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
     extent = parse_extent(images['basin outline']['path'])
 
-    padding = [int(cell_size)*int(p) for p in pad]
+    padding = [cell_size * int(p) for p in pad]
 
     # Pad the extents
     padded_extent = []
@@ -838,7 +838,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
     padded_extent.append(extent[3] + padding[3])  # Top
 
     # Check cell size fits evenly in extent range
-    extent = condition_extent(padded_extent,int(cell_size))
+    extent = condition_extent(padded_extent, cell_size)
 
     s_extent = [str(e) for e in extent]
 
@@ -858,13 +858,18 @@ def process(images, TEMP, cell_size, pad, epsg=None):
             shp_nm =  msk.split('mask')[0]+"subbasin"
 
         images[msk]['path'] = os.path.join(TEMP,'{}.tif'.format(fnm))
-        z = Popen(['gdal_rasterize', '-tr', str(cell_size), str(cell_size),
+
+        # clips, sets resolution, adjusts to fit whole cells
+        z = Popen(['gdal_rasterize','-tap', '-tr', str(cell_size), str(cell_size),
                    '-te', s_extent[0], s_extent[1], s_extent[2], s_extent[3],
                    '-burn', '1', '-ot', 'int', images[shp_nm]['path'],
                     images[msk]['path']], stdout=PIPE)
         z.wait()
 
-        # Clip the mask
+        extent = parse_extent(images[msk]['path'])
+
+
+        # Convert the mask to netcdf
         NC = os.path.abspath(os.path.join(TEMP,'clipped_{}.nc'.format(msk.replace(' ','_'))))
         s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images[msk]['path'],
                                                              NC],stdout=PIPE)
@@ -896,7 +901,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
                                                     ''.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
-        p = Popen(['gdalwarp','-t_srs', proj,'-te', s_extent[0],s_extent[1],
+        p = Popen(['gdalwarp','-t_srs', proj,'-tap','-te', s_extent[0],s_extent[1],
                     s_extent[2],s_extent[3], '-tr',str(cell_size),
                     str(cell_size),'-overwrite', img['path'], CLIPPED],
                     stdout=PIPE)
@@ -1012,7 +1017,10 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
                 dtype = 'u1' # U-BYTE
                 if short_name=='mask':
                     if short_name == 'mask':
-                        long_name = proper_name(basin_name)
+                        if basin_name == None:
+                            long_name = 'Full Basin'
+                        else:
+                            long_name = proper_name(basin_name)
                 else:
                     long_name = name.replace(' mask','')
 
@@ -1218,6 +1226,7 @@ def calculate_height_tau_k(topo, images, height_method='average'):
     topo.variables['veg_height'][:] = final_veg_height
 
     #Output a map for SMRF/AWSM USERS
+    out.msg("Outputting a list of unique vegetation types...")
     veg_map = veg_map.sort_values(by='HEIGHT')
     output_dir = os.path.dirname(topo.filepath(encoding='utf-8'))
     veg_map[['VALUE','HEIGHT','CLASSNAME']].to_csv(
@@ -1237,7 +1246,7 @@ def make_hill(topo,dem_var='dem', lower = 1.0):
         dem_var: The name of the dem variable in the dataset.
         lower: The amount in meters to lower the surround area.
     Returns:
-        topo: An open Netcdfafter being modified.
+        topo: An open Netcdf after being modified.
     """
 
     x_mid = int(len(topo.variables[dem_var][:,0])/2)
