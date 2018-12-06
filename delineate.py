@@ -378,7 +378,7 @@ def convert2ascii(infile, outfile=None):
 
     # convert wfile files to ascii
     CMD = 'gdal_translate -of AAIGrid {0} {1}'.format(infile,outfile)
-    run_cmd(CMD, nthreads=nthreads)
+    run_cmd(CMD)
 
 
 def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
@@ -469,6 +469,11 @@ def cleanup(output_dir, at_start=False):
         shutil.rmtree(temp)
 
     if at_start:
+        # Remove any potential streamflow folders
+        streamflow = os.path.join(output_dir,'streamflow')
+        if os.path.isdir(streamflow):
+            shutil.rmtree(streamflow)
+
         fnames = os.listdir(output_dir)
 
         for f in fnames:
@@ -527,9 +532,37 @@ def confirm_norerun(non_thresholdkeys, imgs):
     return move_forward
 
 
+def output_streamflow(imgs, output_dir='streamflow'):
+    """
+    Outputs files necessary for streamflow modeling.
+
+    Args:
+        imgs: Dictionary containing a files to be outputted.
+        output_dir: Location to output files
+    """
+    out.msg("Creating streamflow files...")
+    if not os.path.isdir(output_dir):
+        out.dbg("Making streamflow directory")
+        os.mkdir(output_dir)
+
+    # Convert the watersheds to ascii and move files to streamflow folder
+    for k in ['watersheds','coord','tree']:
+
+        name = os.path.basename(imgs[k])
+        outfile = os.path.join(output_dir, name)
+
+        if k =='watersheds':
+            outfile = os.path.join(output_dir, name.split('.')[-2] + '.asc')
+            convert2ascii(imgs[k], outfile)
+
+        else:
+            shutil.move(imgs[k], outfile)
+
+
 def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
                                                                 rerun=False,
-                                                                nthreads=None):
+                                                                nthreads=None,
+                                                            out_streams=False):
     """
     Run TauDEM using the script Ernesto Made.... therefore we will
     ernestafy this basin.
@@ -540,7 +573,8 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
         output: Output folder location, default is ./delineation
         threshold: Threshold to use, can be a list or a single value
         rerun: boolean indicating whether to avoid re-doing steps 1-3
-
+        out_streams: Boolean determining whether to output the files for
+                     streamflow modeling
     """
 
     create_readme(sys.argv, output)
@@ -568,6 +602,9 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
         # Watchout for shapefiles
         if 'points' in k:
             imgs[k] = base + '.shp'
+        # Files we need for streamflow
+        elif k in ['coord','tree']:
+            imgs[k] = base + '.dat'
         else:
             imgs[k] = base + '.tif'
 
@@ -639,7 +676,8 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
     # Output the shapefiles of the watershed
     produce_shapefiles(imgs['watersheds'], imgs['corrected_points'],
                                          output_dir=output)
-
+    if out_streams:
+        output_streamflow(imgs, output_dir=os.path.join(output,'streamflow'))
 
 
 def main():
@@ -670,6 +708,10 @@ def main():
                          "accumulation has been completed once")
     p.add_argument("-db","--debug", dest="debug",
                     required=False, action='store_true')
+    p.add_argument('-strm','--streamflow', dest='streamflow', required=False,
+                                           action='store_true', help='Use to'
+                                           ' output the necessary files for'
+                                           ' streamflow modeling')
     args = p.parse_args()
     # Global debug variable
     global DEBUG
@@ -706,9 +748,10 @@ def main():
             rerun = True
 
         ernestafy(args.dem,args.pour_points, output=output, temp=temp,
-                                                       threshold=tr,
-                                                       rerun=rerun,
-                                                       nthreads=args.nthreads)
+                                                   threshold=tr,
+                                                   rerun=rerun,
+                                                   nthreads=args.nthreads,
+                                                   out_streams=args.streamflow)
     if not args.debug:
         cleanup(output, at_start=False)
 
