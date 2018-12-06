@@ -12,7 +12,7 @@ import datetime
 import shutil
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.7.6'
+BASIN_SETUP_VERSION = '0.7.7'
 
 
 class Messages():
