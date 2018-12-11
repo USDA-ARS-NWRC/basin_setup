@@ -24,7 +24,7 @@ from urllib.request import urlopen
 init()
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.7.7'
+BASIN_SETUP_VERSION = '0.7.8'
 
 class Messages():
     def __init__(self):
