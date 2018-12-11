@@ -381,7 +381,7 @@ def convert2ascii(infile, outfile=None):
     run_cmd(CMD)
 
 
-def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
+def produce_shapefiles(watershed_tif, corrected_points, output_dir=None, streamflow=False):
     """
     Outputs the polygons of the individual subbasins to a shapfile.
 
@@ -394,8 +394,10 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None):
     check_path(watershed_tif)
     check_path(corrected_points)
 
+    wfname = os.path.basename(watershed_tif).split('.')[0]+'.shp'
+
     # Polygonize creates a raster with all subbasins
-    watershed_shp = os.path.join(output_dir,'watersheds.shp')
+    watershed_shp = os.path.join(output_dir,wfname)
     CMD = 'gdal_polygonize.py -f "ESRI SHAPEFILE" {} {}'.format(watershed_tif,
                                                             watershed_shp)
     run_cmd(CMD)
@@ -479,8 +481,8 @@ def cleanup(output_dir, at_start=False):
         for f in fnames:
             fn = os.path.join(output_dir,f)
             if ("_subbasin." in f or "thresh" in f or "basin_outline." in f
-                or 'watersheds.' in f or 'out.' in f
-                or "corrected_points." in f):
+                or 'watersheds_' in f or 'out.' in f
+                or "corrected_points_" in f):
                 out.dbg("Removing {}".format(f))
                 os.remove(fn)
 
@@ -546,7 +548,7 @@ def output_streamflow(imgs, output_dir='streamflow'):
         os.mkdir(output_dir)
 
     # Convert the watersheds to ascii and move files to streamflow folder
-    for k in ['watersheds','coord','tree']:
+    for k in ['corrected_points','watersheds','coord','tree']:
 
         name = os.path.basename(imgs[k])
         outfile = os.path.join(output_dir, name)
@@ -581,11 +583,11 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
 
     # Output File keys without a threshold in the filename
     non_thresholdkeys = ['filled','flow_dir','slope','drain_area',
-                      'basin_drain_area', 'corrected_points']
+                      'basin_drain_area']
 
     # Output File keys WITH a threshold in the filename
     thresholdkeys = ['thresh_streams', 'thresh_basin_streams', 'order', 'tree',
-                     'coord', 'net', 'watersheds','basin_outline']
+                     'coord', 'net', 'watersheds','basin_outline', 'corrected_points']
 
     filekeys = non_thresholdkeys + thresholdkeys
 

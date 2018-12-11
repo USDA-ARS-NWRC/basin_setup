@@ -102,4 +102,6 @@ ENV/
 
 #Result in examples
 examples/*/output/*
+examples/*/delineation/*
+examples/*/basin_setup/*
 examples/*/*.csv
