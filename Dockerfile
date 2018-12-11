@@ -39,5 +39,6 @@ RUN cd /code/basin_setup \
 
 VOLUME /data
 WORKDIR /data
+RUN echo "umask 0002" >> /etc/bash.bashrc
 ENTRYPOINT ["basin_setup"]
 CMD ["/bin/bash"]
