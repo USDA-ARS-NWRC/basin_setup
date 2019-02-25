@@ -26,7 +26,7 @@ from spatialnc.utilities import strip_chars
 init()
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.7.8'
+BASIN_SETUP_VERSION = '0.7.9'
 
 class Messages():
     def __init__(self):
