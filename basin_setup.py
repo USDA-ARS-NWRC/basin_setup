@@ -26,7 +26,7 @@ from spatialnc.utilities import strip_chars
 init()
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.7.9'
+BASIN_SETUP_VERSION = '0.8.0'
 
 class Messages():
     def __init__(self):
@@ -738,8 +738,8 @@ def process(images, TEMP, cell_size, pad, epsg=None):
                                                     ''.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
-        p = Popen(['gdalwarp','-t_srs', proj,'-tap','-te', s_extent[0],s_extent[1],
-                    s_extent[2],s_extent[3], '-tr',str(cell_size),
+        p = Popen(['gdalwarp','-t_srs', proj,'-tap','-te', s_extent[0],
+                   s_extent[1], s_extent[2],s_extent[3], '-tr',str(cell_size),
                     str(cell_size),'-overwrite', img['path'], CLIPPED],
                     stdout=PIPE)
 
