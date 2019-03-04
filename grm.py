@@ -74,15 +74,29 @@ class GRM(object):
         # Assign some colors and formats
         coloredlogs.install(fmt='%(levelname)-5s %(message)s', level=level,
                                                                logger=self.log)
+
         self.log.info("Getting Topo attributes...")
         self.ts = get_topo_stats(self.topo)
         self.log.info("Using topo cell size which is {} {}"
                                                   "".format(self.ts['du'],
                                                             self.ts['units']))
+        # Get aso super depth info
         self.image_info = parse_gdalinfo(self.image)
 
         # output netcdf
         self.outfile = os.path.join(self.output, "lidar_depths.nc")
+
+        # Titling
+        renames = {"brb":"boise river basin",
+                   "lakes":"mammoth lakes basin"}
+
+        if self.basin in renames.keys():
+            self.basin = renames[self.basin]
+        else:
+            self.basin = "{} river basin".format(self.basin)
+        self.basin = self.basin.title()
+
+        self.log.info("Working on the {}".format(self.basin))
 
     def grid_match(self):
         """
@@ -145,24 +159,77 @@ class GRM(object):
         if not hasattr(self, "epsg"):
             pass
 
+        # Grab a human readable timefor today
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         # Create a netcdf
         if not os.path.isfile(self.outfile):
             self.log.info("Output NetCDF does not exist, creating a new one!")
 
             # Exclude all variables except dimensions
             ds = nc.Dataset(self.topo, mode='r')
-            ex_var = [v for v in ds.variables if v.lower() not in ['time','x','y']]
+            ex_var = [v for v in ds.variables if v.lower() not in ['x','y']]
             ds.close()
 
+            # Copy a topo like netcdf image to add depths to
             ds = copy_nc(self.topo, self.outfile, exclude=ex_var)
-            ds.close()
+            ds.createDimension("time", None)
+
+            # Determine 10-1 date
+            yr = self.date.year
+
+            if self.date.month <= 10:
+                yr -= 1
+
+            start_date = datetime.date(yr, 10, 1)
+            self.log.debug("Using {} as start of water year for stamping netcdf"
+            "".format(start_date.isoformat()))
+
+            # Assign time and count days since 10-1
+            times = ds.createVariable('time', 'int', ('time'))
+            setattr(ds.variables['time'], 'units', 'days since %s' % start_date)
+            setattr(ds.variables['time'], 'calendar', 'standard')
+
+            # Add append a newm image
+            ds.createVariable("depth", "f", ("time", "y", "x"),
+                                            chunksizes=(6, 10, 10))
+            # Adjust global attributes
+            ds.setncatts({"last_modified":now,
+                        "dateCreated":now,
+                        "Title":"ASO 50m Lidar Flights over the {}."
+                                "".format(self.basin),
+                        "history":"Created using Basin Setup v{}"
+                                  "".format(BASIN_SETUP_VERSION),
+                        })
+
+            # Attribute gets copied over from the topo
+            ds.delncattr("generation_command")
+
         else:
             self.log.info("Output NetCDF exists, appending data to it!")
+            ds = nc.Dataset(self.outfile, mode='w')
+            times = ds.variables['time']
+            ds.setncatts({"last_modified":now})
 
+        tstep = pd.to_timedelta(1, unit='D')
+        t = nc.date2num(self.date, times.units, times.calendar)
 
+        # Figure out the time index
+        if len(times) != 0:
+            index = np.where(times[:] == t)[0]
+
+            if index.size == 0:
+                index = len(times)
+            else:
+                index = index[0]
+        else:
+            index = len(times)
+
+        ds.variables['time'][index] = t
+
+        # ds.close()
         # ds = mask_nc(self.outfile, exclude)
-        #
-        # ds = nc.Dataset(self.outfile)
+
 
 
 def main():
@@ -175,9 +242,16 @@ def main():
     p.add_argument("-t", "--topo", dest="topo",
                     required=True,
                     help="Path to the topo.nc file used for modeling")
+
     p.add_argument("-i", "--image", dest="image",
                     required=True,
                     help="Path to an image for processing")
+
+    p.add_argument("-b", "--basin", dest="basin",
+                    required=True, choices=['brb', 'kaweah', 'kings', 'lakes',
+                                            'merced', 'sanjoaquin','tuolumne'],
+                    help="Name of the basin to use for metadata")
+
     p.add_argument("-o", "--output", dest="output",
                     required=False,
                     help="Path to output folder")
@@ -218,16 +292,17 @@ def main():
     header = "=" * (len(msg) + 1)
     log.info(msg + "\n" + header + "\n")
 
-    g = GRM(image=args.image, topo=args.topo, debug=args.debug,
-                                                   output=output,
-                                                   temp=temp,
-                                                   log=log)
+    g = GRM(image=args.image, topo=args.topo, basin=args.basin,
+                                              debug=args.debug,
+                                              output=output,
+                                              temp=temp,
+                                              log=log)
     g.grid_match()
     g.add_to_collection()
 
     stop = time.time()
-    g.log.info("Grid Resizing and Matching Complete. Elapsed Time {0}s"
-            "".format(int(stop-start)))
+    g.log.info("Grid Resizing and Matching Complete. Elapsed Time {0:0.1f}s"
+            "".format(stop-start))
 
 if __name__ == '__main__':
     main()
