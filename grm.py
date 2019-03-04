@@ -168,7 +168,7 @@ class GRM(object):
 
             # Exclude all variables except dimensions
             ds = nc.Dataset(self.topo, mode='r')
-            ex_var = [v for v in ds.variables if v.lower() not in ['x','y']]
+            ex_var = [v for v in ds.variables if v.lower() not in ['x','y','projection']]
             ds.close()
 
             # Copy a topo like netcdf image to add depths to
@@ -181,12 +181,12 @@ class GRM(object):
             if self.date.month <= 10:
                 yr -= 1
 
-            start_date = datetime.date(yr, 10, 1)
+            start_date = pd.to_datetime("{}-10-01".format(yr))
             self.log.debug("Using {} as start of water year for stamping netcdf"
             "".format(start_date.isoformat()))
 
             # Assign time and count days since 10-1
-            times = ds.createVariable('time', 'int', ('time'))
+            times = ds.createVariable('time', 'f', ('time'))
             setattr(ds.variables['time'], 'units', 'hours since %s' % start_date)
             setattr(ds.variables['time'], 'calendar', 'standard')
 
@@ -196,6 +196,7 @@ class GRM(object):
             ds['depth'].setncatts({"units":"meters",
                                     "long_name":"lidar snow depths",
                                     "short_name":'depth',
+                                    "grid_mapping":"projection",
                                     "description":"Measured snow depth from ASO"
                                                   " lidar."})
 
@@ -230,17 +231,23 @@ class GRM(object):
                 index = index[0]
         else:
             index = len(times)
+
         self.log.info("Input data is {} hours from the beginning of the water"
                       " year.".format(int(t)))
+
         ds.variables['time'][index] = t
 
         # Open the newly convert depth and add it to the collection
-        print(self.working_file)
         new_ds = nc.Dataset(self.working_file, mode='a')
         new_ds.variables['Band1'][:] = np.flipud(new_ds.variables['Band1'][:])
         new_ds.close()
+
+        # Mask it
         new_ds = mask_nc(self.working_file, self.topo, output=self.temp)
+
+        #Save it to output
         ds.variables['depth'][index,:] = new_ds.variables['Band1'][:]
+        ds.sync()
 
         ds.close()
         new_ds.close()
