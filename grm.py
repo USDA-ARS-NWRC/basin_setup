@@ -111,24 +111,24 @@ class GRM(object):
 
         outfile, ext = outfile.split(".")
         outfile = outfile + ".nc"
-        self.working_file = outfile
+        outfile = os.path.join(self.temp, outfile)
 
-        self.log.debug("Writing grid adjusted image to :\n{}".format(outfile))
+        self.log.debug("Writing grid adjusted image to:\n{}".format(outfile))
         cmd = ["gdalwarp",
                "-of NETCDF",
-               "-tap",
                "-overwrite",
                "-te {} {} {} {}".format(int(np.min(self.ts["x"])),
                                         int(np.min(self.ts["y"])),
                                         int(np.max(self.ts["x"])),
                                         int(np.max(self.ts["y"]))),
-               "-tr {} {}".format(int(abs(self.ts['du'])),
-                                  int(abs(self.ts['dv']))),
+               "-ts {} {}".format(self.ts['nx'], self.ts['ny']),
                self.image,
                outfile]
 
         self.log.debug("Executing: {}".format(" ".join(cmd)))
         s = check_output(" ".join(cmd), shell=True)
+
+        self.working_file = outfile
 
     def parse_fname_date(self):
         """
@@ -187,12 +187,18 @@ class GRM(object):
 
             # Assign time and count days since 10-1
             times = ds.createVariable('time', 'int', ('time'))
-            setattr(ds.variables['time'], 'units', 'days since %s' % start_date)
+            setattr(ds.variables['time'], 'units', 'hours since %s' % start_date)
             setattr(ds.variables['time'], 'calendar', 'standard')
 
-            # Add append a newm image
+            # Add append a new image
             ds.createVariable("depth", "f", ("time", "y", "x"),
                                             chunksizes=(6, 10, 10))
+            ds['depth'].setncatts({"units":"meters",
+                                    "long_name":"lidar snow depths",
+                                    "short_name":'depth',
+                                    "description":"Measured snow depth from ASO"
+                                                  " lidar."})
+
             # Adjust global attributes
             ds.setncatts({"last_modified":now,
                         "dateCreated":now,
@@ -211,8 +217,8 @@ class GRM(object):
             times = ds.variables['time']
             ds.setncatts({"last_modified":now})
 
-        tstep = pd.to_timedelta(1, unit='D')
-        t = nc.date2num(self.date, times.units, times.calendar)
+        tstep = pd.to_timedelta(1, unit='h')
+        t = nc.date2num(self.date+pd.to_timedelta(23, unit='h'), times.units, times.calendar)
 
         # Figure out the time index
         if len(times) != 0:
@@ -224,12 +230,20 @@ class GRM(object):
                 index = index[0]
         else:
             index = len(times)
-
+        self.log.info("Input data is {} hours from the beginning of the water"
+                      " year.".format(int(t)))
         ds.variables['time'][index] = t
 
-        # ds.close()
-        # ds = mask_nc(self.outfile, exclude)
+        # Open the newly convert depth and add it to the collection
+        print(self.working_file)
+        new_ds = nc.Dataset(self.working_file, mode='a')
+        new_ds.variables['Band1'][:] = np.flipud(new_ds.variables['Band1'][:])
+        new_ds.close()
+        new_ds = mask_nc(self.working_file, self.topo, output=self.temp)
+        ds.variables['depth'][index,:] = new_ds.variables['Band1'][:]
 
+        ds.close()
+        new_ds.close()
 
 
 def main():
