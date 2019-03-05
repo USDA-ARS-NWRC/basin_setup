@@ -380,9 +380,10 @@ class GRM(object):
 
         times = self.ds.variables['time']
         ncdates = nc.num2date(times[:], times.units, calendar=times.calendar)
+        ncdates = np.array([pd.to_datetime(dt).date() for dt in ncdates])
 
         # Is the incoming date already in the file?
-        error = self.date not in ncdates
+        error = self.date.date() in ncdates
         errmsg = ("This image's date is already in the preexisting netcdf.")
         dbgmsg = ("Incoming date appears to be unique to the dataset.")
         self.handle_error(dbgmsg, errmsg, error=error)
@@ -428,6 +429,7 @@ def main():
     DEBUG = args.debug
 
     start = time.time()
+    skips = 0
 
     # Make sure our output folder exists
     if args.output == None:
@@ -459,19 +461,29 @@ def main():
     log.info("Number of images being processed: {}".format(len(args.images)))
 
     for f in args.images:
+        log.info("")
         log.info("Processing {}".format(os.path.basename(f)))
-        g = GRM(image=f, topo=args.topo, basin=args.basin,
-                                                  debug=args.debug,
-                                                  output=output,
-                                                  temp=temp,
-                                                  log=log)
-        g.grid_match()
-        g.add_to_collection()
+        try:
+            g = GRM(image=f, topo=args.topo, basin=args.basin,
+                                                      debug=args.debug,
+                                                      output=output,
+                                                      temp=temp,
+                                                      log=log)
+            g.grid_match()
+            g.add_to_collection()
 
+        except:
+            log.warning("Skipping {} due to error".format(os.path.basename(f)))
+            skips +=1
 
     stop = time.time()
-    g.log.info("Grid Resizing and Matching Complete. Elapsed Time {0:0.1f}s"
-            "".format(stop-start))
+
+    # Throw a warning when all get skipped
+    if skips == len(args.images):
+        log.warning("No images were processed!")
+
+    g.log.info("Grid Resizing and Matching Complete. {1}/{2} files processed. Elapsed Time {0:0.1f}s"
+            "".format(stop-start, len(args.images) - skips, len(args.images)))
 
     if not DEBUG:
        log.info('Cleaning up temporary files.')
