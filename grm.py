@@ -18,7 +18,7 @@ import pandas as pd
 
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.7.9'
+BASIN_SETUP_VERSION = '0.8.0'
 
 def parse_gdalinfo(fname):
     """
@@ -78,7 +78,7 @@ class GRM(object):
         self.log.info("Getting Topo attributes...")
         self.ts = get_topo_stats(self.topo)
         self.log.info("Using topo cell size which is {} {}"
-                                                  "".format(self.ts['du'],
+                                                  "".format(abs(self.ts['du']),
                                                             self.ts['units']))
         # Get aso super depth info
         self.image_info = parse_gdalinfo(self.image)
@@ -106,7 +106,7 @@ class GRM(object):
         outfile = os.path.basename(self.image)
 
         self.log.info("Rescaling image raster from {} to {}"
-                    "".format(self.image_info['pixel size'][0], self.ts['du']))
+                    "".format(self.image_info['pixel size'][0], abs(self.ts['du'])))
 
 
         outfile, ext = outfile.split(".")
@@ -142,16 +142,75 @@ class GRM(object):
 
         return dt
 
+    def create_lidar_netcdf(self):
+        """
+        Creates a new lidar netcdf to contain all the flights for one water year.
+        """
+
+        self.log.info("Output NetCDF does not exist, creating a new one!")
+
+        # Exclude all variables except dimensions
+        ex_var = [v for v in self.topo_ds.variables if v.lower() not in ['x','y','projection']]
+
+        # Copy a topo like netcdf image to add depths to
+        self.ds = copy_nc(self.topo, self.outfile, exclude=ex_var)
+        self.ds.createDimension("time", None)
+
+        start_date = pd.to_datetime("{}-10-01".format(self.start_yr))
+        self.log.debug("Using {} as start of water year for stamping netcdf"
+        "".format(start_date.isoformat()))
+
+        # Assign time and count days since 10-1
+        times = self.ds.createVariable('time', 'f', ('time'))
+        setattr(self.ds.variables['time'], 'units', 'hours since %s' % start_date)
+        setattr(self.ds.variables['time'], 'calendar', 'standard')
+
+        # Add append a new image
+        self.ds.createVariable("depth", "f", ("time", "y", "x"),
+                                        chunksizes=(6, 10, 10))
+
+        self.ds['depth'].setncatts({"units":"meters",
+                                "long_name":"lidar sself.now depths",
+                                "short_name":'depth',
+                                "grid_mapping":"projection",
+                                "description":"Measured snow depth from ASO"
+                                              " lidar."})
+
+        # Adjust global attributes
+        self.ds.setncatts({"last_modified":self.now,
+                    "dateCreated":self.now,
+                    "Title":"ASO 50m Lidar Flights Over the {} for Water Year {}."
+                            "".format(self.basin, self.water_year),
+                    "history":"Created using Basin Setup v{}"
+                              "".format(BASIN_SETUP_VERSION),
+                    })
+
+        # Attribute gets copied over from the topo
+        self.ds.delncattr("generation_command")
+
     def add_to_collection(self):
         """
         Adds a new netcdf to an existing one that includes all the metadata.
         If the existing file doesn't actually exist, it will create one.
         """
+
+        # Grab a human readable timefor today
+        self.now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         if not hasattr(self, "date"):
             self.date = self.parse_fname_date()
 
         else:
             self.date = pd.to_datetime(self.date)
+
+        # Calculate the start of the water year and the water year
+        self.water_year = self.date.year
+
+        if self.date.month <= 10:
+            self.start_yr = self.water_year - 1
+        else:
+            self.water_year += 1
+
 
         self.log.info("Lidar Flight for {}".format(
                                            self.date.isoformat().split('T')[0]))
@@ -159,67 +218,72 @@ class GRM(object):
         if not hasattr(self, "epsg"):
             pass
 
-        # Grab a human readable timefor today
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Open the topo for gathering data from
+        self.topo_ds = nc.Dataset(self.topo, mode='r')
+
+
+        # Prexisting collection of lidar in netcdf found
+        if  os.path.isfile(self.outfile):
+            self.log.info("Output NetCDF exists, checking to see if everything matches.")
+
+            # Retrieve existing dataset
+            self.ds = nc.Dataset(self.outfile, mode='a')
+
+            # Check for matching basins
+            self.check_basin_match()
+
+            # Check for matching water years
+            self.check_water_year_match()
+
+            # Check to see if we are about to overwrite data
+            self.check_overwrite()
+
+            # Check the basin mask in the topo matches for the dataset
+            self.check_topo_match()
 
         # Create a netcdf
-        if not os.path.isfile(self.outfile):
-            self.log.info("Output NetCDF does not exist, creating a new one!")
-
-            # Exclude all variables except dimensions
-            ds = nc.Dataset(self.topo, mode='r')
-            ex_var = [v for v in ds.variables if v.lower() not in ['x','y','projection']]
-            ds.close()
-
-            # Copy a topo like netcdf image to add depths to
-            ds = copy_nc(self.topo, self.outfile, exclude=ex_var)
-            ds.createDimension("time", None)
-
-            # Determine 10-1 date
-            yr = self.date.year
-
-            if self.date.month <= 10:
-                yr -= 1
-
-            start_date = pd.to_datetime("{}-10-01".format(yr))
-            self.log.debug("Using {} as start of water year for stamping netcdf"
-            "".format(start_date.isoformat()))
-
-            # Assign time and count days since 10-1
-            times = ds.createVariable('time', 'f', ('time'))
-            setattr(ds.variables['time'], 'units', 'hours since %s' % start_date)
-            setattr(ds.variables['time'], 'calendar', 'standard')
-
-            # Add append a new image
-            ds.createVariable("depth", "f", ("time", "y", "x"),
-                                            chunksizes=(6, 10, 10))
-            ds['depth'].setncatts({"units":"meters",
-                                    "long_name":"lidar snow depths",
-                                    "short_name":'depth',
-                                    "grid_mapping":"projection",
-                                    "description":"Measured snow depth from ASO"
-                                                  " lidar."})
-
-            # Adjust global attributes
-            ds.setncatts({"last_modified":now,
-                        "dateCreated":now,
-                        "Title":"ASO 50m Lidar Flights over the {}."
-                                "".format(self.basin),
-                        "history":"Created using Basin Setup v{}"
-                                  "".format(BASIN_SETUP_VERSION),
-                        })
-
-            # Attribute gets copied over from the topo
-            ds.delncattr("generation_command")
-
         else:
-            self.log.info("Output NetCDF exists, appending data to it!")
-            ds = nc.Dataset(self.outfile, mode='w')
-            times = ds.variables['time']
-            ds.setncatts({"last_modified":now})
+            self.create_lidar_netcdf()
+
+        # Calculate the time index
+        index = self.get_time_index()
+
+        # Update the modified attribute
+        self.ds.setncatts({"last_modified":self.now})
+
+        # Open the newly convert depth and add it to the collection
+        self.log.info("Extracting the new netcdf data...")
+        new_ds = nc.Dataset(self.working_file, mode='a')
+        new_ds.variables['Band1'][:] = np.flipud(new_ds.variables['Band1'][:])
+        new_ds.close()
+
+        # Mask it
+        self.log.info("Masking lidar data...")
+        new_ds = mask_nc(self.working_file, self.topo, output=self.temp)
+
+        # Save it to output
+        self.log.info("Addnig masked lidar data to {}".format(self.ds.filepath()))
+
+        self.ds.variables['depth'][index,:] = new_ds.variables['Band1'][:]
+        self.ds.sync()
+
+        self.ds.close()
+        new_ds.close()
+        self.topo_ds.close()
+
+    def get_time_index(self):
+        """
+        Calculates the time based index in hours for current image to go into the
+        existing netcdf for lidar depths
+        """
+        # Get the timestep in hours. Set all images to 2300
+        self.log.debug("Calculating the time index...")
+
+        times = self.ds.variables['time']
 
         tstep = pd.to_timedelta(1, unit='h')
-        t = nc.date2num(self.date+pd.to_timedelta(23, unit='h'), times.units, times.calendar)
+        t = nc.date2num(self.date+pd.to_timedelta(23, unit='h'), times.units,
+                                                                 times.calendar)
 
         # Figure out the time index
         if len(times) != 0:
@@ -235,22 +299,83 @@ class GRM(object):
         self.log.info("Input data is {} hours from the beginning of the water"
                       " year.".format(int(t)))
 
-        ds.variables['time'][index] = t
+        self.ds.variables['time'][index] = t
 
-        # Open the newly convert depth and add it to the collection
-        new_ds = nc.Dataset(self.working_file, mode='a')
-        new_ds.variables['Band1'][:] = np.flipud(new_ds.variables['Band1'][:])
-        new_ds.close()
+        return index
 
-        # Mask it
-        new_ds = mask_nc(self.working_file, self.topo, output=self.temp)
+    def check_topo_match(self):
+        """
+        Checks to see if the topo masks long name matches the basin name of the
+        image
+        """
 
-        #Save it to output
-        ds.variables['depth'][index,:] = new_ds.variables['Band1'][:]
-        ds.sync()
+        topo_mask = self.topo_ds.variables['mask'].long_name
 
-        ds.close()
-        new_ds.close()
+        # Flexible naming convention in the topo to check for matches
+        keywords = [w.lower() for w in topo_mask.split(" ") if w.lower() not in ['river','basin']]
+        for key in keywords:
+            if key in self.basin.lower():
+                found = True
+                break
+            else:
+                found = False
+
+        if not found:
+            self.log.error("Topo's mask ({}) is not associated to the {}."
+            "".format(topo_mask, self.basin))
+            sys.exit()
+
+        else:
+            self.log.debug("Topo's mask name matches the basin name.")
+
+    def check_water_year_match(self):
+        """
+        Checks if the the current images date and the existing lidar depths
+        are in the same water year.
+        """
+        time_units = self.ds.variables['time'].units
+
+        # Calculate the WY from the time units
+        nc_wy = pd.to_datetime(time_units.split("since")[-1]).year + 1
+
+        if int(nc_wy) != self.water_year:
+            self.log.error("Attempting to add an image apart of water year {} "
+            " to an existing lidar depths netcdf for water year {}"
+            "".format(self.water_year,nc_wy))
+            sys.exit()
+
+        else:
+            self.log.debug("Preexisting netcdf water year matches the incoming"
+                           " image.")
+
+    def check_basin_match(self):
+        """
+        Checks that the basin name provided matches whats in the existing netcdf
+        """
+        if self.basin.lower() in self.ds.getncattr("Title").lower():
+            self.log.debug("Basin entered matches the basin in the preexisting"
+            " file. ")
+        else:
+            self.log.error("The preexisting lidar depths file has a title of {}."
+                           "which should contain {} to add this image."
+                           "".format( self.ds.getncattr("Title"), self.basin))
+            sys.exit()
+
+    def check_overwrite(self):
+        """
+        Checks that the netcdf doesn't already contain this date for a flight
+        """
+
+        times = self.ds.variables['time']
+        ncdates = nc.num2date(times[:], times.units, calendar=times.calendar)
+
+        # Is the incoming date already in the file?
+        if self.date in ncdates:
+            self.log.error("This image's date is already in the preexisting netcdf.")
+            sys.exit()
+
+        else:
+            self.log.debug("Incoming date appears to be unique to the dataset.")
 
 
 def main():
@@ -264,9 +389,9 @@ def main():
                     required=True,
                     help="Path to the topo.nc file used for modeling")
 
-    p.add_argument("-i", "--image", dest="image",
-                    required=True,
-                    help="Path to an image for processing")
+    p.add_argument("-i", "--images", dest="images",
+                    required=True, nargs='+',
+                    help="Path to lidar images for processing")
 
     p.add_argument("-b", "--basin", dest="basin",
                     required=True, choices=['brb', 'kaweah', 'kings', 'lakes',
@@ -278,7 +403,9 @@ def main():
                     help="Path to output folder")
 
     p.add_argument("-d", "--debug", dest="debug",
-                    required=False, action='store_true')
+                    required=False, action='store_true',
+                    help="Outputs more information and does not delete any"
+                         " working files generated during runs")
 
     p.add_argument("-dt", "--date", dest="date",
                     required=False, default=None,
@@ -305,25 +432,37 @@ def main():
         if not os.path.isdir(temp):
                 os.mkdir(temp)
 
+    if type(args.images) != list:
+        args.images = [args.images]
+
     # Get logger and add color with a simple format
     log = logging.getLogger(__name__)
     coloredlogs.install(fmt='%(levelname)-5s %(message)s', level="INFO",
                                                            logger=log)
+
+    # Print a nice header with version number
     msg = "\n\nGrid Resizing and Matching Script v{}".format(BASIN_SETUP_VERSION)
     header = "=" * (len(msg) + 1)
     log.info(msg + "\n" + header + "\n")
 
-    g = GRM(image=args.image, topo=args.topo, basin=args.basin,
-                                              debug=args.debug,
-                                              output=output,
-                                              temp=temp,
-                                              log=log)
-    g.grid_match()
-    g.add_to_collection()
+    # Loop through all images provided
+    for f in args.images:
+        log.info("Number of images being processed: {}".format(len(args.images)))
+        g = GRM(image=f, topo=args.topo, basin=args.basin,
+                                                  debug=args.debug,
+                                                  output=output,
+                                                  temp=temp,
+                                                  log=log)
+        g.grid_match()
+        g.add_to_collection()
 
     stop = time.time()
     g.log.info("Grid Resizing and Matching Complete. Elapsed Time {0:0.1f}s"
             "".format(stop-start))
+
+    if not DEBUG:
+       log.info('Cleaning up temporary files.')
+       shutil.rmtree(g.temp)
 
 if __name__ == '__main__':
     main()

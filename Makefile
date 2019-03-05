@@ -3,15 +3,18 @@ install:
 	cp basin_setup.py /usr/local/bin/basin_setup
 	cp delineate.py /usr/local/bin/delineate
 	cp pconvert.py /usr/local/bin/pconvert
+	cp grm.py /usr/local/bin/grm
 	chmod +x /usr/local/bin/basin_setup
 	chmod +x /usr/local/bin/delineate
 	chmod +x /usr/local/bin/pconvert
+	chmod +x /usr/local/bin/grm
 
 uninstall:
 	# Remove the python script from the bin
 	rm /usr/local/bin/basin_setup
 	rm /usr/local/bin/delineate
 	rm /usr/local/bin/pconvert
+	rm /usr/local/bin/grm
 
 develop:
 	# Link the python script so edits are reflected in realtime
@@ -22,7 +25,8 @@ develop:
 	ln delineate.py /usr/local/bin/delineate
 	chmod +x pconvert.py
 	ln pconvert.py /usr/local/bin/pconvert
-
+	chmod +x grm.py
+	ln grm.py /usr/local/bin/grm
 docker:
 	# Build a test docker to play with
 	docker build -t test .
