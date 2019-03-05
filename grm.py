@@ -20,6 +20,7 @@ import pandas as pd
 DEBUG=False
 BASIN_SETUP_VERSION = '0.8.0'
 
+
 def parse_gdalinfo(fname):
     """
     Executes gdalinfo from the commandline on fname. Returns a dictionary of
@@ -83,9 +84,6 @@ class GRM(object):
         # Get aso super depth info
         self.image_info = parse_gdalinfo(self.image)
 
-        # output netcdf
-        self.outfile = os.path.join(self.output, "lidar_depths.nc")
-
         # Titling
         renames = {"brb":"boise river basin",
                    "lakes":"mammoth lakes basin"}
@@ -97,6 +95,17 @@ class GRM(object):
         self.basin = self.basin.title()
 
         self.log.info("Working on the {}".format(self.basin))
+
+    def handle_error(self, dbgmsg, errmsg, error=False):
+        """
+        Manages the error produced by our checks.
+        """
+        if error:
+            self.log.error(errmsg)
+            raise ValueError(errmsg)
+        else:
+            self.log.debug(dbgmsg)
+
 
     def grid_match(self):
         """
@@ -135,6 +144,8 @@ class GRM(object):
         Attempts to parse the date from the filename
         """
         bname = os.path.basename(self.image)
+        if "_" in bname:
+            bname = bname.split("_")[0]
 
         # Only grab the numbers in the basename
         str_dt = "".join([c for c in bname if c.isnumeric()])
@@ -211,7 +222,9 @@ class GRM(object):
         else:
             self.water_year += 1
 
-
+        # output netcdf
+        self.outfile = os.path.join(self.output, "lidar_depths_wy{}.nc"
+                                                 "".format(self.water_year))
         self.log.info("Lidar Flight for {}".format(
                                            self.date.isoformat().split('T')[0]))
 
@@ -309,10 +322,11 @@ class GRM(object):
         image
         """
 
-        topo_mask = self.topo_ds.variables['mask'].long_name
+        topo_mask = self.topo_ds.variables['mask'].long_name.lower()
 
         # Flexible naming convention in the topo to check for matches
-        keywords = [w.lower() for w in topo_mask.split(" ") if w.lower() not in ['river','basin']]
+        keywords = [w for w in topo_mask.split(" ") if w not in ['river','basin']]
+
         for key in keywords:
             if key in self.basin.lower():
                 found = True
@@ -320,13 +334,11 @@ class GRM(object):
             else:
                 found = False
 
-        if not found:
-            self.log.error("Topo's mask ({}) is not associated to the {}."
-            "".format(topo_mask, self.basin))
-            sys.exit()
+        self.handle_error("Topo's mask name matches the basin name.",
+                         ("Topo's mask ({}) is not associated to the {}."
+                                               "".format(topo_mask, self.basin)),
+                          error= not found)
 
-        else:
-            self.log.debug("Topo's mask name matches the basin name.")
 
     def check_water_year_match(self):
         """
@@ -338,28 +350,28 @@ class GRM(object):
         # Calculate the WY from the time units
         nc_wy = pd.to_datetime(time_units.split("since")[-1]).year + 1
 
-        if int(nc_wy) != self.water_year:
-            self.log.error("Attempting to add an image apart of water year {} "
-            " to an existing lidar depths netcdf for water year {}"
-            "".format(self.water_year,nc_wy))
-            sys.exit()
+        error = int(nc_wy) != self.water_year
 
-        else:
-            self.log.debug("Preexisting netcdf water year matches the incoming"
-                           " image.")
+        dbgmsg = "Input image water year does not match prexisting netcdf's"
+        errmsg = ("Attempting to add an image apart of water year {} "
+                 " to an existing lidar depths netcdf for water year {}"
+                 "".format(self.water_year, nc_wy))
+
+        self.handle_error(dbgmsg, errmsg, error=error)
 
     def check_basin_match(self):
         """
         Checks that the basin name provided matches whats in the existing netcdf
         """
-        if self.basin.lower() in self.ds.getncattr("Title").lower():
-            self.log.debug("Basin entered matches the basin in the preexisting"
-            " file. ")
-        else:
-            self.log.error("The preexisting lidar depths file has a title of {}."
-                           "which should contain {} to add this image."
-                           "".format( self.ds.getncattr("Title"), self.basin))
-            sys.exit()
+        error =  not self.basin.lower() in self.ds.getncattr("Title").lower()
+
+        dbgmsg = "Basin entered matches the basin in the preexisting file."
+        errmsg = ("The preexisting lidar depths file has a title of {} which"
+             " should contain {} to add this image."
+             "".format( self.ds.getncattr("Title"), self.basin))
+
+        self.handle_error(dbgmsg, errmsg, error=error)
+
 
     def check_overwrite(self):
         """
@@ -370,12 +382,10 @@ class GRM(object):
         ncdates = nc.num2date(times[:], times.units, calendar=times.calendar)
 
         # Is the incoming date already in the file?
-        if self.date in ncdates:
-            self.log.error("This image's date is already in the preexisting netcdf.")
-            sys.exit()
-
-        else:
-            self.log.debug("Incoming date appears to be unique to the dataset.")
+        error = self.date not in ncdates
+        errmsg = ("This image's date is already in the preexisting netcdf.")
+        dbgmsg = ("Incoming date appears to be unique to the dataset.")
+        self.handle_error(dbgmsg, errmsg, error=error)
 
 
 def main():
@@ -446,8 +456,10 @@ def main():
     log.info(msg + "\n" + header + "\n")
 
     # Loop through all images provided
+    log.info("Number of images being processed: {}".format(len(args.images)))
+
     for f in args.images:
-        log.info("Number of images being processed: {}".format(len(args.images)))
+        log.info("Processing {}".format(os.path.basename(f)))
         g = GRM(image=f, topo=args.topo, basin=args.basin,
                                                   debug=args.debug,
                                                   output=output,
@@ -455,6 +467,7 @@ def main():
                                                   log=log)
         g.grid_match()
         g.add_to_collection()
+
 
     stop = time.time()
     g.log.info("Grid Resizing and Matching Complete. Elapsed Time {0:0.1f}s"
