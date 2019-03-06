@@ -26,7 +26,7 @@ from spatialnc.utilities import strip_chars
 init()
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.8.0'
+BASIN_SETUP_VERSION = '0.8.1'
 
 class Messages():
     def __init__(self):
@@ -276,13 +276,18 @@ def parse_extent(fname):
     return extent
 
 
-def download_zipped_url(url):
+def download_zipped_url(url, downloads):
     """
     Downloads a url that is expected to be a zipped folder.
     """
     r = requests.get(url, stream=True)
+    if r.status_code == 404:
+        out.error("It appears the downloadable image no longer exists, please submit an issue at https://github.com/USDA-ARS-NWRC/basin_setup/issues."
+                  "\nStatus 404 found on request from:\n{}".format(url))
+        sys.exit()
+
     z = zipfile.ZipFile(io.BytesIO(r.content))
-    z.extractall('~/Downloads')
+    z.extractall(downloads)
 
 
 def convert_shapefile(fname, out_f):
@@ -411,20 +416,20 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
 
         # Populate images for downloaded sources
         images['vegetation type']['source'] = \
-        'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_04252017.zip&TYPE=landfire'
+        'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_20180618.zip&TYPE=landfire'
 
         images['vegetation height']['source'] = \
-        'https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_12052016.zip&TYPE=landfire'
+        'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_20180618.zip&TYPE=landfire'
 
         images['vegetation type']['path'] = \
                                         os.path.join(required_dirs['downloads'],
-                                                    'US_140EVT_04252017',
+                                                    'US_140EVT_20180618',
                                                     'Grid','us_140evt',
                                                     'hdr.adf')
 
         images['vegetation height']['path'] = \
                                         os.path.join(required_dirs['downloads'],
-                                                     'US_140EVH_12052016',
+                                                     'US_140EVH_20180618',
                                                      'Grid',
                                                      'us_140evh',
                                                      'hdr.adf')
@@ -479,8 +484,8 @@ def setup_point(images, point, cell_size, temp, pad, epsg_code):
     cell_size = int(cell_size)
     padding = cell_size*int(pad[0])
     points = []
-    half_width = cell_size/2
     x0 = point[0] - half_width - padding
+    half_width = cell_size/2
     y0 = point[1] - half_width - padding
     x1 = point[0] + half_width + padding
     y1 = point[1] + half_width + padding
@@ -607,7 +612,7 @@ def check_and_download(images,required_dirs):
                 # Zip file does not exist
                 out.warn("No data found!\nDownloading %s ..." % image_name)
                 out.warn("This could take up to 20mins, so sit back and relax.")
-                download_zipped_url(info['source'])
+                download_zipped_url(info['source'], required_dirs['downloads'])
 
             # Downloaded but not unzipped
             else:
