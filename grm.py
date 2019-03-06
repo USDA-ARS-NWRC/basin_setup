@@ -20,6 +20,7 @@ import pandas as pd
 DEBUG=False
 BASIN_SETUP_VERSION = '0.8.0'
 
+
 def parse_fname_date(fname):
     """
     Attempts to parse the date from the filename
@@ -33,6 +34,7 @@ def parse_fname_date(fname):
     dt = pd.to_datetime(str_dt)
 
     return dt
+
 
 def parse_gdalinfo(fname):
     """
@@ -79,6 +81,7 @@ class GRM(object):
 
         # Manage Logging
         level="INFO"
+
         if hasattr(self, 'debug'):
             if self.debug:
                 level='DEBUG'
@@ -88,7 +91,6 @@ class GRM(object):
         # Assign some colors and formats
         coloredlogs.install(fmt='%(levelname)-5s %(message)s', level=level,
                                                                logger=self.log)
-
         self.log.info("Getting Topo attributes...")
         self.ts = get_topo_stats(self.topo)
         self.log.info("Using topo cell size which is {} {}"
@@ -120,7 +122,6 @@ class GRM(object):
         else:
             self.log.debug(dbgmsg)
 
-
     def grid_match(self):
         """
         Interpolates the newly scaled grid to the current grid
@@ -133,12 +134,15 @@ class GRM(object):
                               abs(int(self.ts['du']))))
 
 
+
         outfile, ext = outfile.split(".")
         outfile = outfile + ".nc"
+
         outfile = os.path.join(self.temp, outfile)
 
         self.log.debug("Writing grid adjusted image to:\n{}".format(outfile))
         cmd = ["gdalwarp",
+               "-r bilinear",
                "-of NETCDF",
                "-overwrite",
                "-te {} {} {} {}".format(int(np.min(self.ts["x"])),
@@ -153,20 +157,6 @@ class GRM(object):
         s = check_output(" ".join(cmd), shell=True)
 
         self.working_file = outfile
-
-    def parse_fname_date(self):
-        """
-        Attempts to parse the date from the filename
-        """
-        bname = os.path.basename(self.image)
-        if "_" in bname:
-            bname = bname.split("_")[0]
-
-        # Only grab the numbers in the basename
-        str_dt = "".join([c for c in bname if c.isnumeric()])
-        dt = pd.to_datetime(str_dt)
-
-        return dt
 
     def create_lidar_netcdf(self):
         """
@@ -446,6 +436,12 @@ def main():
                     required=False, default=None,
                     help="Enables user to directly control the date.")
 
+    p.add_argument("-e", "--allow_exceptions", dest="allow_exceptions",
+                    required=False, action="store_true",
+                    help="For Development purposes, allows it to be debugging"
+                    " but also enables the errors to NOT catch, which is useful"
+                    " for batch processing.")
+
     args = p.parse_args()
 
     # Global debug variable
@@ -471,11 +467,11 @@ def main():
     if type(args.images) != list:
         args.images = [args.images]
 
+
     # Get logger and add color with a simple format
     log = logging.getLogger(__name__)
     coloredlogs.install(fmt='%(levelname)-5s %(message)s', level="INFO",
                                                            logger=log)
-
     # Print a nice header with version number
     msg = "\n\nGrid Resizing and Matching Script v{}".format(BASIN_SETUP_VERSION)
     header = "=" * (len(msg) + 1)
@@ -495,7 +491,7 @@ def main():
         log.info("")
         log.info("Processing {}".format(os.path.basename(f)))
 
-        if not DEBUG:
+        if not DEBUG or args.allow_exceptions:
             try:
                 g = GRM(image=f, topo=args.topo, basin=args.basin,
                                                           debug=args.debug,
