@@ -4,15 +4,7 @@
 
 The basin setup tool is a python script designed to create the required
 inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and
-[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) simulations. The tool
-outputs a single netcdf file containing:
-
-  - Basin mask
-  - Basin DEM
-  - Basin Vegetation type (From Landfire)
-  - Basin Vegetation Height (From Landfire)
-  - Basin Vegetation Tau
-  - Basin Vegetation K
+[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations.
 
 ## INSTALL
 
@@ -31,13 +23,13 @@ provided at:
 
 Once GDAL is installed, install the python requirements using pip:
 
-```
+``` bash
 $ pip install -r requirements.txt
 ```
 
 Finally to install basin\_setup for commandline use use:
 
-```
+``` bash
 $ sudo make install
 ```
 
@@ -45,11 +37,31 @@ If you want to develop on basin\_setup use the following command to
 install the utility so that you changes to the source will be used
 without having to reinstall
 
-```
+``` bash
 $ sudo make develop
 ```
 
-## GENERAL USAGE
+## Commands
+There are 3 commands that are installed after installing using the make file.
+
+1. [basin_setup](## basin\_setup) - creates all the images for running SMRF/AWSM
+2. [delineate](## delineate) - Automatically delineates a new basin.
+3. [grm](## grm) - Aggregates Lidar snow depths into a single netcdf
+
+----
+## basin\_setup
+----
+The basin_setup
+outputs a single netcdf file containing:
+
+ - Basin mask
+ - Basin DEM
+ - Basin Vegetation type (From Landfire)
+ - Basin Vegetation Height (From Landfire)
+ - Basin Vegetation Tau
+ - Basin Vegetation K
+ -
+#### General Usage
 
 To use basin\_setup you only need a shapefile of your basins boundary
 and a dem that contains the the extents of the shapefile. **It is
@@ -61,7 +73,7 @@ dem:
 
 **Easiest Use**
 
-```
+``` bash
 $  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif
 ```
 
@@ -69,7 +81,7 @@ $  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_
 which is specified in meters, if it is not used the default is
 50m:
 
-```
+``` bash
 $  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif --cell_size 10
 ```
 
@@ -88,10 +100,10 @@ the y axis data and the images over the x-axis resulting images
 correctly oriented in ncview and
 imshow.
 
-```
+``` bash
 $  basin_setup -f rme_basin_outline.shp -dm ~/Downloads/ASTGTM2_N43W117/ASTGTM2_N43W117_dem.tif --noflip
 ```
-# Point Models
+#### Setting Up Point Models
 
 It is possible to create what our group considers a point model. The
 goal here is to create all the files necessary to run in SMRF/AWSM
@@ -103,7 +115,7 @@ East's snow pillow site.
 
 **Easiest Use**
 
-```
+``` bash
 $  basin_setup -p 519976,4768323 -dm ASTGTM2_N43W117_dem.tif --epsg 2153
 ```
 
@@ -115,10 +127,9 @@ your EPSG is use this link to find it.
 With a point model there is sometimes the desire to use a uniform value
 for variables. This is done by using the uniform flag.
 
-**Uniform
-Data**
+**Uniform Data**
 
-```
+``` bash
 $  basin_setup -p 519976,4768323 -dm ASTGTM2_N43W117_dem.tif --epsg 2153 --uniform
 ```
 
@@ -128,11 +139,11 @@ choose a different elevation than what an image can provide. E.g.
 
 **Custom DEM**
 
-```
+``` bash
 $  basin_setup -p 519976,4768323 -dm 1000 --epsg 2153 --uniform
 ```
 
-# Using it in Docker
+#### Using it in Docker
 
 Building GDAL can sometimes be a headache if you are unfamiliar with
 normal build practices. If you would like to just use the tool with no
@@ -145,7 +156,7 @@ you generate persist.
 The commands are used the same but with
 extra:
 
-```
+``` bash
 $ docker run -it --rm -v $(pwd):/data -v <DOWNLOADS>/:/data/downloads usdaarsnwrc/basin_setup:develop -f SHAPEFILE -dm DME_IMG -d /data/downloads
 ```
 
@@ -156,3 +167,37 @@ The command above is:
   - Mounting the current working directory to the
     ```/data/downloads``` folder inside docker
   - Running basin_setup with the dowloads pointing to the docker side.
+
+----
+## delineate
+----
+
+The delineation script automatically delineates a basin using pour points and
+a dem. The tool is based on [TaudDEM](http://hydrology.usu.edu/taudem/taudem5/index.html).
+
+The script will produce shapefiles of all the subbasins using a threshold.
+It also saves data to allow for re-running faster.
+
+#### Features
+
+* Auto delineation.
+* Multiruns with multiple thresholds.
+* Rerun functionality to reduce computation time.
+* Outputs Shapefiles for basins and subbasins
+* Runs in parallel
+
+#### General Usage
+
+* pour points must be in a BNA format. The name of the points in the BNA file
+  will be used as the name for the output files.
+* DEM must be a .tif
+*
+
+``` bash
+$ delineate -p pour_points.bna -d dem.tif --rerun -t 2000000 -n 2 --debug
+```
+
+Using the debug flag will leave lots of extra files that were generated on the
+way in a folder named delineation
+
+To get files necessary for s

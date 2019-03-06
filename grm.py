@@ -20,6 +20,19 @@ import pandas as pd
 DEBUG=False
 BASIN_SETUP_VERSION = '0.8.0'
 
+def parse_fname_date(fname):
+    """
+    Attempts to parse the date from the filename
+    """
+    bname = os.path.basename(fname)
+    if "_" in bname:
+        bname = bname.split("_")[0]
+
+    # Only grab the numbers in the basename
+    str_dt = "".join([c for c in bname if c.isnumeric()])
+    dt = pd.to_datetime(str_dt)
+
+    return dt
 
 def parse_gdalinfo(fname):
     """
@@ -79,8 +92,9 @@ class GRM(object):
         self.log.info("Getting Topo attributes...")
         self.ts = get_topo_stats(self.topo)
         self.log.info("Using topo cell size which is {} {}"
-                                                  "".format(abs(self.ts['du']),
-                                                            self.ts['units']))
+                                                  "".format(
+                                                        abs(int(self.ts['du'])),
+                                                        self.ts['units']))
         # Get aso super depth info
         self.image_info = parse_gdalinfo(self.image)
 
@@ -115,7 +129,8 @@ class GRM(object):
         outfile = os.path.basename(self.image)
 
         self.log.info("Rescaling image raster from {} to {}"
-                    "".format(self.image_info['pixel size'][0], abs(self.ts['du'])))
+                    "".format(int(self.image_info['pixel size'][0]),
+                              abs(int(self.ts['du']))))
 
 
         outfile, ext = outfile.split(".")
@@ -178,7 +193,7 @@ class GRM(object):
 
         # Add append a new image
         self.ds.createVariable("depth", "f", ("time", "y", "x"),
-                                        chunksizes=(6, 10, 10))
+                                        chunksizes=(6, 10, 10), fill_value=np.nan)
 
         self.ds['depth'].setncatts({"units":"meters",
                                 "long_name":"lidar sself.now depths",
@@ -209,7 +224,7 @@ class GRM(object):
         self.now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if not hasattr(self, "date"):
-            self.date = self.parse_fname_date()
+            self.date = parse_fname_date(self.image)
 
         else:
             self.date = pd.to_datetime(self.date)
@@ -267,12 +282,21 @@ class GRM(object):
         # Open the newly convert depth and add it to the collection
         self.log.info("Extracting the new netcdf data...")
         new_ds = nc.Dataset(self.working_file, mode='a')
+
+        # Fill values to np.nan
+        idx = new_ds.variables['Band1'][:] == \
+                                            new_ds.variables['Band1']._FillValue
+        new_ds.variables['Band1'][:][idx] = np.nan
+
         new_ds.variables['Band1'][:] = np.flipud(new_ds.variables['Band1'][:])
+
         new_ds.close()
 
         # Mask it
         self.log.info("Masking lidar data...")
         new_ds = mask_nc(self.working_file, self.topo, output=self.temp)
+
+        depths = new_ds.variables['Band1'][:]
 
         # Save it to output
         self.log.info("Addnig masked lidar data to {}".format(self.ds.filepath()))
@@ -352,7 +376,7 @@ class GRM(object):
 
         error = int(nc_wy) != self.water_year
 
-        dbgmsg = "Input image water year does not match prexisting netcdf's"
+        dbgmsg = "Input image water year matches prexisting netcdf's"
         errmsg = ("Attempting to add an image apart of water year {} "
                  " to an existing lidar depths netcdf for water year {}"
                  "".format(self.water_year, nc_wy))
@@ -457,13 +481,36 @@ def main():
     header = "=" * (len(msg) + 1)
     log.info(msg + "\n" + header + "\n")
 
+    # We need to sort the images by date so create a dictionary of the two here
+    log.info("Calculating dates and sorting images for processing...")
+    dates = [parse_fname_date(f) for f in args.images]
+    image_dict = {k:v for (k,v) in zip(dates, args.images)}
+
     # Loop through all images provided
     log.info("Number of images being processed: {}".format(len(args.images)))
 
-    for f in args.images:
+    for k in sorted(image_dict.keys()):
+        f = image_dict[k]
+
         log.info("")
         log.info("Processing {}".format(os.path.basename(f)))
-        try:
+
+        if not DEBUG:
+            try:
+                g = GRM(image=f, topo=args.topo, basin=args.basin,
+                                                          debug=args.debug,
+                                                          output=output,
+                                                          temp=temp,
+                                                          log=log)
+                g.grid_match()
+                g.add_to_collection()
+
+            except:
+                log.warning("Skipping {} due to error".format(
+                                                           os.path.basename(f)))
+                skips +=1
+
+        else:
             g = GRM(image=f, topo=args.topo, basin=args.basin,
                                                       debug=args.debug,
                                                       output=output,
@@ -471,18 +518,14 @@ def main():
                                                       log=log)
             g.grid_match()
             g.add_to_collection()
-
-        except:
-            log.warning("Skipping {} due to error".format(os.path.basename(f)))
-            skips +=1
-
     stop = time.time()
 
     # Throw a warning when all get skipped
     if skips == len(args.images):
         log.warning("No images were processed!")
 
-    g.log.info("Grid Resizing and Matching Complete. {1}/{2} files processed. Elapsed Time {0:0.1f}s"
+    g.log.info("Grid Resizing and Matching Complete. {1}/{2} files processed."
+               " Elapsed Time {0:0.1f}s"
             "".format(stop-start, len(args.images) - skips, len(args.images)))
 
     if not DEBUG:
