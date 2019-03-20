@@ -289,7 +289,7 @@ class GRM(object):
         depths = new_ds.variables['Band1'][:]
 
         # Save it to output
-        self.log.info("Addnig masked lidar data to {}".format(self.ds.filepath()))
+        self.log.info("Adding masked lidar data to {}".format(self.ds.filepath()))
 
         self.ds.variables['depth'][index,:] = new_ds.variables['Band1'][:]
         self.ds.sync()
