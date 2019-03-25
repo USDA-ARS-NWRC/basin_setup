@@ -145,6 +145,7 @@ class GRM(object):
                "-r bilinear",
                "-of NETCDF",
                "-overwrite",
+               "-dstnodata nan",
                "-te {} {} {} {}".format(int(np.min(self.ts["x"])),
                                         int(np.min(self.ts["y"])),
                                         int(np.max(self.ts["x"])),
