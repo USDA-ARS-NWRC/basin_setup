@@ -10,6 +10,7 @@ import time
 import geopandas as gpd
 import datetime
 import shutil
+import pandas as pd
 
 DEBUG=False
 BASIN_SETUP_VERSION = '0.9.0'
@@ -389,6 +390,7 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None, streamf
         watershed_tif: Path to a geotiff of the watersheds
         corrected_points: Path to the corrected points used for delineation
         output_dir: Output location used for producing shapefiles
+
     """
     # Check files
     check_path(watershed_tif)
@@ -425,6 +427,8 @@ def produce_shapefiles(watershed_tif, corrected_points, output_dir=None, streamf
     wdf['all'] = same
     basin_outline = wdf.dissolve(by='all')
     basin_outline.to_file(os.path.join(output_dir,'basin_outline.shp'))
+
+    return watershed_shp
 
 def create_readme(sysargs, output_dir):
     """
@@ -533,33 +537,88 @@ def confirm_norerun(non_thresholdkeys, imgs):
         out.dbg("No pre-existing files, moving forward...")
     return move_forward
 
+def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, output='basin_catchments.csv'):
+    """
+    Takes in the Tree file and the Coordinates file to produce a csv of the
+    downstream catchment, the elevation of a catchment, and contributing area
+    """
+    today = (datetime.datetime.today().date()).isoformat()
 
-def output_streamflow(imgs, output_dir='streamflow'):
+    header = ("##############################################################\n"
+              " Basin Catchment File for USDA-ARS-NWRC Streamflow modeling. \n"
+              " Delineatation Threshold: {}\n"
+              " Date Created: {}\n"
+              " Created using basin_setup v{}\n"
+              "##############################################################\n"
+              "\n".format(threshold, today,
+                                                       BASIN_SETUP_VERSION)
+              )
+
+    with open(output, 'w+') as fp:
+        fp.write(header)
+        fp.close()
+
+    dftree = pd.read_csv(treefile, delimiter='\t', names=['link','start number','end number','downstream','upstream','strahler', 'monitor point','network magnitude'])
+    dfcoord = pd.read_csv(coordfile, delimiter='\t', names=['dummy','x','y','distance','elevation','area'])
+    dfwshp = gpd.read_file(wshp)
+
+    # Get the network shpapefile which lives under a folder named after the tif.
+    name = os.path.split(netdir)[-1].split('.')[0] + '.shp'
+    netshp = os.path.join(netdir, name)
+    dfnet = gpd.read_file(netshp)
+    print(dfnet)
+    dfnet = dfnet.set_index('WSNO')
+    # Collect the area of each basin
+    dfwshp['area'] = dfwshp.area
+    dfwshp = dfwshp.groupby('DN').sum() # handle individual cells acting as subbasins
+
+    # Collect down stream info.
+    dfwshp['downstream'] = dfnet['DSLINKNO']
+    print(dfwshp)
+    dfwshp.to_csv(output, mode='a')
+
+def output_streamflow(imgs, threshold, wshp, output_dir='streamflow'):
     """
     Outputs files necessary for streamflow modeling.
 
     Args:
         imgs: Dictionary containing a files to be outputted.
+        threshold: threshold used for creating subbasins
+        wshp: Watershed shapefile
         output_dir: Location to output files
     """
+    # Dictionary to grab filenames for ARS streamflow
+    dat = {}
     out.msg("Creating streamflow files...")
     if not os.path.isdir(output_dir):
         out.dbg("Making streamflow directory")
         os.mkdir(output_dir)
 
-    # Convert the watersheds to ascii and move files to streamflow folder
+    # Convert the watersheds to ascii and move files to streamflow folder for SLF streamflow
     for k in ['corrected_points','watersheds','coord','tree']:
 
         name = os.path.basename(imgs[k])
-        outfile = os.path.join(output_dir, name)
+        print(name)
+        outfile = os.path.join(output_dir, k + "." + name.split('.')[-1])
+
+        # Handle grabbing data for outputing ARS streamflow
+        if k in ['tree','coord']:
+            dat[k] = outfile
 
         if k =='watersheds':
-            outfile = os.path.join(output_dir, name.split('.')[-2] + '.asc')
+            outfile = os.path.join(output_dir, k + '.asc')
             convert2ascii(imgs[k], outfile)
 
-        else:
-            shutil.move(imgs[k], outfile)
+        shutil.move(imgs[k], outfile)
 
+    # Create the files for ARS Streamflow
+    create_ars_streamflow_files(dat['tree'],
+                                dat['coord'],
+                                threshold,
+                                wshp,
+                                imgs['net'],
+                                output=os.path.join(output_dir,
+                                                    'basin_catchments.csv'))
 
 def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
                                                                 rerun=False,
@@ -628,7 +687,8 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
             # 2. D8 Flow Directions in order to compute the flow direction in each
             #    DEM cell
             calcD8Flow(imgs['filled'], d8dir_file=imgs['flow_dir'],
-                                       d8slope_file=imgs['slope'], nthreads=nthreads)
+                                       d8slope_file=imgs['slope'],
+                                       nthreads=nthreads)
 
             # 3. D8 Contributing Area so as to compute the drainage area in each
             #    DEM cell
@@ -676,11 +736,11 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
                        wfile=imgs['watersheds'], nthreads=nthreads)
 
     # Output the shapefiles of the watershed
-    produce_shapefiles(imgs['watersheds'], imgs['corrected_points'],
+    wshp = produce_shapefiles(imgs['watersheds'], imgs['corrected_points'],
                                          output_dir=output)
     if out_streams:
-        output_streamflow(imgs, output_dir=os.path.join(output,'streamflow'))
-
+        output_streamflow(imgs, threshold, wshp,
+                                output_dir=os.path.join(output,'streamflow'))
 
 def main():
 
