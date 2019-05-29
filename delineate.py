@@ -566,8 +566,9 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, ou
     name = os.path.split(netdir)[-1].split('.')[0] + '.shp'
     netshp = os.path.join(netdir, name)
     dfnet = gpd.read_file(netshp)
-    print(dfnet)
+
     dfnet = dfnet.set_index('WSNO')
+
     # Collect the area of each basin
     dfwshp['area'] = dfwshp.area
     dfwshp = dfwshp.groupby('DN').sum() # handle individual cells acting as subbasins
