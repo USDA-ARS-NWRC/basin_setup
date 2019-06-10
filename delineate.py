@@ -562,6 +562,7 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, ou
     dfcoord = pd.read_csv(coordfile, delimiter='\t', names=['dummy','x','y','distance','elevation','area'])
     dfwshp = gpd.read_file(wshp)
 
+    #check_output('ogr2ogr -simplify 2 -f ESRI Shapefile {} {}'.format(wshp, wshp))
     # Get the network shpapefile which lives under a folder named after the tif.
     name = os.path.split(netdir)[-1].split('.')[0] + '.shp'
     netshp = os.path.join(netdir, name)
@@ -575,7 +576,7 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, ou
 
     # Collect down stream info.
     dfwshp['downstream'] = dfnet['DSLINKNO']
-    print(dfwshp)
+
     dfwshp.to_csv(output, mode='a')
 
 def output_streamflow(imgs, threshold, wshp, output_dir='streamflow'):
