@@ -558,11 +558,17 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, ou
         fp.write(header)
         fp.close()
 
-    dftree = pd.read_csv(treefile, delimiter='\t', names=['link','start number','end number','downstream','upstream','strahler', 'monitor point','network magnitude'])
-    dfcoord = pd.read_csv(coordfile, delimiter='\t', names=['dummy','x','y','distance','elevation','area'])
+    tree_names = ['link','start number','end number','downstream',
+                                                     'upstream',
+                                                     'strahler',
+                                                     'monitor point',
+                                                     'network magnitude']
+    coord_names = ['dummy','x','y','distance','elevation','area']
+
+    dftree = pd.read_csv(treefile, delimiter='\t', names=tree_names)
+    dfcoord = pd.read_csv(coordfile, delimiter='\t', names=coord_names)
     dfwshp = gpd.read_file(wshp)
 
-    #check_output('ogr2ogr -simplify 2 -f ESRI Shapefile {} {}'.format(wshp, wshp))
     # Get the network shpapefile which lives under a folder named after the tif.
     name = os.path.split(netdir)[-1].split('.')[0] + '.shp'
     netshp = os.path.join(netdir, name)
@@ -795,15 +801,17 @@ def main():
     # Make sure our output folder exists
     if args.output == None:
         output = './delineation'
-        temp = os.path.join(output, 'temp')
-        if not os.path.isdir(output):
-            os.mkdir(output)
-        else:
-            cleanup(output, at_start=True)
+    else:
+        output = args.output
 
-        if not os.path.isdir(temp):
-                os.mkdir(temp)
+    temp = os.path.join(output, 'temp')
+    if not os.path.isdir(output):
+        os.mkdir(output)
+    else:
+        cleanup(output, at_start=True)
 
+    if not os.path.isdir(temp):
+            os.mkdir(temp)
 
 
     # Cycle through all the thresholds provided
