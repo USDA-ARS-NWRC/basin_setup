@@ -606,7 +606,7 @@ def output_streamflow(imgs, threshold, wshp, output_dir='streamflow'):
     for k in ['corrected_points','watersheds','coord','tree']:
 
         name = os.path.basename(imgs[k])
-        print(name)
+
         outfile = os.path.join(output_dir, k + "." + name.split('.')[-1])
 
         # Handle grabbing data for outputing ARS streamflow
@@ -770,7 +770,7 @@ def main():
                          " the flow accumulation, default=100")
     p.add_argument("-n","--nthreads", dest="nthreads",
                     required=False,
-                    help="cores to use when processing the data")
+                    help="Cores to use when processing the data")
     p.add_argument("-re","--rerun", dest="rerun",
                     required=False, action='store_true',
                     help="Boolean Flag that determines whether to run the "
