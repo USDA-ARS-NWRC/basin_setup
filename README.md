@@ -1,4 +1,4 @@
-# BASIN SETUP TOOL v0.9.0
+# BASIN SETUP TOOL v0.8.2
 
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
 
@@ -44,9 +44,9 @@ $ sudo make develop
 ## Commands
 There are 3 commands that are installed after installing using the make file.
 
-1. [basin_setup](## basin\_setup) - creates all the images for running SMRF/AWSM
-2. [delineate](## delineate) - Automatically delineates a new basin.
-3. [grm](## grm) - Aggregates Lidar snow depths into a single netcdf
+1. [basin_setup](#basin\_setup) - creates all the images for running SMRF/AWSM
+2. [delineate](#delineate) - Automatically delineates a new basin.
+3. [grm](#grm) - Aggregates Lidar snow depths into a single netcdf
 
 ----
 ## basin\_setup
@@ -200,18 +200,4 @@ $ delineate -p pour_points.bna -d dem.tif --rerun -t 2000000 -n 2 --debug
 Using the debug flag will leave lots of extra files that were generated on the
 way in a folder named delineation
 
-To get files necessary for streamflow add the --streamflow flag which will
-produce a folder called streamflow containing files for modeling streamflow.
-
------
-## GRM
------
-The Grid Resizing and Matching Script is used to resample the lidar images from
-ASO and create a netcdf that is useable for the modeling system. The script can
-take any number images at once and will create a netCDF for each water year.
-
-To use it simply pass a topo.nc and the desired images to aggregate.
-
-``` bash
-$ grm -t topo.nc -i USCASJ20190325_SUPERsnow_depth.tif -b sanjoaquin -r near --debug
-```
+To get files necessary for s
