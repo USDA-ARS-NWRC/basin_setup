@@ -13,7 +13,7 @@ import shutil
 import pandas as pd
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.9.0'
+BASIN_SETUP_VERSION = '0.10.0'
 
 
 class Messages():
