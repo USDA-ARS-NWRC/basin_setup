@@ -18,7 +18,7 @@ import pandas as pd
 
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.8.2'
+BASIN_SETUP_VERSION = '0.9.0'
 
 
 def parse_fname_date(fname):
