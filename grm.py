@@ -142,7 +142,7 @@ class GRM(object):
 
         self.log.debug("Writing grid adjusted image to:\n{}".format(outfile))
         cmd = ["gdalwarp",
-               "-r bilinear",
+               "-r {}".format(self.resample),
                "-of NETCDF",
                "-overwrite",
                "-srcnodata -9999",
@@ -443,6 +443,13 @@ def main():
                     help="For Development purposes, allows it to be debugging"
                     " but also enables the errors to NOT catch, which is useful"
                     " for batch processing.")
+    p.add_argument("-r", "--resample", dest="resample",
+                    choices= ['near', 'bilinear', 'cubic', 'cubicspline',
+                              'lanczos', 'average', 'mode',  'max', 'min',
+                              'med', 'Q1', 'Q3'],
+                    required=False, default="bilinear",
+                    help="Pass through the resample technique to use in"
+                         " gdalwarp .")
 
     args = p.parse_args()
 
@@ -499,13 +506,15 @@ def main():
                                                           debug=args.debug,
                                                           output=output,
                                                           temp=temp,
+                                                          resample=args.resample,
                                                           log=log)
                 g.grid_match()
                 g.add_to_collection()
 
-            except:
+            except Exception as e:
                 log.warning("Skipping {} due to error".format(
                                                            os.path.basename(f)))
+                log.error(e)
                 skips +=1
 
         else:
@@ -513,6 +522,7 @@ def main():
                                                       debug=args.debug,
                                                       output=output,
                                                       temp=temp,
+                                                      resample=args.resample,
                                                       log=log)
             g.grid_match()
             g.add_to_collection()

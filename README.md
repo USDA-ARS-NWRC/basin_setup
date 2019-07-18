@@ -200,4 +200,18 @@ $ delineate -p pour_points.bna -d dem.tif --rerun -t 2000000 -n 2 --debug
 Using the debug flag will leave lots of extra files that were generated on the
 way in a folder named delineation
 
-To get files necessary for s
+To get files necessary for streamflow add the --streamflow flag which will
+produce a folder called streamflow containing files for modeling streamflow.
+
+-----
+## GRM
+-----
+The Grid Resizing and Matching Script is used to resample the lidar images from
+ASO and create a netcdf that is useable for the modeling system. The script can
+take any number images at once and will create a netCDF for each water year.
+
+To use it simply pass a topo.nc and the desired images to aggregate.
+
+``` bash
+$ grm -t topo.nc -i USCASJ20190325_SUPERsnow_depth.tif -b sanjoaquin -r near --debug
+```
