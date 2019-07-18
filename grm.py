@@ -463,15 +463,17 @@ def main():
     # Make sure our output folder exists
     if args.output == None:
         output = './output'
-        temp = os.path.join(output,'tmp')
+    else:
+        output = args.output
 
-        # Make the output folder
-        if not os.path.isdir(output):
-            os.mkdir(output)
+    # Make the output folder
+    if not os.path.isdir(output):
+        os.mkdir(output)
 
-        # Make the temp folder inside the output folder
-        if not os.path.isdir(temp):
-                os.mkdir(temp)
+    # Make the temp folder inside the output folder
+    temp = os.path.join(output,'tmp')
+    if not os.path.isdir(temp):
+            os.mkdir(temp)
 
     if type(args.images) != list:
         args.images = [args.images]
@@ -520,7 +522,7 @@ def main():
         else:
             g = GRM(image=f, topo=args.topo, basin=args.basin,
                                                       debug=args.debug,
-                                                      output=output,
+                                                      output=args.output,
                                                       temp=temp,
                                                       resample=args.resample,
                                                       log=log)
