@@ -106,10 +106,8 @@ examples/*/basin_setup/*
 examples/*/delineation/*
 examples/*/basin_setup/*
 examples/*/*.csv
-basin_setup/*
-*/basin_setup/*
 */output/*
 output/*
 *.zip
 *.kml
-
+*/basin_topo/*
