@@ -22,6 +22,7 @@ from urllib.request import urlopen
 from spatialnc.proj import add_proj
 from spatialnc.utilities import strip_chars
 
+from basin_setup import __veg_parameters__
 # Initialize colors
 init()
 
@@ -251,7 +252,6 @@ def parse_extent(fname):
                 parseable = ''.join( c for c in v if  c not in ' ()\n')
                 parseable = parseable.replace('-',',')
                 extent = [i for i in parseable.split(',')]
-                out.dbg(extent)
                 break
 
     elif file_type == 'tif':
@@ -956,6 +956,11 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
     veg_values = np.unique(np.array(topo.variables['veg_type'][:]))
     d.close()
 
+    # Open the key provided by Landfire to assign values in Tau and K
+    vm = pd.read_csv(images['vegetation type']['map'])
+    ind = vm['VALUE'].isin(veg_values)
+    veg_map = vm.loc[ind, vm.columns]
+
     # We have a CSV describing the vegetation data
     if veg_params != None:
         out.warn("Using the CSV file with vegetation parameters to define veg "
@@ -963,8 +968,8 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
         if not os.path.isfile(veg_params):
             out.error("Vegetation parameters CSV file {} does not exist"
                       "".format(veg_params))
+            sys.exit()
 
-      
         df_veg = pd.read_csv(veg_params, index_col="VALUE")
 
         # Determine underdefined values
@@ -1005,12 +1010,6 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
              'mixed conifer and deciduous':['Mixed evergreen-deciduous shrubland'],
              'medium conifer':['Mixed evergreen-deciduous open tree canopy'],
              'dense conifer':['Evergreen closed tree canopy','conifer']}
-
-        # Open the key provided by Landfire to auto assign values in Tau and K
-        f = images['vegetation type']['map']
-        vm = pd.read_csv(f)
-        ind = vm['VALUE'].isin(veg_values)
-        veg_map = vm.loc[ind, vm.columns]
 
         # Cycle through the key words in the table used for conversion/assign values
         for k, keywords in veg_keywords.items():
@@ -1260,7 +1259,7 @@ def main():
     p.add_argument('-bn','--basin_name', dest='basin_name', nargs='+',
                                    help='provide a long name for the basin'
                                    ' total mask')
-    p.add_argument('-vc','--veg_params', dest='veg_params', default="landfire_veg_param.csv",
+    p.add_argument('-vc','--veg_params', dest='veg_params', default=None,
                                    help=('Provide a csv defining veg tau and veg'
                                         'k values for the available vegetation'
                                         ' classes, any veg classes found in the '
@@ -1335,7 +1334,11 @@ def main():
     topo = create_netcdf(images, extent, args.cell_size, required_dirs['output']
                                                        , basin_name)
     # Calculates TAU and K
-    topo = calculate_height_tau_k(topo, images, veg_params=args.veg_params)
+    if args.veg_params == None:
+        veg_params = __veg_parameters__
+    else:
+        veg_params = args.veg_params
+    topo = calculate_height_tau_k(topo, images, veg_params=veg_params)
 
     # Add the projection information
     topo = add_proj(topo, images['basin outline']['epsg'],images['dem']['path'])

@@ -1,43 +1,81 @@
-install:
-	# Install the python script to the bin
-	cp basin_setup.py /usr/local/bin/basin_setup
-	cp delineate.py /usr/local/bin/delineate
-	cp pconvert.py /usr/local/bin/pconvert
-	cp grm.py /usr/local/bin/grm
-	chmod +x /usr/local/bin/basin_setup
-	chmod +x /usr/local/bin/delineate
-	chmod +x /usr/local/bin/pconvert
-	chmod +x /usr/local/bin/grm
+.PHONY: clean clean-test clean-pyc clean-build docs help
+.DEFAULT_GOAL := help
 
-uninstall:
-	# Remove the python script from the bin
-	rm /usr/local/bin/basin_setup
-	rm /usr/local/bin/delineate
-	rm /usr/local/bin/pconvert
-	rm /usr/local/bin/grm
+define BROWSER_PYSCRIPT
+import os, webbrowser, sys
 
-develop:
-	# Link the python script so edits are reflected in realtime
-	make uninstall
-	chmod +x basin_setup.py
-	ln basin_setup.py /usr/local/bin/basin_setup
-	chmod +x delineate.py
-	ln delineate.py /usr/local/bin/delineate
-	chmod +x pconvert.py
-	ln pconvert.py /usr/local/bin/pconvert
-	chmod +x grm.py
-	ln grm.py /usr/local/bin/grm
+try:
+	from urllib import pathname2url
+except:
+	from urllib.request import pathname2url
+
+webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
+endef
+export BROWSER_PYSCRIPT
+
+define PRINT_HELP_PYSCRIPT
+import re, sys
+
+for line in sys.stdin:
+	match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
+	if match:
+		target, help = match.groups()
+		print("%-20s %s" % (target, help))
+endef
+export PRINT_HELP_PYSCRIPT
+
+BROWSER := python -c "$$BROWSER_PYSCRIPT"
+
+help:
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+
+clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+
+clean-build: ## remove build artifacts
+	rm -fr build/
+	rm -fr dist/
+	rm -fr .eggs/
+	find . -name '*.egg-info' -exec rm -fr {} +
+	find . -name '*.egg' -exec rm -f {} +
+
+clean-pyc: ## remove Python file artifacts
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	find . -name '*~' -exec rm -f {} +
+	find . -name '__pycache__' -exec rm -fr {} +
+
+clean-test: ## remove test and coverage artifacts
+	rm -fr .tox/
+	rm -f .coverage
+	rm -fr htmlcov/
+	rm -fr .pytest_cache
+
+lint: ## check style with flake8
+	flake8 basin_setup tests
+
+test: ## run tests quickly with the default Python
+	python setup.py test
+
+test-all: ## run tests on every Python version with tox
+	tox
+
+coverage: ## check code coverage quickly with the default Python
+	coverage run --source basin_setup setup.py test
+	coverage report -m
+	coverage html
+	$(BROWSER) htmlcov/index.html
+
+release: dist ## package and upload a release
+	twine upload dist/*
+
+dist: clean ## builds source and wheel package
+	python setup.py sdist
+	python setup.py bdist_wheel
+	ls -l dist
+
+install: clean ## install the package to the active Python's site-packages
+	python setup.py install
+
 docker:
 	# Build a test docker to play with
-	docker build -t test .
-
-test:
-	# Test the test docker to ensure things are running
-	docker run -it --rm \
-								-v $(pwd):/data \
-								-v $HOME/Downloads:/data/downloads \
-								test \
-								-f /data/examples/reynolds_mountain_east/rme_basin_outline.shp \
-								-dm /data/examples/reynolds_mountain_east/ASTGTM2_N43W117_dem.tif \
-								-d /data/downloads
-								--debug
+	docker build -t develop .
