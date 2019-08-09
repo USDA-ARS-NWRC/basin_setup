@@ -11,9 +11,9 @@ import geopandas as gpd
 import datetime
 import shutil
 import pandas as pd
+from basin_setup import __version__
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.10.0'
 
 
 class Messages():
@@ -447,7 +447,7 @@ def create_readme(sysargs, output_dir):
     "\nTo get access to the source code please visit:\n"
     "https://github.com/USDA-ARS-NWRC/basin_setup")
 
-    out_str = out_str.format(BASIN_SETUP_VERSION, dt, ' '.join(sys.argv))
+    out_str = out_str.format(__version__, dt, ' '.join(sys.argv))
     with open(os.path.join(output_dir,'README.txt'),'w') as fp:
         fp.write(out_str)
         fp.close()
@@ -551,7 +551,7 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, ou
               " Created using basin_setup v{}\n"
               "##############################################################\n"
               "\n".format(threshold, today,
-                                                       BASIN_SETUP_VERSION)
+                                                       __version__)
               )
 
     with open(output, 'w+') as fp:
@@ -790,7 +790,7 @@ def main():
     start = time.time()
 
     # Print a nice header
-    msg ="Basin Delineation Tool v{0}".format(BASIN_SETUP_VERSION)
+    msg ="Basin Delineation Tool v{0}".format(__version__)
     m = "="*(2*len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')

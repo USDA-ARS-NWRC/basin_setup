@@ -23,11 +23,11 @@ from spatialnc.proj import add_proj
 from spatialnc.utilities import strip_chars
 
 from basin_setup import __veg_parameters__
+from basin_setup import __version__
 # Initialize colors
 init()
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.10.0'
 
 class Messages():
     def __init__(self):
@@ -917,7 +917,7 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
     topo.setncattr_string('history', '[{}] Create netCDF4 file using '
                                      'Basin Setup v{}'
                                      ''.format(datetime.now().strftime(fmt),
-                                               BASIN_SETUP_VERSION))
+                                               __version__))
     topo.setncattr_string('institution',
             'USDA Agricultural Research Service, Northwest Watershed Research'
             ' Center')
@@ -976,11 +976,10 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
         missing = [int(value) for value in veg_values if int(value) not in df_veg.index]
 
         if missing:
-            out.error("Vegetation classification(s) {} are in the domain but not"
-                      " vegetation parameter file "
-                      "{}".format(", ".join([str(v) for v in missing]),
-                                            veg_params))
-            sys.exit()
+            err = ("Vegetation Parameter file {} missing classes {}"
+                  "").format(veg_params, ", ".join([str(v) for v in missing]))
+            out.error(err)
+            raise IOError(err)
 
         # Cycle through values and assign them
         for value in veg_values:
@@ -1272,7 +1271,7 @@ def main():
     DEBUG = args.debug
 
     # Print a nice header
-    msg ="Basin Setup Tool v{0}".format(BASIN_SETUP_VERSION)
+    msg ="Basin Setup Tool v{0}".format(__version__)
     m = "="*(2*len(msg)+1)
     out.msg(m,'header')
     out.msg(msg,'header')

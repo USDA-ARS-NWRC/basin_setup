@@ -78,4 +78,4 @@ install: clean ## install the package to the active Python's site-packages
 
 docker:
 	# Build a test docker to play with
-	docker build -t develop .
+	docker build -t usdaarsnwrc/basin_setup:develop .

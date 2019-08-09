@@ -15,10 +15,10 @@ from spatialnc.utilities import copy_nc, mask_nc
 import logging
 from inicheck.utilities import mk_lst, remove_chars
 import pandas as pd
+from basin_setup import __version__
 
 
 DEBUG=False
-BASIN_SETUP_VERSION = '0.10.0'
 
 
 def parse_fname_date(fname):
@@ -200,7 +200,7 @@ class GRM(object):
                     "Title":"ASO 50m Lidar Flights Over the {} for Water Year {}."
                             "".format(self.basin, self.water_year),
                     "history":"Created using Basin Setup v{}"
-                              "".format(BASIN_SETUP_VERSION),
+                              "".format(__version__),
                     })
 
         # Attribute gets copied over from the topo
@@ -484,7 +484,7 @@ def main():
     coloredlogs.install(fmt='%(levelname)-5s %(message)s', level="INFO",
                                                            logger=log)
     # Print a nice header with version number
-    msg = "\n\nGrid Resizing and Matching Script v{}".format(BASIN_SETUP_VERSION)
+    msg = "\n\nGrid Resizing and Matching Script v{}".format(__version__)
     header = "=" * (len(msg) + 1)
     log.info(msg + "\n" + header + "\n")
 
