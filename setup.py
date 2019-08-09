@@ -21,7 +21,7 @@ setup(
     author="Micah Johnson",
     author_email='micah.johnson150@gmail.com',
     classifiers=[
-        'Development Status :: 4 - beta',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication',
         'Natural Language :: English',
@@ -33,6 +33,7 @@ setup(
     license="CCO 1.0",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
+    long_description_content_type='text/markdown',
     package_data={'basin_setup':['./landfire_veg_param.csv']},
     keywords=['basin_setup','delineation','topo',],
     name='basin_setup',
