@@ -75,3 +75,12 @@ History
 * Fixes for #24
 * Added in Static file output fro ARS streamflow modeling
 * Documentation Improvements
+
+
+0.10.0 (2019-08-09)
+------------------
+* Fixes for #31
+* First Release on Pypi
+* Converted Basin_setup to a python package not a collection of scripts
+* Vegetation Parameter requirements more strict, requiring a csv to dictate the interpretation
+* Updated Docker
