@@ -1,4 +1,4 @@
-# BASIN SETUP TOOL v0.11.1
+# BASIN SETUP TOOL v0.11.2
 
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
 
