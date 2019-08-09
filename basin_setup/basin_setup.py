@@ -24,6 +24,7 @@ from spatialnc.utilities import strip_chars
 
 from basin_setup import __veg_parameters__
 from basin_setup import __version__
+
 # Initialize colors
 init()
 
