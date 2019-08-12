@@ -1232,7 +1232,7 @@ def main():
 
     p.add_argument('-apd','--asym_pad', dest='apad', nargs=4, required=False,
                     help="Number of cells to add on to the domain for each"
-                         " side. Format is [Left, Right, Top, Bottom]")
+                         " side. Format is [Left, Bottom, Right, Top]")
 
     p.add_argument('-u','--uniform', dest='uniform', action='store_true',
                     help="Specifies whether for point runs to use a uniform"
