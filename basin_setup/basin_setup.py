@@ -812,8 +812,8 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
     topo.createDimension('y', y.shape[0])
     topo.createDimension('x', x.shape[0])
 
-    topo.createVariable('y', 'f', 'y')
-    topo.createVariable('x', 'f', 'x')
+    topo.createVariable('y', 'f4', 'y', zlib=True, least_significant_digit=3)
+    topo.createVariable('x', 'f4', 'x', zlib=True, least_significant_digit=3)
 
     # The y variable attributes
     topo.variables['y'][:] = y
@@ -846,7 +846,6 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
     # Add in topo variables
     for name, image in images.items():
         if name in topo_names:
-            out.respond("Adding {0}".format(name))
 
             if 'short_name' in image.keys():
                 short_name = image['short_name']
@@ -868,12 +867,12 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
                     long_name = name.replace(' mask','')
 
             elif short_name in ['veg_type']:
-                dtype = 'u4' # U-INT 32 bit
+                dtype = 'u2' # U-INT 16 bit
 
             else:
-                dtype = 'f'
-
-            topo.createVariable(short_name, dtype,('y','x'))
+                dtype = 'f4' # Floating point 32
+            out.respond("Adding {0}, type={1}".format(name, dtype))
+            topo.createVariable(short_name, dtype,('y','x'), zlib=True, least_significant_digit=3)
             topo.variables[short_name].setncattr('long_name', long_name)
 
             if is_float(image['path']):
