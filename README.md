@@ -10,9 +10,9 @@ inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and
 
 **Prequisites**:
 
-  - GDAL 2.3.1
+  - GDAL 2.3.2
   - Python\>=3.5
-  - pip 9.0.1
+  - pip 19.2.1
 
 To begin the install for basin\_setup, ensure that GDAL is compiled from
 source. Note: Do not install the python library for GDAL but rather the
