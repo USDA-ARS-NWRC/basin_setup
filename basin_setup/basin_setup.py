@@ -187,7 +187,7 @@ def condition_extent(extent, cell_size):
     domain so cells fit evenly.
 
     Args:
-        extent: A list of 4 values representing the domain in bottom,left,right,top
+        extent: A list of 4 values representing the domain in left,bottom, right,top
         cell_size: integer of the resolution
     Returns:
         result: a list of 4 values representing the domain with evenly fitting cells
@@ -214,8 +214,8 @@ def condition_extent(extent, cell_size):
     result.append(extent[1] - tb_adjustment) # Bottom
     result.append(extent[2] + rl_adjustment)  # Right
     result.append(extent[3] + tb_adjustment)  # Top
-    rl_mod = (result[2] - result[0]) % cell_size
-    tb_mod = (result[3] - result[1]) % cell_size
+    rl_mod = (result[2] - result[0]) % cell_size # Modulus right to left
+    tb_mod = (result[3] - result[1]) % cell_size # Modulus top to bottom
 
     if rl_adjustment != 0 or tb_adjustment != 0:
         out.warn(" Modeling domain extents are ill fit for cell size {}."
@@ -644,7 +644,7 @@ def check_and_download(images,required_dirs):
     return images
 
 
-def process(images, TEMP, cell_size, pad, epsg=None):
+def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
     """
     Creates the mask image, veg_type, height and dem images,
     reprojects them to the proejction of the basin_shapefile and converts them
@@ -655,35 +655,45 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         TEMP: temporary work dir
         cell_size: Desired cell size for the images.
         pad: list of number of cells to add to an image from the extent of the
-             shapefile, format = [ LEFT, RIGHT, BOTTOM, TOP]
+             shapefile, format = [ LEFT, BOTTOM, RIGHT, TOP]
+        extents: list of of coordinates in the shapefiles projection,
+                 format = [ LEFT, BOTTOM, RIGHT, TOP]
 
     Returns:
         images: dictionary containing the path to the latest image for each key.
         extent: The list of the bottom left and upper right image extents plus
-                padding
+                padding or whatever was requested specifically.
     """
     out_of_bounds = False
     cell_size = int(cell_size)
     # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
-    extent = parse_extent(images['basin outline']['path'])
 
-    padding = [cell_size * int(p) for p in pad]
+    if extents == None:
+        extents = parse_extent(images['basin outline']['path'])
 
-    # Pad the extents
-    padded_extent = []
-    extent = [float(e) for e in extent]
+        padding = [cell_size * int(p) for p in pad]
 
-    # Allows for custom padding
-    padded_extent.append(extent[0] - padding[0]) # Left
-    padded_extent.append(extent[1] - padding[1]) # Bottom
-    padded_extent.append(extent[2] + padding[2])  # Right
-    padded_extent.append(extent[3] + padding[3])  # Top
+        # Pad the extents
+        padded_extent = []
+        extents = [float(e) for e in extents]
 
-    # Check cell size fits evenly in extent range
-    extent = condition_extent(padded_extent, cell_size)
+        # Allows for custom padding
+        padded_extent.append(extents[0] - padding[0]) # Left
+        padded_extent.append(extents[1] - padding[1]) # Bottom
+        padded_extent.append(extents[2] + padding[2])  # Right
+        padded_extent.append(extents[3] + padding[3])  # Top
 
-    s_extent = [str(e) for e in extent]
+        # Check cell size fits evenly in extent range
+        extents = padded_extent
+        extents = condition_extent(extents, cell_size)
+
+    else:
+        extents = [float(e) for e in extents]
+
+
+
+    s_extent = [str(e) for e in extents]
 
     # Recover projection info
     proj = images['basin outline']['path'].split('.')[0]+'.prj'
@@ -698,27 +708,27 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         if msk =='mask':
             shp_nm = 'basin outline'
         else:
-            shp_nm =  msk.split('mask')[0]+"subbasin"
+            shp_nm = msk.split('mask')[0] + "subbasin"
 
         images[msk]['path'] = os.path.join(TEMP,'{}.tif'.format(fnm))
 
         # clips, sets resolution, adjusts to fit whole cells
-        z = Popen(['gdal_rasterize','-tap', '-tr', str(cell_size), str(cell_size),
+        z = Popen(['gdal_rasterize', '-tr', str(cell_size), str(cell_size),
                    '-te', s_extent[0], s_extent[1], s_extent[2], s_extent[3],
                    '-burn', '1', '-ot', 'int', images[shp_nm]['path'],
                     images[msk]['path']], stdout=PIPE)
         z.wait()
 
-        extent = parse_extent(images[msk]['path'])
-
 
         # Convert the mask to netcdf
-        NC = os.path.abspath(os.path.join(TEMP,'clipped_{}.nc'.format(msk.replace(' ','_'))))
+        NC = os.path.abspath(os.path.join(TEMP,
+                                'clipped_{}.nc'.format(msk.replace(' ','_'))))
         s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images[msk]['path'],
-                                                             NC],stdout=PIPE)
+                                                             NC], stdout=PIPE)
         s.wait()
         images[msk]['path'] = NC
-
+        extent = parse_extent(images[msk]['path'])
+        s_extent = [str(e) for e in extents]
 
     # If user passes an float then don't process the image, were probably
     # using a point model
@@ -744,7 +754,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
                                                     ''.format(fname)))
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
-        p = Popen(['gdalwarp','-t_srs', proj,'-tap','-te', s_extent[0],
+        p = Popen(['gdalwarp','-t_srs', proj,'-te', s_extent[0],
                    s_extent[1], s_extent[2],s_extent[3], '-tr',str(cell_size),
                     str(cell_size),'-overwrite', img['path'], CLIPPED],
                     stdout=PIPE)
@@ -759,7 +769,7 @@ def process(images, TEMP, cell_size, pad, epsg=None):
         images[name]['path'] = NC
         s.wait()
 
-    return images, extent
+    return images, extents
 
 
 def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
@@ -975,7 +985,7 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
                       "".format(veg_params))
             sys.exit()
 
-        df_veg = pd.read_csv(veg_params, index_col="VALUE")
+        df_veg = pd.read_csv(veg_params, index_col="veg")
 
         # Determine underdefined values
         missing = [int(value) for value in veg_values if int(value) not in df_veg.index]
@@ -1269,6 +1279,11 @@ def main():
                                         ' classes, any veg classes found in the '
                                         ' topo not listed in the csv will throw '
                                         ' an error'))
+
+
+    p.add_argument('-ex','--extents', dest='desired_extents', nargs=4, required=False,
+                    help="Number of cells to add on to the domain for each"
+                         " side. Format is [Left, Bottom, Right, Top]")
     args = p.parse_args()
 
     # Global debug variable
@@ -1295,13 +1310,18 @@ def main():
     images = setup_and_check(required_dirs, args.basin_shapefile, args.dem,
                                                        subbasins=args.subbasins)
 
-    # DEM Cell padding
-    pad = int(args.pad)
-    # No asymetric padding provided
-    if args.apad == None:
-        pad = [ pad for i in range(4)]
+    if args.desired_extents != None:
+        out.warn("Using --extents will override any padding requested!")
+        pad = None
     else:
-        pad = [int(i) for i in args.apad]
+        # DEM Cell padding
+        pad = int(args.pad)
+
+        # No asymetric padding provided
+        if args.apad == None:
+            pad = [ pad for i in range(4)]
+        else:
+            pad = [int(i) for i in args.apad]
 
     #--------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point != None:
@@ -1325,7 +1345,7 @@ def main():
     #===========================================================================
     # Processing
     #===========================================================================
-    images, extent = process(images, TEMP, args.cell_size,pad)
+    images, extent = process(images, TEMP, args.cell_size, pad=pad, extents=args.desired_extents)
 
     #===========================================================================
     # Post Processing
