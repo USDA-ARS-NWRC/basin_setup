@@ -228,48 +228,134 @@ def condition_extent(extent, cell_size):
     return result
 
 
-
-def parse_extent(fname):
+def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
     """
-    Uses ogr to parse the information of some GIS file and returns a dict of the
+    Author: Micah Johnson, mod. by Ernesto Trujillo
+    Uses ogr to parse the information of some GIS file and returns a list of the
     response of the things important to this script.
-
     Args:
         fname: Full path point to file containing GIS information
-
+        cellsize_return: Optional (deafault = False). True will add cellsize as the
+                         last element of the return list. Option only for '.asc'
+                         and '.nc' data types
     Returns:
-        extent: containing images extent in str type.
+        extent: containing images extent in list type
+        [x_ll, y_ll, x_ur, y_ur, cellsize (optional)]
     """
     file_type = fname.split('.')[-1]
     if file_type == 'shp':
-        basin_shp_info = check_output(['ogrinfo','-al', fname],
+        basin_shp_info = check_output(['ogrinfo', '-al', fname],
                                       universal_newlines=True)
         parse_list = basin_shp_info.split('\n')
 
         # Parse extents from basin info
         for l in parse_list:
             if 'extent' in l.lower():
-                k,v = l.split(':')
-                parseable = ''.join( c for c in v if  c not in ' ()\n')
-                parseable = parseable.replace('-',',')
+                k, v = l.split(':')
+                parseable = ''.join(c for c in v if c not in ' ()\n')
+                parseable = parseable.replace('-', ',')
                 extent = [i for i in parseable.split(',')]
                 break
 
     elif file_type == 'tif':
-        basin_shp_info = check_output(['gdalinfo',fname],
+        basin_shp_info = check_output(['gdalinfo', fname],
                                       universal_newlines=True)
         parse_list = basin_shp_info.split('\n')
         extent = []
         for l in parse_list:
             if 'lower left' in l.lower() or 'upper right' in l.lower():
-                 for w in l.split(' '):
-                     try:
-                         if len(extent) <=4:
-                             parseable = \
-                             ''.join( c for c in w if  c not in ' ,()\n')
-                             extent.append(float(parseable))
-                     except:
+                for w in l.split(' '):
+                    try:
+                        if len(extent) <= 4:
+                            parseable = \
+                                ''.join(c for c in w if c not in ' ,()\n')
+                            extent.append(float(parseable))
+                    except:
                         pass
+
+    elif file_type == 'asc':
+
+        ascii_file = open(fname, 'r')
+
+        ascii_headlines = []
+        ascii_headlines = [ascii_file.readline().strip('\n')
+                           for i_line in range(6)]
+        ascii_file.close()
+
+        parse_list = ascii_headlines
+        extent = []
+        n_rows = 0
+        n_cols = 0
+        x_ll = 0
+        y_ll = 0
+        cellsize = 0
+
+        for l in parse_list:
+            if 'xllcorner' in l.lower():
+                w = l.split(' ')
+                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
+                x_ll = float(w[-1])
+            elif 'yllcorner' in l.lower():
+                w = l.split(' ')
+                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
+                y_ll = float(w[-1])
+            elif 'ncols' in l.lower():
+                w = l.split(' ')
+                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
+                n_cols = float(w[-1])
+            elif 'nrows' in l.lower():
+                w = l.split(' ')
+                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
+                n_rows = float(w[-1])
+            elif 'cellsize' in l.lower():
+                w = l.split(' ')
+                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
+                cellsize = float(w[-1])
+
+            extent = [x_ll, y_ll,
+                      x_ll + (n_cols) * cellsize,
+                      y_ll + (n_rows) * cellsize]
+
+            if cellsize_return == True:
+                extent.append(cellsize)
+
+    elif file_type == 'nc':
+
+        ncfile = Dataset(fname, 'r')
+
+        # Extract fields of interest
+        try:
+            x_vector = ncfile.variables[x_field][:]
+        except KeyError:
+            print('KeyError: x_field key not found')
+            return None
+
+        try:
+            y_vector = ncfile.variables[y_field][:]
+        except KeyError:
+            print('KeyError: y_field key not found')
+            return None
+
+        # Determine extents of input netCDF file
+
+        n_cols = len(x_vector)
+        n_rows = len(y_vector)
+        # Be careful if coordinate system is lat-lon and southern hemisphere, etc.
+        # Should be in meters (projected coordinate system)
+        dx = abs(x_vector[1]-x_vector[0])  # in meters
+        dy = abs(y_vector[1]-y_vector[0])  # in meters
+        x_ll = x_vector.min() - dx/2  # the nc_file uses center of cell coords
+        y_ll = y_vector.min() - dy/2  # Change if not cell center coords
+
+        extent = [x_ll, y_ll,
+                  x_ll + (n_cols) * dx,
+                  y_ll + (n_rows) * dy]
+
+        if cellsize_return == True:
+            extent += [dx, dy]
+
+        ncfile.close()
+
     else:
         raise IOError("File type .{0} not recoginizeable for parsing extent"
                       "".format(file_type))
@@ -283,8 +369,10 @@ def download_zipped_url(url, downloads):
     """
     r = requests.get(url, stream=True)
     if r.status_code == 404:
-        out.error("It appears the downloadable image no longer exists, please submit an issue at https://github.com/USDA-ARS-NWRC/basin_setup/issues."
-                  "\nStatus 404 found on request from:\n{}".format(url))
+        out.error("It appears the downloadable image no longer exists, please "
+                  "submit an issue at "
+                  "https://github.com/USDA-ARS-NWRC/basin_setup/issues.\nStatus"
+                  " 404 found on request from:\n{}".format(url))
         sys.exit()
 
     z = zipfile.ZipFile(io.BytesIO(r.content))
@@ -661,7 +749,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
 
     Returns:
         images: dictionary containing the path to the latest image for each key.
-        extent: The list of the bottom left and upper right image extents plus
+        extents: The list of the bottom left and upper right image extents plus
                 padding or whatever was requested specifically.
     """
     out_of_bounds = False
@@ -726,9 +814,12 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
         s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images[msk]['path'],
                                                              NC], stdout=PIPE)
         s.wait()
+
         images[msk]['path'] = NC
-        extent = parse_extent(images[msk]['path'])
-        s_extent = [str(e) for e in extents]
+
+    # Get the final extent
+    extents = parse_extent(images["mask"]['path'])
+    s_extent = [str(e) for e in extents]
 
     # If user passes an float then don't process the image, were probably
     # using a point model
@@ -742,23 +833,32 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
     for name in process_names:
         img = images[name]
 
-        #Get data loaded in
+        # Get data loaded in
         out.msg("Getting {0} image info...".format(name))
 
-        img_info = check_output(['gdalinfo',img['path']],
+        img_info = check_output(['gdalinfo', img['path']],
                                 universal_newlines=True)
 
         fname = name.replace(' ', '_')
 
         CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'
                                                     ''.format(fname)))
+        if name == "vegetation type":
+            resample = "near"
+        else:
+            resample = "bilinear"
 
         out.msg("Reprojecting and clipping {0} rasters...".format(name))
-        p = Popen(['gdalwarp','-t_srs', proj,'-te', s_extent[0],
-                   s_extent[1], s_extent[2],s_extent[3], '-tr',str(cell_size),
-                    str(cell_size),'-overwrite', img['path'], CLIPPED],
-                    stdout=PIPE)
 
+        cmd = ['gdalwarp',
+               '-t_srs', proj,
+               '-te', s_extent[0], s_extent[1], s_extent[2], s_extent[3],
+               '-tr',str(cell_size), str(cell_size),
+               '-r', resample,
+               '-overwrite',
+                img['path'], CLIPPED]
+
+        p = Popen(cmd, stdout=PIPE)
         p.wait()
 
         # Convert to Netcdf
@@ -887,7 +987,8 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
                     precision = 4
 
             out.respond("Adding {0}, type={1}".format(name, dtype))
-            topo.createVariable(short_name, dtype,('y','x'), zlib=True, least_significant_digit=precision)
+            topo.createVariable(short_name, dtype,('y','x'), zlib=True,
+                                            least_significant_digit=precision)
             topo.variables[short_name].setncattr('long_name', long_name)
 
             if is_float(image['path']):
@@ -1345,7 +1446,8 @@ def main():
     #===========================================================================
     # Processing
     #===========================================================================
-    images, extent = process(images, TEMP, args.cell_size, pad=pad, extents=args.desired_extents)
+    images, extents = process(images, TEMP, args.cell_size, pad=pad,
+                                                  extents=args.desired_extents)
 
     #===========================================================================
     # Post Processing
@@ -1355,8 +1457,8 @@ def main():
     else:
         basin_name = None
 
-    topo = create_netcdf(images, extent, args.cell_size, required_dirs['output']
-                                                       , basin_name)
+    topo = create_netcdf(images, extents, args.cell_size,
+                                            required_dirs['output'], basin_name)
     # Calculates TAU and K
     if args.veg_params == None:
         veg_params = __veg_parameters__
