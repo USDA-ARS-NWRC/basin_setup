@@ -77,10 +77,16 @@ History
 * Documentation Improvements
 
 
-0.10.0 (2019-08-09)
+0.11.0 (2019-08-09)
 ------------------
 * Fixes for #31
 * First Release on Pypi
 * Converted Basin_setup to a python package not a collection of scripts
 * Vegetation Parameter requirements more strict, requiring a csv to dictate the interpretation
 * Updated Docker
+
+0.12.0 (2019-09-16)
+------------------
+* Fixes for #34
+* Added in CLI extents flag for cutting exactly to a known domain.
+* Added resampling to DEM and Veg Height layers, all else use nearest neighbor.
