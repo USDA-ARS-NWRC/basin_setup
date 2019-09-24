@@ -12,82 +12,9 @@ import datetime
 import shutil
 import pandas as pd
 from basin_setup import __version__
+from basin_setup.basin_setup import Messages
 
-DEBUG=False
-
-
-class Messages():
-    def __init__(self):
-        self.context = {'warning':Fore.YELLOW,
-                        'error':Fore.RED,
-                        'ok': Fore.GREEN,
-                        'normal': Style.NORMAL+Fore.WHITE,
-                        'header': Style.BRIGHT}
-
-    def build_msg(self,str_msg,context_str=None):
-        """
-        Constructs the desired strings for color and Style
-
-        Args;
-            str_msg: String the user wants to output
-            context_str: type of print style and color, key associated with
-                         self.context
-        Returns:
-            final_msg: Str containing the desired colors and styles
-        """
-
-        if context_str == None:
-            context_str = 'normal'
-
-        if context_str in self.context.keys():
-            if type(str_msg) == list:
-                str_msg = ', '.join([str(s) for s in str_msg])
-
-            final_msg = self.context[context_str]+ str_msg + Style.RESET_ALL
-        else:
-            raise ValueError("Not a valid context")
-        return final_msg
-
-    def _structure_msg(self, a_msg):
-        if type(a_msg) == list:
-            a_msg = ', '.join([str(s) for s in a_msg])
-
-        if type(a_msg)!=str:
-            a = str(a_msg)
-
-        return a_msg
-
-    def msg(self,str_msg,context_str=None):
-        final_msg = self.build_msg(str_msg,context_str)
-        print('\n' + final_msg)
-
-    def dbg(self,str_msg,context_str=None):
-        """
-        Messages designed for debugging set by a global variable DEBUG
-        """
-        if DEBUG:
-            final_msg = self.build_msg('[DEBUG]: ','header')
-            final_msg += self._structure_msg(str_msg)
-            final_msg = self.build_msg(final_msg,context_str)
-            print('\n' + final_msg)
-
-    def warn(self,str_msg):
-        final_msg = self.build_msg('[WARNING]: ','header')
-        final_msg = self.build_msg(final_msg+str_msg, 'warning')
-        print('\n' + final_msg)
-
-    def error(self,str_msg):
-        final_msg = self.build_msg('[ERROR]: ','header')
-        final_msg = self.build_msg(final_msg+str_msg,'error')
-        print('\n' + final_msg)
-
-    def respond(self,str_msg):
-        """
-        Messages acting like a confirmation to the user and in response to the
-        previous message
-        """
-        final_msg = self.build_msg(str_msg, 'ok')
-        print('\t' + final_msg)
+DEBUG = False
 
 out = Messages()
 
@@ -116,7 +43,7 @@ def check_path(filename, outfile=False):
         sys.exit()
 
 
-def rename_file(original,add_tag):
+def rename_file(original, add_tag):
     """
     Takes a filename and renames the file based on the add tag.
     E.g.
@@ -537,7 +464,8 @@ def confirm_norerun(non_thresholdkeys, imgs):
         out.dbg("No pre-existing files, moving forward...")
     return move_forward
 
-def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, output='basin_catchments.csv'):
+def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir,
+                                          output='basin_catchments.csv'):
     """
     Takes in the Tree file and the Coordinates file to produce a csv of the
     downstream catchment, the elevation of a catchment, and contributing area
@@ -585,9 +513,10 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir, ou
 
     dfwshp.to_csv(output, mode='a')
 
-def output_streamflow(imgs, threshold, wshp, output_dir='streamflow'):
+def output_streamflow(imgs, threshold, wshp, temp="temp", output_dir='streamflow'):
     """
-    Outputs files necessary for streamflow modeling.
+    Outputs files necessary for streamflow modeling. This will create a file
+    structure under a folder defined by output_dir and the threshold. E.g. streamflow/thresh_10000000
 
     Args:
         imgs: Dictionary containing a files to be outputted.
@@ -598,26 +527,49 @@ def output_streamflow(imgs, threshold, wshp, output_dir='streamflow'):
     # Dictionary to grab filenames for ARS streamflow
     dat = {}
     out.msg("Creating streamflow files...")
+
+    final_output = os.path.join(output_dir,"thresh_{}".format(threshold))
+
     if not os.path.isdir(output_dir):
-        out.dbg("Making streamflow directory")
+        out.msg("Making streamflow directory")
         os.mkdir(output_dir)
 
-    # Convert the watersheds to ascii and move files to streamflow folder for SLF streamflow
+    if not os.path.isdir(final_output):
+        out.msg("Making streamflow threshold directory...")
+        os.mkdir(final_output)
+
+    # Move all the threshold images from temp to streamflow
+    # thresh_files = [os.path.join(temp,p) for p in os.listdir(temp) if "_{}.".format(threshold) in p]
+    #
+    # for p in thresh_files:
+    #     fname = os.path.basename(p)
+    #     to_f = os.path.join(final_output,fname)
+    #     out.msg("Moving {} to {}".format(p,to_f))
+    #     shutil.move(p,to_f)
+
+    # Convert the watersheds to ascii and move files to streamflow folder for
+    # SLF streamflow
     for k in ['corrected_points','watersheds','coord','tree']:
 
         name = os.path.basename(imgs[k])
 
-        outfile = os.path.join(output_dir, k + "." + name.split('.')[-1])
+        outfile = os.path.join(final_output, k + "." + name.split('.')[-1])
 
         # Handle grabbing data for outputing ARS streamflow
         if k in ['tree','coord']:
             dat[k] = outfile
 
         if k =='watersheds':
-            outfile = os.path.join(output_dir, k + '.asc')
+            outfile = os.path.join(final_output, k + '.asc')
             convert2ascii(imgs[k], outfile)
 
-        shutil.move(imgs[k], outfile)
+        else:
+            shutil.copy(imgs[k], outfile)
+
+    # Copy over threshold files
+    for f in os.listdir(imgs['net']):
+        to_f = os.path.join(final_output, os.path.basename(f))
+        shutil.copy(os.path.join(imgs["net"],f), to_f)
 
     # Create the files for ARS Streamflow
     create_ars_streamflow_files(dat['tree'],
@@ -625,7 +577,7 @@ def output_streamflow(imgs, threshold, wshp, output_dir='streamflow'):
                                 threshold,
                                 wshp,
                                 imgs['net'],
-                                output=os.path.join(output_dir,
+                                output=os.path.join(final_output,
                                                     'basin_catchments.csv'))
 
 def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
@@ -688,6 +640,7 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
                 " accumulation exist...")
     else:
         move_forward = confirm_norerun(non_thresholdkeys, imgs)
+
         if move_forward:
             # 1. Pit Remove in order to fill the pits in the DEM
             pitremove(demfile, outfile=imgs['filled'], nthreads=nthreads)
@@ -747,7 +700,7 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
     wshp = produce_shapefiles(imgs['watersheds'], imgs['corrected_points'],
                                          output_dir=output)
     if out_streams:
-        output_streamflow(imgs, threshold, wshp,
+        output_streamflow(imgs, threshold, wshp, temp=temp,
                                 output_dir=os.path.join(output,'streamflow'))
 
 def main():
@@ -819,11 +772,11 @@ def main():
         if i > 0:
             rerun = True
 
-        ernestafy(args.dem,args.pour_points, output=output, temp=temp,
-                                                   threshold=tr,
-                                                   rerun=rerun,
-                                                   nthreads=args.nthreads,
-                                                   out_streams=args.streamflow)
+        ernestafy(args.dem, args.pour_points, output=output, temp=temp,
+                                               threshold=tr,
+                                               rerun=rerun,
+                                               nthreads=args.nthreads,
+                                               out_streams=args.streamflow)
     if not args.debug:
         cleanup(output, at_start=False)
 
