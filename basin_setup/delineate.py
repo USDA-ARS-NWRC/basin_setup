@@ -568,7 +568,6 @@ def output_streamflow(imgs, threshold, wshp, temp="temp", output_dir='streamflow
 
     # Copy over threshold files
     for f in os.listdir(imgs['net']):
-        print(f)
         to_f = os.path.join(final_output, os.path.basename(f))
         shutil.copy(os.path.join(imgs["net"],f), to_f)
 
