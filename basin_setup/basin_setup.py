@@ -757,6 +757,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
     # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
 
+    # No explicit
     if extents == None:
         extents = parse_extent(images['basin outline']['path'])
 
@@ -780,7 +781,6 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
         extents = [float(e) for e in extents]
 
 
-
     s_extent = [str(e) for e in extents]
 
     # Recover projection info
@@ -800,7 +800,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
 
         images[msk]['path'] = os.path.join(TEMP,'{}.tif'.format(fnm))
 
-        # clips, sets resolution, adjusts to fit whole cells
+        # clips, sets resolution
         z = Popen(['gdal_rasterize', '-tr', str(cell_size), str(cell_size),
                    '-te', s_extent[0], s_extent[1], s_extent[2], s_extent[3],
                    '-burn', '1', '-ot', 'int', images[shp_nm]['path'],
@@ -891,10 +891,15 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
 
     # Setup the extent using the files we just generated. The extent is decided
     # oddly in gdal so it was tough to generate the extents manually, this way we
-    # let gdal managae it.
+    # let gdal manage it.
+
+    ds = Dataset(images["mask"]['path'])
+    x = ds.variables['x'][:]
+    y = ds.variables['y'][:]
+    ds.close()
     extent = [float(e) for e in extent]
-    x = np.arange(extent[0], extent[2], int(cell_size))
-    y = np.arange(extent[1], extent[3], int(cell_size))
+    # x = np.arange(extent[0], extent[2], int(cell_size))
+    # y = np.arange(extent[1], extent[3], int(cell_size))
 
     out.respond("Output Netcdf setup is:\n\t {0} x {1} pixels"
             "\n\t {2} x {3} meters"
