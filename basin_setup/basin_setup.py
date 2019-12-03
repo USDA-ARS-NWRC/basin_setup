@@ -263,6 +263,10 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
         parse_list = basin_shp_info.split('\n')
         extent = []
         for l in parse_list:
+            if 'pixel' in l.lower():
+                for w in l.split(' '):
+                    if w.lower() not in '=pixelsize':
+                        cellsize = float(w.strip('()').split(',')[0])
             if 'lower left' in l.lower() or 'upper right' in l.lower():
                 for w in l.split(' '):
                     try:
@@ -272,6 +276,9 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                             extent.append(float(parseable))
                     except:
                         pass
+
+        if cellsize_return == True:
+            extent.append(cellsize)
 
     elif file_type == 'asc':
 
