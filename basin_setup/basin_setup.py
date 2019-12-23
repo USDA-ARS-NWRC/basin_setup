@@ -254,7 +254,7 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                 k, v = l.split(':')
                 parseable = ''.join(c for c in v if c not in ' ()\n')
                 parseable = parseable.replace('-', ',')
-                extent = [i for i in parseable.split(',')]
+                extent = [float(i) for i in parseable.split(',')]
                 break
 
     elif file_type == 'tif':
@@ -263,6 +263,17 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
         parse_list = basin_shp_info.split('\n')
         extent = []
         for l in parse_list:
+            ll = l.lower()
+
+            # Look for the kw pixel
+            if 'pixel size' in ll:
+                # Should find an equals
+                if "=" in ll:
+                    v = ll.split("=")[-1]
+                    w = ''.join(c for c in v if c not in ' ()\n')
+                    cellsize = float(w.split(',')[0])
+
+
             if 'lower left' in l.lower() or 'upper right' in l.lower():
                 for w in l.split(' '):
                     try:
@@ -272,6 +283,9 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                             extent.append(float(parseable))
                     except:
                         pass
+
+        if cellsize_return == True:
+            extent.append(cellsize)
 
     elif file_type == 'asc':
 
