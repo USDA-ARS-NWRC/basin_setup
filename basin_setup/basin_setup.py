@@ -1053,7 +1053,8 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
 
     return topo
 
-def calculate_height_tau_k(topo, images, height_method='average', veg_params=None):
+def calculate_height_tau_k(topo, images, height_method='average', veg_params=None,
+                                                        bypass_veg_check=False):
     """
     Calculates the images for veg height, veg tau and veg K and adds them  to
     the netcdf.
@@ -1065,7 +1066,9 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
         height_method: Determines the way veg_height is calculated given the veg
                        height data. Each method is using the range provided.
                        Options are average, max, randomized
-
+        veg_params: path to another interpretation of the vegetation radiation
+                    parameters
+        bypass_veg_check: Flag to skip the error in the event a veg parameter is missing.
     """
 
     out.msg('Calculating veg_tau and veg_k...')
@@ -1103,16 +1106,20 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
         # Determine underdefined values
         missing = [int(value) for value in veg_values if int(value) not in df_veg.index]
 
-        if missing:
+        if missing and not bypass_veg_check:
             err = ("Vegetation Parameter file {} missing classes {}"
                   "").format(veg_params, ", ".join([str(v) for v in missing]))
             out.error(err)
+            out.warn("To accept missing data in the tau/K layers use '--bypass_veg_check'")
             raise IOError(err)
 
         # Cycle through values and assign them
         for value in veg_values:
-            veg_tau[veggies==value] = df_veg['tau'].loc[value]
-            veg_k[veggies==value] = df_veg['k'].loc[value]
+            if value in df_veg.index:
+                veg_tau[veggies==value] = df_veg['tau'].loc[value]
+                veg_k[veggies==value] = df_veg['k'].loc[value]
+            else:
+                out.error("Bypassing not assigning any tau//k values for veg parameter {}".format(value))
 
     # use the keywords and dictionaries to guess at the tau and K
     else:
@@ -1392,6 +1399,10 @@ def main():
                                         ' classes, any veg classes found in the '
                                         ' topo not listed in the csv will throw '
                                         ' an error'))
+    p.add_argument('-bp','--bypass_veg_check', dest='bypass_veg_check',
+                    action='store_true',
+                    help='Allows the user to bypass error raised when the tau/k'
+                        ' layers are missing data. For research purposes only.')
 
 
     p.add_argument('-ex','--extents', dest='desired_extents', nargs=4, required=False,
@@ -1476,7 +1487,8 @@ def main():
         veg_params = __veg_parameters__
     else:
         veg_params = args.veg_params
-    topo = calculate_height_tau_k(topo, images, veg_params=veg_params)
+    topo = calculate_height_tau_k(topo, images, veg_params=veg_params,
+                                        bypass_veg_check=args.bypass_veg_check)
 
     # Add the projection information
     topo = add_proj(topo, images['basin outline']['epsg'],images['dem']['path'])

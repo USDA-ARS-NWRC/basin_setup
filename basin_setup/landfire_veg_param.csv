@@ -1,127 +1,154 @@
-veg,tau,k
-3001,1.0,0.0
-3002,1.0,0.0
-3006,1.0,0.0
-3011,0.44,0.025
-3017,0.3,0.033
-3019,0.3,0.033
-3020,0.2,0.04
-3027,0.2,0.04
-3028,0.2,0.04
-3029,0.2,0.04
-3030,0.2,0.04
-3031,0.2,0.04
-3032,0.2,0.04
-3033,0.2,0.04
-3034,0.2,0.04
-3043,0.16,0.07400000000000001
-3044,0.2,0.04
-3045,0.2,0.04
-3055,0.2,0.04
-3058,0.16,0.07400000000000001
-3061,0.44,0.025
-3062,0.3,0.033
-3067,0.3,0.033
-3071,1.0,0.0
-3079,0.3,0.033
-3080,1.0,0.0
-3081,1.0,0.0
-3082,1.0,0.0
-3087,0.3,0.033
-3088,1.0,0.0
-3097,1.0,0.0
-3098,0.44,0.025
-3099,1.0,0.0
-3103,1.0,0.0
-3105,1.0,0.0
-3108,1.0,0.0
-3114,0.44,0.025
-3123,1.0,0.0
-3125,1.0,0.0
-3126,1.0,0.0
-3127,1.0,0.0
-3135,1.0,0.0
-3136,1.0,0.0
-3137,1.0,0.0
-3138,1.0,0.0
-3139,1.0,0.0
-3140,1.0,0.0
-3145,1.0,0.0
-3151,0.4,0.025
-3152,0.2,0.04
-3153,1.0,0.0
-3154,0.2,0.04
-3159,0.44,0.025
-3181,1.0,0.0
-3182,1.0,0.0
-3183,1.0,0.0
-3184,1.0,0.0
-3208,0.2,0.04
-3211,0.3,0.033
-3219,1.0,0.0
-3220,1.0,0.0
-3221,1.0,0.0
-3227,0.2,0.04
-3229,0.2,0.04
-3230,0.16,0.07400000000000001
-3231,0.16,0.07400000000000001
-3232,0.2,0.04
-3255,0.3,0.033
-3257,1.0,0.0
-3260,0.3,0.033
-3261,0.3,0.033
-3264,0.44,0.025
-3265,0.44,0.025
-3292,1.0,0.0
-3293,1.0,0.0
-3294,1.0,0.0
-3295,1.0,0.0
-3296,1.0,0.0
-3297,1.0,0.0
-3298,1.0,0.0
-3299,1.0,0.0
-3900,0.44,0.025
-3901,0.2,0.04
-3902,0.2,0.04
-3903,1.0,0.0
-3904,0.2,0.04
-3910,0.44,0.025
-3911,0.44,0.025
-3912,0.2,0.04
-3913,1.0,0.0
-3914,0.3,0.033
-3921,0.2,0.04
-3923,1.0,0.0
-3924,1.0,0.0
-3926,0.3,0.033
-3928,0.3,0.033
-3929,1.0,0.0
-3960,0.44,0.025
-3961,0.3,0.033
-3964,1.0,0.0
-3965,1.0,0.0
-3967,1.0,0.0
-3968,1.0,0.0
-3980,0.44,0.025
-3981,0.3,0.033
-3984,1.0,0.0
-3985,1.0,0.0
-3986,1.0,0.0
-3988,1.0,0.0
-3004,1.0,0.0
-3920,0.44,0.025
-3925,0.44,0.025
-3941,0.2,0.04
-3943,1.0,0.0
-3983,1.0,0.0
-3987,1.0,0.0
-3944,1.0,0.0
-3014,0.3,0.033
-3057,0.3,0.033
-3124,1.0,0.0
-3164,1.0,0.0
-3210,1.0,0.0
-3222,1.0,0.0
-3252,1.0,0.0
-3966,1.0,0.0
-3982,1.0,0.0
+veg,tau,k,CLASSNAME,EVT_Fuel,EVT_Fuel_N,EVT_LF,EVT_GP,EVT_PHYS,EVT_GP_N,SAF_SRM,EVT_ORDER,EVT_CLASS,EVT_SBCLS
+3001,1.0,0.0,Inter-Mountain Basins Sparsely Vegetated Systems,2001,Sps Inter-Mountain Basins Sparsely Vegetated Systems,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3002,1.0,0.0,Mediterranean California Sparsely Vegetated Systems,2002,Sps Mediterranean California Sparsely Vegetated Systems,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3006,1.0,0.0,Rocky Mountain Alpine/Montane Sparsely Vegetated Systems,2006,Sps Rocky Mountain Alpine/Montane Sparsely Vegetated Systems,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3011,0.44,0.025,Rocky Mountain Aspen Forest and Woodland,2011,Tr Rocky Mountain Aspen Forest and Woodland,Tree,602,Hardwood,"Aspen Forest, Woodland, and Parkland",SAF 217: Aspen,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3017,0.3,0.033,Columbia Plateau Western Juniper Woodland and Savanna,2017,Tr Columbia Plateau Western Juniper Woodland and Savanna,Tree,620,Conifer,Juniper Woodland and Savanna,SRM 107: Western Juniper-Big Sagebrush-Bluebunch Wheatgrass,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3019,0.3,0.033,Great Basin Pinyon-Juniper Woodland,2019,Tr Great Basin Pinyon-Juniper Woodland,Tree,630,Conifer,Pinyon-Juniper Woodland,SRM 412: Juniper-Pinyon Woodland,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3020,0.2,0.04,Inter-Mountain Basins Subalpine Limber-Bristlecone Pine Woodland,2020,Tr Inter-Mountain Basins Subalpine Limber-Bristlecone Pine Woodland,Tree,621,Conifer,Limber Pine Woodland,SAF 209: Bristlecone Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3027,0.2,0.04,Mediterranean California Dry-Mesic Mixed Conifer Forest and Woodland,2027,Tr Mediterranean California Dry-Mesic Mixed Conifer Forest and Woodland,Tree,625,Conifer,Douglas-fir-Ponderosa Pine-Lodgepole Pine Forest and Woodland,SAF 243: Sierra Nevada Mixed Conifer,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3028,0.16,0.07400000000000001,Mediterranean California Mesic Mixed Conifer Forest and Woodland,2028,Tr Mediterranean California Mesic Mixed Conifer Forest and Woodland,Tree,643,Conifer,Douglas-fir-Grand Fir-White Fir Forest and Woodland,SAF 211: White Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3029,0.2,0.04,Mediterranean California Mixed Oak Woodland,2029,Tr Mediterranean California Mixed Oak Woodland,Tree,629,Hardwood,Western Oak Woodland and Savanna,SAF 246: California Black Oak,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3030,0.2,0.04,Mediterranean California Lower Montane Conifer Forest and Woodland,2030,Tr Mediterranean California Lower Montane Conifer Forest and Woodland,Tree,610,Conifer,Conifer-Oak Forest and Woodland,SAF 246: California Black Oak,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3031,0.2,0.04,California Montane Jeffrey Pine(-Ponderosa Pine) Woodland,2031,Tr California Montane Jeffrey Pine(-Ponderosa Pine) Woodland,Tree,631,Conifer,"Ponderosa Pine Forest, Woodland and Savanna",SAF 247: Jeffrey Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3032,0.2,0.04,Mediterranean California Red Fir Forest,2032,Tr Mediterranean California Red Fir Forest,Tree,633,Conifer,Red Fir Forest and Woodland,SAF 207: Red Fir,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3033,0.2,0.04,Mediterranean California Subalpine Woodland,2033,Tr Mediterranean California Subalpine Woodland,Tree,640,Conifer,Subalpine Woodland and Parkland,SAF 256: California Mixed Subalpine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3034,0.2,0.04,Mediterranean California Mesic Serpentine Woodland and Chaparral,2034,Tr Mediterranean California Mesic Serpentine Woodland and Chaparral,Tree,607,Conifer,Chaparral,SAF 248: Knobcone Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3043,0.16,0.07400000000000001,Mediterranean California Mixed Evergreen Forest,2043,Tr Mediterranean California Mixed Evergreen Forest,Tree,626,Conifer,California Mixed Evergreen Forest and Woodland,SAF 234: Douglas-Fir-Tanoak-Pacific Madrone,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3044,0.2,0.04,Northern California Mesic Subalpine Woodland,2044,Tr Northern California Mesic Subalpine Woodland,Tree,627,Conifer,Mountain Hemlock Forest and Woodland,SAF 205: Mountain Hemlock,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3045,0.2,0.04,Northern Rocky Mountain Dry-Mesic Montane Mixed Conifer Forest,2045,Tr Northern Rocky Mountain Dry-Mesic Montane Mixed Conifer Forest,Tree,625,Conifer,Douglas-fir-Ponderosa Pine-Lodgepole Pine Forest and Woodland,SAF 210: Interior Douglas-Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3055,0.2,0.04,Rocky Mountain Subalpine Dry-Mesic Spruce-Fir Forest and Woodland,2055,Tr Rocky Mountain Subalpine Dry-Mesic Spruce-Fir Forest and Woodland,Tree,639,Conifer,Spruce-Fir Forest and Woodland,SAF 206: Engelmann Spruce-Subalpine Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3058,0.16,0.07400000000000001,Sierra Nevada Subalpine Lodgepole Pine Forest and Woodland,2058,Tr Sierra Nevada Subalpine Lodgepole Pine Forest and Woodland,Tree,622,Conifer,Lodgepole Pine Forest and Woodland,SAF 218: Lodgepole Pine,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3061,0.44,0.025,Inter-Mountain Basins Aspen-Mixed Conifer Forest and Woodland,2061,Tr Inter-Mountain Basins Aspen-Mixed Conifer Forest and Woodland,Tree,603,Conifer-Hardwood,Aspen-Mixed Conifer Forest and Woodland,SAF 217: Aspen,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3062,0.3,0.033,Inter-Mountain Basins Curl-leaf Mountain Mahogany Woodland,2062,Tr Inter-Mountain Basins Curl-leaf Mountain Mahogany Woodland and Shrubland,Tree,628,Conifer,Mountain Mahogany Woodland and Shrubland,SRM 415: Curlleaf Mountain-Mahogany,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3067,0.3,0.033,Mediterranean California Alpine Fell-Field,2067,Sh Mediterranean California Alpine Fell-Field,Shrub,601,Grassland,"Alpine Dwarf-Shrubland, Fell-field and Meadow",SRM 213: Alpine Grassland,Shrub-dominated,Dwarf-shrubland,Mixed evergreen-deciduous dwarf-shrubland
+3071,1.0,0.0,Sierra Nevada Alpine Dwarf-Shrubland,2071,Sh Sierra Nevada Alpine Dwarf-Shrubland,Shrub,601,Grassland,"Alpine Dwarf-Shrubland, Fell-field and Meadow",SRM 213: Alpine Grassland,Shrub-dominated,Dwarf-shrubland,Evergreen dwarf-shrubland
+3079,0.3,0.033,Great Basin Xeric Mixed Sagebrush Shrubland,2079,Sh Great Basin Xeric Mixed Sagebrush Shrubland,Shrub,623,Shrubland,Low Sagebrush Shrubland and Steppe,SRM 406: Low Sagebrush,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3080,1.0,0.0,Inter-Mountain Basins Big Sagebrush Shrubland,2080,Sh Inter-Mountain Basins Big Sagebrush Shrubland,Shrub,604,Shrubland,Big Sagebrush Shrubland and Steppe,SRM 403: Wyoming Big Sagebrush,Shrub-dominated,Shrubland,Evergreen shrubland
+3081,1.0,0.0,Inter-Mountain Basins Mixed Salt Desert Scrub,2081,Sh Inter-Mountain Basins Mixed Salt Desert Scrub,Shrub,636,Shrubland,Salt Desert Scrub,SRM 414: Salt Desert Shrub,Shrub-dominated,Shrubland,Evergreen shrubland
+3082,1.0,0.0,Mojave Mid-Elevation Mixed Desert Scrub,2082,Sh Mojave Mid-Elevation Mixed Desert Scrub,Shrub,613,Shrubland,Desert Scrub,SRM 212: Blackbush,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3087,0.3,0.033,Sonora-Mojave Creosotebush-White Bursage Desert Scrub,2087,Sh Sonora-Mojave Creosotebush-White Bursage Desert Scrub,Shrub,611,Shrubland,Creosotebush Desert Scrub,SRM 506: Creosotebush-Bursage,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3088,1.0,0.0,Sonora-Mojave Mixed Salt Desert Scrub,2088,Sh Sonora-Mojave Mixed Salt Desert Scrub,Shrub,636,Shrubland,Salt Desert Scrub,SRM 414: Salt Desert Shrub,Shrub-dominated,Shrubland,Evergreen shrubland
+3097,1.0,0.0,California Mesic Chaparral,2097,Sh California Mesic Chaparral,Shrub,607,Shrubland,Chaparral,SRM 207: Scrub Oak Mixed Chaparral,Shrub-dominated,Shrubland,Evergreen shrubland
+3098,1.0,0.0,California Montane Woodland and Chaparral,2098,Sh California Montane Woodland and Chaparral,Shrub,607,Shrubland,Chaparral,SRM 209: Montane Shrubland,Shrub-dominated,Shrubland,Evergreen shrubland
+3099,1.0,0.0,California Xeric Serpentine Chaparral,2099,Sh California Xeric Serpentine Chaparral,Shrub,607,Shrubland,Chaparral,SRM 209: Montane Shrubland,Shrub-dominated,Shrubland,Evergreen shrubland
+3103,1.0,0.0,Great Basin Semi-Desert Chaparral,2103,Sh Great Basin Semi-Desert Chaparral,Shrub,607,Shrubland,Chaparral,SRM 503: Arizona Chaparral,Shrub-dominated,Shrubland,Evergreen shrubland
+3105,1.0,0.0,Northern and Central California Dry-Mesic Chaparral,2105,Sh Northern and Central California Dry-Mesic Chaparral,Shrub,607,Shrubland,Chaparral,SRM 206: Chamise Chaparral,Shrub-dominated,Shrubland,Evergreen shrubland
+3108,1.0,0.0,Sonora-Mojave Semi-Desert Chaparral,2108,Sh Sonora-Mojave Semi-Desert Chaparral,Shrub,607,Shrubland,Chaparral,SRM 503: Arizona Chaparral,Shrub-dominated,Shrubland,Evergreen shrubland
+3114,0.44,0.025,California Lower Montane Foothill Pine Woodland and Savanna,2114,Tr California Lower Montane Foothill Pine Woodland and Savanna,Tree,610,Conifer,Conifer-Oak Forest and Woodland,SAF 250: Blue Oak-Digger Pine,Tree-dominated,Sparse tree canopy,Evergreen sparse tree canopy
+3123,1.0,0.0,Columbia Plateau Steppe and Grassland,2123,He Columbia Plateau Steppe and Grassland,Herb,618,Shrubland,Grassland and Steppe,SRM 106: Bluegrass Scabland,Shrub-dominated,Herbaceous - shrub-steppe,Perennial graminoid steppe
+3125,1.0,0.0,Inter-Mountain Basins Big Sagebrush Steppe,2125,Sh Inter-Mountain Basins Big Sagebrush Steppe,Shrub,604,Shrubland,Big Sagebrush Shrubland and Steppe,SRM 314: Big Sagebrush-Bluebunch Wheatgrass,Shrub-dominated,Herbaceous - shrub-steppe,Perennial graminoid steppe
+3126,1.0,0.0,Inter-Mountain Basins Montane Sagebrush Steppe,2126,Sh Inter-Mountain Basins Montane Sagebrush Steppe,Shrub,604,Shrubland,Big Sagebrush Shrubland and Steppe,SRM 402: Mountain Big Sagebrush,Shrub-dominated,Herbaceous - shrub-steppe,Perennial graminoid steppe
+3127,1.0,0.0,Inter-Mountain Basins Semi-Desert Shrub-Steppe,2127,Sh Inter-Mountain Basins Semi-Desert Shrub-Steppe,Shrub,613,Shrubland,Desert Scrub,SRM 403: Wyoming Big Sagebrush,Shrub-dominated,Herbaceous - shrub-steppe,Perennial graminoid steppe
+3135,1.0,0.0,Inter-Mountain Basins Semi-Desert Grassland,2135,He Inter-Mountain Basins Semi-Desert Grassland,Herb,617,Grassland,Grassland,SRM 502: Grama-Galetta,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3136,1.0,0.0,Mediterranean California Alpine Dry Tundra,2136,He Mediterranean California Alpine Dry Tundra,Herb,616,Grassland,Dry Tundra,SRM 213: Alpine Grassland,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3137,1.0,0.0,Mediterranean California Subalpine Meadow,2137,He Mediterranean California Subalpine Meadow,Herb,601,Grassland,"Alpine Dwarf-Shrubland, Fell-field and Meadow",SRM 216: Montane Meadows,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3138,1.0,0.0,North Pacific Montane Grassland,2138,He North Pacific Montane Grassland,Herb,617,Grassland,Grassland,SRM 102: Idaho Fescue,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3139,1.0,0.0,Northern Rocky Mountain Lower Montane-Foothill-Valley Grassland,2139,He Northern Rocky Mountain Lower Montane-Foothill-Valley Grassland,Herb,617,Grassland,Grassland,SRM 311: Rough Fescue-Bluebunch Wheatgrass,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3140,1.0,0.0,Northern Rocky Mountain Subalpine-Upper Montane Grassland,2140,He Northern Rocky Mountain Subalpine-Upper Montane Grassland,Herb,617,Grassland,Grassland,SRM 312: Rough Fescue-Idaho Fescue,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3145,1.0,0.0,Rocky Mountain Subalpine-Montane Mesic Meadow,2145,He Rocky Mountain Subalpine-Montane Mesic Meadow,Herb,601,Grassland,"Alpine Dwarf-Shrubland, Fell-field and Meadow",SRM 409: Tall Forb,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3151,0.4,0.025,California Central Valley Riparian Forest and Woodland,2151,Tr California Central Valley Riparian Woodland and Shrubland,Tree,635,Riparian,Western Riparian Woodland and Shrubland,SRM 203: Riparian Woodland,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3152,0.3,0.033,California Montane Riparian Systems,2152,Tr California Montane Riparian Systems,Tree,635,Riparian,Western Riparian Woodland and Shrubland,SRM 203: Riparian Woodland,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3153,1.0,0.0,Inter-Mountain Basins Greasewood Flat,2153,Sh Inter-Mountain Basins Greasewood Flat,Shrub,619,Shrubland,Greasewood Shrubland,SRM 501: Saltbush-Greasewood,Shrub-dominated,Shrubland,Evergreen shrubland
+3154,0.2,0.04,Inter-Mountain Basins Montane Riparian Forest and Woodland,2154,Tr Inter-Mountain Basins Montane Riparian Systems,Tree,635,Riparian,Western Riparian Woodland and Shrubland,SAF 235: Cottonwood-Willow,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3159,0.44,0.025,Rocky Mountain Montane Riparian Forest and Woodland,2159,Tr Rocky Mountain Montane Riparian Systems,Tree,635,Riparian,Western Riparian Woodland and Shrubland,SAF 235: Cottonwood-Willow,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3181,1.0,0.0,Introduced Upland Vegetation-Annual Grassland,2181,He Introduced Upland Vegetation-Annual Grassland,Herb,702,Exotic Herbaceous,Introduced Annual Grassland,LF 54: Introduced Upland Vegetation - Herbaceous,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3182,1.0,0.0,Introduced Upland Vegetation-Perennial Grassland and Forbland,2182,He Introduced Upland Vegetation-Perennial Grassland and Forbland,Herb,703,Exotic Herbaceous,Introduced Perennial Grassland and Forbland,LF 54: Introduced Upland Vegetation - Herbaceous,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3183,1.0,0.0,Introduced Upland Vegetation-Annual and Biennial Forbland,2183,He Introduced Upland Vegetation-Annual and Biennial Forbland,Herb,704,Exotic Herbaceous,Introduced Annual and Biennial Forbland,LF 54: Introduced Upland Vegetation - Herbaceous,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3184,1.0,0.0,California Annual Grassland,2184,He California Annual Grassland,Herb,702,Exotic Herbaceous,Introduced Annual Grassland,LF 54: Introduced Upland Vegetation - Herbaceous,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3208,0.2,0.04,Abies concolor Forest Alliance,2208,Tr Abies concolor Forest Alliance,Tree,643,Conifer,Douglas-fir-Grand Fir-White Fir Forest and Woodland,SAF 211: White Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3211,0.3,0.033,Grayia spinosa Shrubland Alliance,2211,Sh Grayia spinosa Shrubland Alliance,Shrub,613,Shrubland,Desert Scrub,SRM 414: Salt Desert Shrub,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3219,1.0,0.0,Inter-Mountain Basins Sparsely Vegetated Systems II,2219,Sps Inter-Mountain Basins Sparsely Vegetated Systems II,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3220,1.0,0.0,Artemisia tridentata ssp. vaseyana Shrubland Alliance,2220,Sh Artemisia tridentata ssp. vaseyana Shrubland Alliance,Shrub,604,Shrubland,Big Sagebrush Shrubland and Steppe,SRM 402: Mountain Big Sagebrush,Shrub-dominated,Herbaceous - shrub-steppe,Perennial graminoid steppe
+3221,1.0,0.0,Mediterranean California Sparsely Vegetated Systems II,2221,Sps Mediterranean California Sparsely Vegetated Systems II,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3227,0.2,0.04,Dry-mesic Montane Douglas-fir Forest,2227,Tr Pseudotsuga menziesii Forest Alliance,Tree,614,Conifer,Douglas-fir Forest and Woodland,SAF 210: Interior Douglas-Fir,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3229,0.2,0.04,Pinus albicaulis Woodland Alliance,2229,Tr Pinus albicaulis Woodland Alliance,Tree,640,Conifer,Subalpine Woodland and Parkland,SAF 208: Whitebark Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3230,0.16,0.07400000000000001,Pinus sabiniana Woodland Alliance,2230,Tr Pinus sabiniana Woodland Alliance,Tree,610,Conifer-Hardwood,Conifer-Oak Forest and Woodland,SAF 250: Blue Oak-Digger Pine,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3231,0.16,0.07400000000000001,Sequoiadendron giganteum Forest Alliance,2231,Tr Sequoiadendron giganteum Forest Alliance,Tree,643,Conifer,Douglas-fir-Grand Fir-White Fir Forest and Woodland,SAF 243: Sierra Nevada Mixed Conifer,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3232,0.2,0.04,Abies grandis Forest Forest,2232,Tr Abies grandis Forest Forest,Tree,643,Conifer,Douglas-fir-Grand Fir-White Fir Forest and Woodland,SAF 213: Grand Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3255,0.3,0.033,Inter-Mountain Basins Montane Riparian Shrubland,2154,Tr Inter-Mountain Basins Montane Riparian Systems,Shrub,635,Riparian,Western Riparian Woodland and Shrubland,SAF 235: Cottonwood-Willow,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous shrubland
+3257,1.0,0.0,California Central Valley Riparian Herbaceous,2151,Tr California Central Valley Riparian Woodland and Shrubland,Herb,635,Riparian,Western Riparian Woodland and Shrubland,SRM 203: Riparian Woodland,Tree-dominated,Open tree canopy,Perennial graminoid grassland
+3260,0.3,0.033,Mediterranean California Lower Montane Black Oak Forest and Woodland,2260,Tr Mediterranean California Lower Montane Black Oak Forest and Woodland,Tree,610,Hardwood,Conifer-Oak Forest and Woodland,SAF 246: California Black Oak,Tree-dominated,Open tree canopy,Deciduous closed tree canopy
+3261,0.3,0.033,Mediterranean California Lower Montane Black Oak - Conifer Forest and Woodland,2261,Tr Mediterranean California Lower Montane Black Oak - Conifer Forest and Woodland,Tree,610,Conifer-Hardwood,Conifer-Oak Forest and Woodland,SAF 246: California Black Oak,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous closed tree canopy
+3264,0.44,0.025,California Lower Montane Blue Oak Forest and Woodland,2264,Tr California Lower Montane Blue Oak Forest and Woodland,Tree,610,Hardwood,Conifer-Oak Forest and Woodland,SAF 250: Blue Oak-Digger Pine,Tree-dominated,Sparse tree canopy,Deciduous closed tree canopy
+3265,0.44,0.025,California Lower Montane Blue Oak-Foothill Pine Forest and Woodland,2265,Tr California Lower Montane Blue Oak-Foothill Pine Forest and Woodland,Tree,610,Conifer-Hardwood,Conifer-Oak Forest and Woodland,SAF 250: Blue Oak-Digger Pine,Tree-dominated,Sparse tree canopy,Mixed evergreen-deciduous sparse tree canopy
+3292,1.0,0.0,Open Water,11,Ba Open Water,Water,11,Open Water,Open Water,LF 11: Water,Non-vegetated,Non-vegetated,Non-vegetated
+3293,1.0,0.0,Snow-Ice,12,Ba Snow-Ice,Barren,12,Snow-Ice,Snow-Ice,LF 12: Snow-Ice,Non-vegetated,Non-vegetated,Non-vegetated
+3294,1.0,0.0,Barren,31,Bab Barren,Barren,31,Barren,Barren,LF 31: Barren,Non-vegetated,Non-vegetated,Non-vegetated
+3295,1.0,0.0,Quarries-Strip Mines-Gravel Pits,32,Bab Quarries-Strip Mines-Gravel Pits,Barren,32,Quarries-Strip Mines-Gravel Pits,Quarries-Strip Mines-Gravel Pits,LF 20: Developed,Non-vegetated,Non-vegetated,Developed
+3296,1.0,0.0,Developed-Low Intensity,2902,Bau Developed-Low Intensity,Developed,22,Developed-Low Intensity,Developed-Low Intensity,LF 20: Developed,No Dominant Lifeform,No Dominant Lifeform,Developed
+3297,1.0,0.0,Developed-Medium Intensity,2903,Bau Developed-Medium Intensity,Developed,23,Developed-Medium Intensity,Developed-Medium Intensity,LF 20: Developed,No Dominant Lifeform,No Dominant Lifeform,Developed
+3298,1.0,0.0,Developed-High Intensity,2904,Bau Developed-High Intensity,Developed,24,Developed-High Intensity,Developed-High Intensity,LF 20: Developed,No Dominant Lifeform,No Dominant Lifeform,Developed
+3299,1.0,0.0,Developed-Roads,2905,Bau Developed-Roads,Developed,25,Developed-Roads,Developed-Roads,LF 20: Developed,No Dominant Lifeform,No Dominant Lifeform,Developed
+3900,0.44,0.025,Western Cool Temperate Urban Deciduous Forest,2913,Dtd Urban Deciduous Forest,Tree,13,Developed,Developed-Upland Deciduous Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3901,0.2,0.04,Western Cool Temperate Urban Evergreen Forest,2914,Dtc Urban Evergreen Forest,Tree,14,Developed,Developed-Upland Evergreen Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3902,0.2,0.04,Western Cool Temperate Urban Mixed Forest,2915,Dtm Urban Mixed Deciduous-Evergreen Forest,Tree,15,Developed,Developed-Upland Mixed Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3903,1.0,0.0,Western Cool Temperate Urban Herbaceous,2916,Dgr Urban Herbaceous,Herb,16,Developed,Developed-Upland Herbaceous,LF 20: Developed,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Herbaceous - grassland
+3904,0.2,0.04,Western Cool Temperate Urban Shrubland,2917,Dsh Urban Shrubland,Shrub,17,Developed,Developed-Upland Shrubland,LF 20: Developed,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3910,0.44,0.025,Western Warm Temperate Urban Deciduous Forest,2913,Dtd Urban Deciduous Forest,Tree,13,Developed,Developed-Upland Deciduous Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3911,0.44,0.025,Western Warm Temperate Urban Evergreen Forest,2914,Dtc Urban Evergreen Forest,Tree,14,Developed,Developed-Upland Evergreen Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3912,0.2,0.04,Western Warm Temperate Urban Mixed Forest,2915,Dtm Urban Mixed Deciduous-Evergreen Forest,Tree,15,Developed,Developed-Upland Mixed Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous open tree canopy
+3913,1.0,0.0,Western Warm Temperate Urban Herbaceous,2916,Dgr Urban Herbaceous,Herb,16,Developed,Developed-Upland Herbaceous,LF 20: Developed,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Herbaceous - grassland
+3914,0.3,0.033,Western Warm Temperate Urban Shrubland,2917,Dsh Urban Shrubland,Shrub,17,Developed,Developed-Upland Shrubland,LF 20: Developed,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3921,0.2,0.04,Western Cool Temperate Developed Ruderal Evergreen Forest,2924,Dtc Developed Ruderal Evergreen Forest,Tree,14,Developed,Developed-Upland Evergreen Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3923,1.0,0.0,Western Cool Temperate Developed Ruderal Shrubland,2926,Dsh Developed Ruderal Shrubland,Shrub,17,Developed,Developed-Upland Shrubland,LF 20: Developed,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3924,1.0,0.0,Western Cool Temperate Developed Ruderal Grassland,2927,Dgr Developed Ruderal Grassland,Herb,16,Developed,Developed-Upland Herbaceous,LF 20: Developed,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Herbaceous - grassland
+3926,0.3,0.033,Western Warm Temperate Developed Ruderal Evergreen Forest,2924,Dtc Developed Ruderal Evergreen Forest,Tree,14,Developed,Developed-Upland Evergreen Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3928,0.3,0.033,Western Warm Temperate Developed Ruderal Shrubland,2926,Dsh Developed Ruderal Shrubland,Shrub,17,Developed,Developed-Upland Shrubland,LF 20: Developed,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3929,1.0,0.0,Western Warm Temperate Developed Ruderal Grassland,2927,Dgr Developed Ruderal Grassland,Herb,16,Developed,Developed-Upland Herbaceous,LF 20: Developed,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Herbaceous - grassland
+3960,0.44,0.025,Western Cool Temperate Orchard,2960,Dab Orchard,Tree,60,Agricultural,Agricultural-Orchard,LF 80: Agriculture,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3961,0.3,0.033,Western Cool Temperate Vineyard,2961,Da Vineyard,Agriculture,61,Agricultural,Agricultural-Vineyard,LF 80: Agriculture,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3964,1.0,0.0,Western Cool Temperate Row Crop,2964,Da Row Crop,Agriculture,64,Agricultural,Agricultural-Row Crop,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3965,1.0,0.0,Western Cool Temperate Close Grown Crop,2965,Da Close Grown Crop,Agriculture,65,Agricultural,Agricultural-Close Grown Crop,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3967,1.0,0.0,Western Cool Temperate Pasture and Hayland,2967,Dab Pasture and Hayland,Herb,67,Agricultural,Agricultural-Pasture and Hayland,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3968,1.0,0.0,Western Cool Temperate Wheat,2968,Da Wheat,Agriculture,68,Agricultural,Agricultural-Wheat,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3980,0.44,0.025,Western Warm Temperate Orchard,2960,Dab Orchard,Tree,60,Agricultural,Agricultural-Orchard,LF 80: Agriculture,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3981,0.3,0.033,Western Warm Temperate Vineyard,2961,Da Vineyard,Agriculture,61,Agricultural,Agricultural-Vineyard,LF 80: Agriculture,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3984,1.0,0.0,Western Warm Temperate Row Crop,2964,Da Row Crop,Agriculture,64,Agricultural,Agricultural-Row Crop,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3985,1.0,0.0,Western Warm Temperate Close Grown Crop,2965,Da Close Grown Crop,Agriculture,65,Agricultural,Agricultural-Close Grown Crop,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3986,1.0,0.0,Western Warm Temperate Fallow/Idle Cropland,2966,Dab Fallow/Idle Cropland,Herb,66,Agricultural,Agricultural-Fallow/Idle Cropland,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3988,1.0,0.0,Western Warm Temperate Wheat,2968,Da Wheat,Agriculture,68,Agricultural,Agricultural-Wheat,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3004,1.0,0.0,North American Warm Desert Sparsely Vegetated Systems,2004,Sps North American Warm Desert Sparsely Vegetated Systems,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3920,0.44,0.025,Western Cool Temperate Developed Ruderal Deciduous Forest,2923,Dtd Developed Ruderal Deciduous Forest,Tree,13,Developed,Developed-Upland Deciduous Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3925,0.44,0.025,Western Warm Temperate Developed Ruderal Deciduous Forest,2923,Dtd Developed Ruderal Deciduous Forest,Tree,13,Developed,Developed-Upland Deciduous Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3941,0.2,0.04,Western Cool Temperate Undeveloped Ruderal Evergreen Forest,2934,Dtc Undeveloped Ruderal Evergreen Forest,Tree,14,Developed,Developed-Upland Evergreen Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3943,1.0,0.0,Western Cool Temperate Undeveloped Ruderal Shrubland,2936,Dsh Undeveloped Ruderal Shrubland,Shrub,17,Developed,Developed-Upland Shrubland,LF 20: Developed,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3983,1.0,0.0,Western Warm Temperate Row Crop - Close Grown Crop,2963,Da Row Crop - Close Grown Crop,Agriculture,63,Agricultural,Agricultural-Row Crop-Close Grown Crop,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3987,1.0,0.0,Western Warm Temperate Pasture and Hayland,2967,Dab Pasture and Hayland,Herb,67,Agricultural,Agricultural-Pasture and Hayland,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3944,1.0,0.0,Western Cool Temperate Undeveloped Ruderal Grassland,2937,Dgr Undeveloped Ruderal Grassland,Herb,16,Developed,Developed-Upland Herbaceous,LF 20: Developed,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Herbaceous - grassland
+3014,0.3,0.033,Central and Southern California Mixed Evergreen Woodland,2014,Tr Central and Southern California Mixed Evergreen Woodland,Tree,626,Conifer,California Mixed Evergreen Forest and Woodland,SAF 249: Canyon Live Oak,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3057,0.3,0.033,Rocky Mountain Subalpine-Montane Limber-Bristlecone Pine Woodland,2057,Tr Rocky Mountain Subalpine-Montane Limber-Bristlecone Pine Woodland,Tree,621,Conifer,Limber Pine Woodland,SAF 209: Bristlecone Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3124,1.0,0.0,Columbia Plateau Low Sagebrush Steppe,2124,Sh Columbia Plateau Low Sagebrush Steppe,Shrub,623,Shrubland,Low Sagebrush Shrubland and Steppe,SRM 406: Low Sagebrush,Shrub-dominated,Herbaceous - shrub-steppe,Perennial graminoid steppe
+3164,1.0,0.0,Rocky Mountain Wetland-Herbaceous,2164,He Rocky Mountain Wetland-Herbaceous,Herb,635,Riparian,Western Herbaceous Wetland,SRM 422: Riparian,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3210,1.0,0.0,Coleogyne ramosissima Shrubland Alliance,2210,Sh Coleogyne ramosissima Shrubland Alliance,Shrub,606,Shrubland,Blackbrush Shrubland,SRM 212: Blackbush,Shrub-dominated,Shrubland,Evergreen shrubland
+3222,1.0,0.0,Rocky Mountain Alpine/Montane Sparsely Vegetated Systems II,2222,Sps Rocky Mountain Alpine/Montane Sparsely Vegetated Systems II,Sparse,700,Sparsely Vegetated,Sparse Vegetation,LF 33: Sparsely Vegetated,No Dominant Lifeform,Sparsely vegetated,Sparsely vegetated
+3252,1.0,0.0,Rocky Mountain Subalpine/Upper Montane Riparian Shrubland,2160,Tr Rocky Mountain Subalpine/Upper Montane Riparian Systems,Shrub,635,Riparian,Western Riparian Woodland and Shrubland,SRM 422: Riparian,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3966,1.0,0.0,Western Cool Temperate Fallow/Idle Cropland,2966,Dab Fallow/Idle Cropland,Herb,66,Agricultural,Agricultural-Fallow/Idle Cropland,LF 80: Agriculture,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Annual Graminoid/Forb
+3982,1.0,0.0,Western Warm Temperate Bush fruit and berries,2962,Dab Bush Fruit and Berries,Shrub,62,Agricultural,Agricultural-Bush fruit and berries,LF 80: Agriculture,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3940,0.44,0.025,Western Cool Temperate Undeveloped Ruderal Deciduous Forest,2933,Dtd Undeveloped Ruderal Deciduous Forest,Tree,13,Developed,Developed-Upland Deciduous Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3940,0.44,0.025,Western Cool Temperate Undeveloped Ruderal Deciduous Forest,2933,Dtd Undeveloped Ruderal Deciduous Forest,Tree,13,Developed,Developed-Upland Deciduous Forest,LF 20: Developed,Tree-dominated,Open tree canopy,Deciduous open tree canopy
+3180,0.44,0.025,Introduced Riparian Forest and Woodland,2180,Tr Introduced Riparian Vegetation,Tree,701,Exotic Tree-Shrub,Introduced Riparian Vegetation,LF 58: Introduced Woody Wetlands and Riparian Vegetation,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3259,1.0,0.0,Introduced Riparian Shrubland,2180,Tr Introduced Riparian Vegetation,Shrub,701,Exotic Tree-Shrub,Introduced Riparian Vegetation,LF 58: Introduced Woody Wetlands and Riparian Vegetation,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3056,0.16,0.07400000000000001,Rocky Mountain Subalpine Mesic-Wet Spruce-Fir Forest and Woodland,2056,Tr Rocky Mountain Subalpine Mesic-Wet Spruce-Fir Forest and Woodland,Tree,639,Conifer,Spruce-Fir Forest and Woodland,SAF 206: Engelmann Spruce-Subalpine Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3051,0.16,0.07400000000000001,Southern Rocky Mountain Dry-Mesic Montane Mixed Conifer Forest and Woodland,2051,Tr Southern Rocky Mountain Dry-Mesic Montane Mixed Conifer Forest and Woodland,Tree,625,Conifer,Douglas-fir-Ponderosa Pine-Lodgepole Pine Forest and Woodland,SAF 210: Interior Douglas-Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3052,0.16,0.07400000000000001,Southern Rocky Mountain Mesic Montane Mixed Conifer Forest and Woodland,2052,Tr Southern Rocky Mountain Mesic Montane Mixed Conifer Forest and Woodland,Tree,643,Conifer,Douglas-fir-Grand Fir-White Fir Forest and Woodland,SAF 211: White Fir,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3050,0.16,0.07400000000000001,Rocky Mountain Lodgepole Pine Forest,2050,Tr Rocky Mountain Lodgepole Pine Forest,Tree,622,Conifer,Lodgepole Pine Forest and Woodland,SAF 218: Lodgepole Pine,Tree-dominated,Closed tree canopy,Evergreen closed tree canopy
+3049,0.2,0.04,Rocky Mountain Foothill Limber Pine-Juniper Woodland,2049,Tr Rocky Mountain Foothill Limber Pine-Juniper Woodland,Tree,621,Conifer,Limber Pine Woodland,SAF 219: Limber Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3251,0.44,0.025,Rocky Mountain Montane Riparian Shrubland,2159,Tr Rocky Mountain Montane Riparian Systems,Shrub,635,Riparian,Western Riparian Woodland and Shrubland,SAF 235: Cottonwood-Willow,Tree-dominated,Open tree canopy,Mixed evergreen-deciduous shrubland
+3054,0.2,0.04,Southern Rocky Mountain Ponderosa Pine Woodland,2054,Tr Southern Rocky Mountain Ponderosa Pine Woodland,Tree,631,Conifer,"Ponderosa Pine Forest, Woodland and Savanna",SAF 237: Interior Ponderosa Pine,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3117,0.3,0.033,Southern Rocky Mountain Ponderosa Pine Savanna,2117,Tr Southern Rocky Mountain Ponderosa Pine Savanna,Tree,631,Conifer,"Ponderosa Pine Forest, Woodland and Savanna",SAF 237: Interior Ponderosa Pine,Tree-dominated,Sparse tree canopy,Evergreen sparse tree canopy
+3064,1.0,0.0,Colorado Plateau Mixed Low Sagebrush Shrubland,2064,Sh Colorado Plateau Mixed Low Sagebrush Shrubland,Shrub,623,Shrubland,Low Sagebrush Shrubland and Steppe,SRM 405: Black Sagebrush,Shrub-dominated,Dwarf-shrubland,Evergreen dwarf-shrubland
+3070,1.0,0.0,Rocky Mountain Alpine Dwarf-Shrubland,2070,Sh Rocky Mountain Alpine Dwarf-Shrubland,Shrub,601,Grassland,"Alpine Dwarf-Shrubland, Fell-field and Meadow",SRM 410: Alpine Rangeland,Shrub-dominated,Dwarf-shrubland,Evergreen dwarf-shrubland
+3143,1.0,0.0,Rocky Mountain Alpine Fell-Field,2143,He Rocky Mountain Alpine Fell-Field,Herb,601,Grassland,"Alpine Dwarf-Shrubland, Fell-field and Meadow",SRM 410: Alpine Rangeland,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3144,1.0,0.0,Rocky Mountain Alpine Turf,2144,He Rocky Mountain Alpine Turf,Herb,616,Grassland,Dry Tundra,SRM 410: Alpine Rangeland,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3146,1.0,0.0,Southern Rocky Mountain Montane-Subalpine Grassland,2146,He Southern Rocky Mountain Montane-Subalpine Grassland,Herb,617,Grassland,Grassland,SRM 410: Alpine Rangeland,Herbaceous / Nonvascular-dominated,Herbaceous - grassland,Perennial graminoid grassland
+3115,0.3,0.033,Inter-Mountain Basins Juniper Savanna,2115,Tr Inter-Mountain Basins Juniper Savanna,Tree,620,Conifer,Juniper Woodland and Savanna,SRM 412: Juniper-Pinyon Woodland,Tree-dominated,Sparse tree canopy,Evergreen sparse tree canopy
+3107,1.0,0.0,Rocky Mountain Gambel Oak-Mixed Montane Shrubland,2107,Sh Rocky Mountain Gambel Oak-Mixed Montane Shrubland,Shrub,612,Shrubland,Deciduous Shrubland,SRM 413: Gambel oak,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3217,1.0,0.0,Quercus gambelii Shrubland Alliance,2217,Sh Quercus gambelii Shrubland Alliance,Shrub,612,Shrubland,Deciduous Shrubland,SRM 413: Gambel Oak,Shrub-dominated,Shrubland,Deciduous shrubland
+3086,1.0,0.0,Rocky Mountain Lower Montane-Foothill Shrubland,2086,Sh Rocky Mountain Lower Montane-Foothill Shrubland,Shrub,612,Shrubland,Deciduous Shrubland,SRM 421: Chokecherry-Serviceberry-Rose,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3160,0.44,0.025,Rocky Mountain Subalpine/Upper Montane Riparian Forest and Woodland,2160,Tr Rocky Mountain Subalpine/Upper Montane Riparian Systems,Tree,635,Riparian,Western Riparian Woodland and Shrubland,SRM 422: Riparian,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
+3214,1.0,0.0,Arctostaphylos patula Shrubland Alliance,2214,Sh Arctostaphylos patula Shrubland Alliance,Shrub,607,Shrubland,Chaparral,SRM 503: Arizona Chaparral,Shrub-dominated,Shrubland,Evergreen shrubland
+3016,0.2,0.04,Colorado Plateau Pinyon-Juniper Woodland,2016,Tr Colorado Plateau Pinyon-Juniper Woodland,Tree,630,Conifer,Pinyon-Juniper Woodland,SRM 504: Juniper-Pinyon Pine Woodland,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3059,0.2,0.04,Southern Rocky Mountain Pinyon-Juniper Woodland,2059,Tr Southern Rocky Mountain Pinyon-Juniper Woodland,Tree,630,Conifer,Pinyon-Juniper Woodland,SRM 504: Juniper-Pinyon Pine Woodland,Tree-dominated,Open tree canopy,Evergreen open tree canopy
+3119,0.3,0.033,Southern Rocky Mountain Juniper Woodland and Savanna,2119,Tr Southern Rocky Mountain Juniper Woodland and Savanna,Tree,620,Conifer,Juniper Woodland and Savanna,SRM 504: Juniper-Pinyon Pine Woodland,Tree-dominated,Sparse tree canopy,Evergreen sparse tree canopy
+3093,1.0,0.0,Southern Colorado Plateau Sand Shrubland,2093,Sh Southern Colorado Plateau Sand Shrubland,Shrub,637,Shrubland,Sand Shrubland,SRM 605: Sandsage Prairie,Shrub-dominated,Shrubland,Mixed evergreen-deciduous shrubland
