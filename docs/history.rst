@@ -90,3 +90,11 @@ History
 * Fixes for #34
 * Added in CLI extents flag for cutting exactly to a known domain.
 * Added resampling to DEM and Veg Height layers, all else use nearest neighbor.
+
+0.13.0 (2019-12-23)
+-------------------
+* Fixes for #29, #36, #37, #39, #40
+* Added in a bypass flag for skipping over missing tau/k data
+* Updated veg tau/k parameters
+* Added tif file format to parse_extent
+* Added first unittests!
