@@ -49,6 +49,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/USDA-ARS-NWRC/basin_setup',
-    version='0.12.2',
+    version='0.13.0',
     zip_safe=False,
 )
