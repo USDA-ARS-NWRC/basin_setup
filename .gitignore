@@ -101,11 +101,10 @@ ENV/
 .mypy_cache/
 
 #Result in examples
-examples/*/output/*
+examples/**/output/**
+**/delineation/**
 examples/**/basin_setup/**
-examples/**delineation/**
 new_basin/**/basin_setup/**
-new_basin/**delineation/**
 examples/*/*.csv
 */output/*
 output/*
@@ -113,3 +112,4 @@ output/*
 *.kml
 */basin_topo/*
 *.zip
+*.xml
