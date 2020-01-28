@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+   make:
+      image: usdaarsnwrc/basin_setup:0.13.2
+      volumes:
+        - ./:/data
+        - ~/Downloads:/Downloads
+      entrypoint: make
+
+   cmd:
+      image: usdaarsnwrc/basin_setup:0.13.2
+      volumes:
+        - ./:/data
+      entrypoint: /bin/bash
