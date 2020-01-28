@@ -111,3 +111,4 @@ output/*
 *.zip
 *.kml
 */basin_topo/*
+*.zip
