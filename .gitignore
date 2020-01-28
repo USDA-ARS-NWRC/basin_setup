@@ -104,6 +104,7 @@ ENV/
 examples/**/output/**
 **/delineation/**
 examples/**/basin_setup/**
+tests/**/basin_setup/**
 new_basin/**/basin_setup/**
 examples/*/*.csv
 */output/*
@@ -112,4 +113,6 @@ output/*
 *.kml
 */basin_topo/*
 *.zip
-*.xml
+examples/**.xml
+tests/**.xml
+**.aux.**

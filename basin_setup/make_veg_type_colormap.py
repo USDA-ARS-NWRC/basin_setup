@@ -21,8 +21,7 @@ def main():
 
     print("Creating a new colormap for QGIS based on the vegetation type values.")
 
-    output = "./colormaps/veg_colormap.qml"
-
+    output = "./veg_colormap.qml"
 
     print("Parsing vegetation types...")
     df = pd.read_csv(fname)
@@ -66,9 +65,6 @@ def main():
     """
 
     color_entry = '          <item alpha="{0}" value="{1}" label="{2}" color="{3}"/>\n'
-
-
-    print(df['CLASSNAME'])
 
     # Grab the veg values for all the modeling domains in the sierras
     with open(output,'w+') as fp:

@@ -126,12 +126,16 @@ def get_now_str():
     return str_now
 
 class QGISLayerMaker(object):
-    def __init__(self, path, epsg, template_dir='./scripts/qgis_templates', **kwargs):
+    def __init__(self, path, epsg, **kwargs):
         """
         Adds a layer to a QGIS project in a hacky XML copy and paste way
         This class is meant to be inherited from with modifications to the
         declaration strings
         """
+        dirname(__file__)
+
+        template_dir = join(dirname(__file__), 'qgis_templates')
+
         # Grab a UID for layer
         self.str_now = get_now_str()
 
@@ -201,7 +205,7 @@ class QGISLayerMaker(object):
                                 "LINE_TYPE":line_type,
                                 "PROVIDER":provider,
                                 "DISPLAY_NAME":display_name}
-                                
+
         elif self.ext == 'tif':
             self.ftype = 'geotiff'
             ftype = 'geotiff'
