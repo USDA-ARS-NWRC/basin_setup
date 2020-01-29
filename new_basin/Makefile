@@ -4,8 +4,8 @@ BASIN_NAME := lakes basin
 POUR_POINTS := pour_points.bna
 EPSG := 32611
 
-# LEFT UPPER, RIGHT BOTTOM
-MAX_EXTENT := 318520.405027 4167937.07547 329767.728206 4157522.88734
+# LEFT BOTTOM, RIGHT TOP
+MAX_EXTENT := 318520.405027 4157522.88734 329767.728206 4167937.07547
 DELINEATE_THRESHOLD := 10000 100000
 DELINEATE_RESOLUTION := 10
 NTHREADS := 2
@@ -56,7 +56,6 @@ download_dem:
 	done <$(DEM_SOURCE)
 
 MOSAIC:=./dem/mosaic.img
-FULL_DEM:=./dem/full_dem_$(EPSG).tif
 
 dem_process:
 	# Unzip all the dems
@@ -67,15 +66,11 @@ dem_process:
 	gdalwarp -overwrite \
 					 -t_srs EPSG:$(EPSG) \
 					 -tr $(DELINEATE_RESOLUTION) $(DELINEATE_RESOLUTION) \
+					 -te $(MAX_EXTENT) \
 					 -r bilinear \
 					 $(MOSAIC) \
-					 $(FULL_DEM)
-	# Cut the dem to avoid lengthy processing
-	gdal_translate -projwin $(MAX_EXTENT) \
-								 -of GTiff \
-								 -r bilinear \
-								 $(FULL_DEM) \
-								 $(DEM_IMG)
+					 $(DEM_IMG)
+
 	# Clean up some processing images
 	rm $(MOSAIC)
 
@@ -95,7 +90,7 @@ topo:
 							-bn $(BASIN_NAME) \
 							-sb delineation/*_subbasin.shp \
 							-dm $(DEM_IMG) \
-							# --extent $(BASIN_EXTENT)
+							# --extent $(BASIN_EXTENT) \
 							-d /Downloads
 
 gis_package:

@@ -12,11 +12,10 @@ Last Date Modified: 01-24-2020
 
 import datetime
 import argparse
-from os.path import basename, split, join
+from os.path import basename, split, join, dirname
 import pprint
 import requests
 from basin_setup.basin_setup import parse_extent
-
 
 def get_xml_spatial_ref(epsg):
     """
@@ -277,10 +276,10 @@ class QGISLayerMaker(object):
             search_str = self.replacements['PATH'].lower()
 
         ###### Universally choose colors ############
-
+        qgis_templates = join(dirname(__file__),'qgis_templates')
         # Use simple gray scale for hillshade rasters
         if 'hillshade' in search_str:
-            color = './colormaps/hillshade.qml'
+            color = join(qgis_templates,'hillshade.xml')
 
         # Use Custom dem colrmap for the elevation rasters
         elif 'dem' in search_str:
@@ -288,7 +287,7 @@ class QGISLayerMaker(object):
 
         # Use Custom dem colrmap for the elevation rasters
         elif 'veg_type' in search_str:
-            color = './colormaps/veg_colormap.qml'
+            color = join(qgis_templates,'veg_type_colormap.xml')
 
         # streams
         elif "net_thresh" in search_str:
@@ -383,7 +382,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Build a qgis project for '
                                     'setting up a basin')
-    parser.add_argument('-t','--geotiff', dest='tifs', nargs='+',
+    parser.add_argument('-t','--geotiff', dest='tifs', nargs='+', required=True,
                         help='Paths to the geotifs to add, specifically looking'
                              ' for a hillshade and dem')
     parser.add_argument('-s','--shapefiles', dest='shapefiles', nargs='+',
@@ -393,28 +392,38 @@ def main():
     parser.add_argument('-v','--variables', dest='variables', nargs='+',
                         help='Variable names in the netcdf to add to the'
                              ' project')
+    parser.add_argument('-e','--epsg', dest='epsg', required=True,
+                     help='Paths to the shapefiles')
 
     args = parser.parse_args()
-    epsg = 32611
+    epsg = args.epsg
 
-    ######## INPUTS ########
-    print("\n\nAdding shapefiles to the project...")
-    declarations, order, layers, legends = create_layer_strings(args.shapefiles, epsg)
+    if args.shapefiles != None:
+        print("\n\nAdding shapefiles to the project...")
+        declarations, order, layers, legends = create_layer_strings(args.shapefiles, epsg)
+    else:
+        declarations = ''
+        order = ''
+        layers = ''
+        legends = ''
 
-    print("\n\nAdding variables from a netcdf to the project...")
-    declarations, order, layers, legends = create_layer_strings(args.netcdf, epsg,
-                                                    variables=args.variables,
-                                                    declarations=declarations,
-                                                    order=order,
-                                                    layers=layers,
-                                                    legends=legends)
-
-    print("\n\nAdding geotiffs to the project...")
-    declarations, order, layers, legend = create_layer_strings(args.tifs, epsg,
+    if args.netcdf != None and args.variables != None:
+        print("\n\nAdding variables from a netcdf to the project...")
+        declarations, order, layers, legends = create_layer_strings(args.netcdf, epsg,
+                                                        variables=args.variables,
                                                         declarations=declarations,
                                                         order=order,
                                                         layers=layers,
                                                         legends=legends)
+    if args.tifs != None:
+        print("\n\nAdding geotiffs to the project...")
+        declarations, order, layers, legend = create_layer_strings(args.tifs, epsg,
+                                                            declarations=declarations,
+                                                            order=order,
+                                                            layers=layers,
+                                                            legends=legends)
+    else:
+        raise IOError("Must have at least one geotiff to define the project extent")
     # Populate replacement info
     replacements = \
     {
@@ -425,7 +434,8 @@ def main():
     "EXTENT": get_extent_str(args.tifs[0])
     }
     replacements['SPATIAL_REF'] = get_xml_spatial_ref(epsg)
-    template_dir = './scripts/qgis_templates'
+    template_dir = join(dirname(__file__), 'qgis_templates')
+
     # Open the template
     fname = join(template_dir, 'template.xml')
 
