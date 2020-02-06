@@ -125,7 +125,6 @@ History
 0.14.0 (TBD)
 -------------------
 * Fixes for 41_, 42_
-* Added in a template folder for setting up new basins with scripts
 * Added in colormap making scripts
 * Added in QGIS project maker script
 
