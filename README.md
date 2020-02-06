@@ -1,5 +1,5 @@
 # BASIN SETUP TOOL v0.13.2
-
+[![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.python.org/basin_setup/ansicolortags/)
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
 
 The basin setup tool is a python script designed to create the required
@@ -30,7 +30,7 @@ $ pip install -r requirements.txt
 Finally to install basin\_setup for commandline use use:
 
 ``` bash
-$ sudo make install
+$ python install setup.py
 ```
 
 If you want to develop on basin\_setup use the following command to
@@ -38,15 +38,18 @@ install the utility so that you changes to the source will be used
 without having to reinstall
 
 ``` bash
-$ sudo make develop
+$ python setup.py develop
 ```
 
 ## Commands
-There are 3 commands that are installed after installing using the make file.
+There are 6 commands that are installed after installing using the make file.
 
 1. [basin_setup](#basin\_setup) - creates all the images for running SMRF/AWSM
 2. [delineate](#delineate) - Automatically delineates a new basin.
 3. [grm](#grm) - Aggregates Lidar snow depths into a single netcdf
+4. [make_qgis_proj](#make_qgis_proj) - Adds files to a xml file to be used in QGIS
+5. [make_dem_colormap](#make_dem_colormap) - Makes a custom colormap for a dem specifically making nice maps
+6. [make_veg_type_colormap](#make_veg_type_colormap) - Makes a custom colormap from the landfire data set specifically for maps
 
 ----
 ## basin\_setup
@@ -200,4 +203,4 @@ $ delineate -p pour_points.bna -d dem.tif --rerun -t 2000000 -n 2 --debug
 Using the debug flag will leave lots of extra files that were generated on the
 way in a folder named delineation
 
-To get files necessary for s
+To get files necessary for streamflow add --streamflow flag to the command
