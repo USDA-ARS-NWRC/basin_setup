@@ -1133,7 +1133,7 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
                 veg_tau[veggies==value] = df_veg['tau'].loc[value]
                 veg_k[veggies==value] = df_veg['k'].loc[value]
             else:
-                out.error("Bypassing not assigning any tau//k values for veg parameter {}".format(value))
+                out.error("Bypassing not assigning any tau/k values for veg parameter {}".format(value))
 
     # use the keywords and dictionaries to guess at the tau and K
     else:
