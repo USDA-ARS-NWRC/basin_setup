@@ -124,9 +124,10 @@ History
 
 0.14.0 (TBD)
 -------------------
-* Fixes for 41_, 42_
+* Fixes for 41_, 42_, 43_
 * Added in colormap making scripts
 * Added in QGIS project maker script
 
 .. _41: https://github.com/USDA-ARS-NWRC/basin_setup/issues/41
 .. _42: https://github.com/USDA-ARS-NWRC/basin_setup/issues/42
+.. _43: https://github.com/USDA-ARS-NWRC/basin_setup/issues/43

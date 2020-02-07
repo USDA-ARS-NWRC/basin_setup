@@ -250,11 +250,18 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
 
         # Parse extents from basin info
         for l in parse_list:
-            if 'extent' in l.lower():
+            if 'extent:' in l.lower():
                 k, v = l.split(':')
-                parseable = ''.join(c for c in v if c not in ' ()\n')
-                parseable = parseable.replace('-', ',')
-                extent = [float(i) for i in parseable.split(',')]
+                parseable = v.replace(' - ', ',')
+                parseable = ''.join(c for c in parseable if c not in ' ()\n')
+
+                try:
+                    extent = [float(i) for i in parseable.split(',')]
+                except Exception as e:
+                    print("Attempting to evaluate extent on {} from the line "
+                          "-->  {}".format(fname, parseable))
+                    raise(e)
+
                 break
 
     elif file_type == 'tif':
