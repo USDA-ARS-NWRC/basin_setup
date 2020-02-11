@@ -122,7 +122,7 @@ History
 .. _40: https://github.com/USDA-ARS-NWRC/basin_setup/issues/40
 
 
-0.14.0 (TBD)
+0.14.0 (2020-02-11)
 -------------------
 * Fixes for 41_, 42_, 43_, 44__, 45__
 * Added in colormap making scripts
