@@ -116,3 +116,7 @@ output/*
 examples/**.xml
 tests/**.xml
 **.aux.**
+
+scripts/*.pdf
+scripts/*.csv
+scripts/*.md

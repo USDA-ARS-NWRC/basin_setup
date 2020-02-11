@@ -124,10 +124,12 @@ History
 
 0.14.0 (TBD)
 -------------------
-* Fixes for 41_, 42_, 43_
+* Fixes for 41_, 42_, 43_, 44__
 * Added in colormap making scripts
 * Added in QGIS project maker script
+* Added in a script for adding veg values to landfire dataset
 
 .. _41: https://github.com/USDA-ARS-NWRC/basin_setup/issues/41
 .. _42: https://github.com/USDA-ARS-NWRC/basin_setup/issues/42
 .. _43: https://github.com/USDA-ARS-NWRC/basin_setup/issues/43
+.. _44: https://github.com/USDA-ARS-NWRC/basin_setup/issues/44
