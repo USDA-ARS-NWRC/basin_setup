@@ -5,6 +5,7 @@ import requests
 import zipfile
 import io
 import os
+from os.path import join, abspath, basename, dirname, expanduser, isdir, isfile
 import sys
 import threading
 from subprocess import Popen, check_output, PIPE
@@ -409,12 +410,12 @@ def convert_shapefile(fname, out_f):
         fname: String file path
 
     """
-    fname = os.path.abspath(os.path.expanduser(fname))
+    fname = abspath(expanduser(fname))
 
-    if os.path.isfile(fname):
+    if isfile(fname):
         name, ext = fname.split('.')
-        out_dir = os.path.dirname(name)
-        name = os.path.basename(name)
+        out_dir = dirname(name)
+        name = basename(name)
 
     else:
         raise IOError('File {0} does not exist')
@@ -423,7 +424,7 @@ def convert_shapefile(fname, out_f):
     if ext == 'kmz':
         out.msg("KMZ (Compressed KML) file provided, unzipping...")
         #Copy to a zip
-        zip_fname = os.path.join(out_dir,name+'.zip')
+        zip_fname = join(out_dir,name+'.zip')
         copyfile(fname,zip_fname)
 
         zip_ref = zipfile.ZipFile(zip_fname, 'r')
@@ -436,9 +437,9 @@ def convert_shapefile(fname, out_f):
         for root, dirs, files in os.walk(out_dir):
             for f in files:
                 if f.split('.')[-1] =='kml':
-                    fname = os.path.join(root,f)
+                    fname = join(root,f)
                     ext = 'kml'
-                    name = os.path.basename(fname)
+                    name = basename(fname)
                     out.respond('KML found!{0}'.format(fname))
                     break
 
@@ -499,7 +500,7 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
 
         else:
             # Populate Images for non downloaded files\
-            images['dem']['path'] = os.path.abspath(os.path.expanduser(dem))
+            images['dem']['path'] = abspath(expanduser(dem))
 
         # Add in the subbasins
         if subbasins != None:
@@ -507,13 +508,13 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
                 subbasins = [subbasins]
 
             for zz,sb in enumerate(subbasins):
-                base = os.path.basename(sb).split('.')[0].lower()
+                base = basename(sb).split('.')[0].lower()
                 fname = base.replace(' ','_')
                 name = base.replace('_outline','')
                 name = name.replace('_subbasin','')
                 name = name.replace('  ','') # remove any double spaces
                 name = name.replace('_',' ')
-                pth = os.path.abspath(os.path.expanduser(sb))
+                pth = abspath(expanduser(sb))
                 # Capitalize the first letter
                 name = proper_name(name)
                 # Shapefiles
@@ -532,13 +533,13 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
         'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_20180618.zip&TYPE=landfire'
 
         images['vegetation type']['path'] = \
-                                        os.path.join(required_dirs['downloads'],
+                                        join(required_dirs['downloads'],
                                                     'US_140EVT_20180618',
                                                     'Grid','us_140evt',
                                                     'hdr.adf')
 
         images['vegetation height']['path'] = \
-                                        os.path.join(required_dirs['downloads'],
+                                        join(required_dirs['downloads'],
                                                      'US_140EVH_20180618',
                                                      'Grid',
                                                      'us_140evh',
@@ -546,26 +547,27 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
 
         # Make directories and create setup
         for k,d in required_dirs.items():
-            full = os.path.abspath(os.path.expanduser(d))
+            full = abspath(expanduser(d))
 
-            if not os.path.isdir(os.path.dirname(full)):
+            if not isdir(dirname(full)):
                 raise IOError("Path to vegetation data/download directory does"
                               " not exist.\n %s" % full)
 
             if k != 'downloads':
-                if os.path.isdir(full):
+                if isdir(full):
                     out.warn("{0} folder exists, potential to overwrite"
                              " non-downloaded files!".format(k))
 
                 else:
                     out.msg("Making folder...")
-                    os.mkdir(os.path.abspath(full))
+                    os.mkdir(full)
             else:
-                if os.path.isdir(full):
+                if isdir(full):
                     out.respond("{0} folder found!".format(k))
                 else:
                     out.msg("Making {0} folder...".format(k))
                     os.mkdir(full)
+
         return images
 
 
@@ -606,8 +608,8 @@ def setup_point(images, point, cell_size, temp, pad, epsg_code):
 
     # Write the points to a csv
     name = "points"
-    SHP = os.path.join(temp,'{0}.shp'.format(name))
-    PRJ = os.path.join(temp,'{0}.prj'.format(name))
+    SHP = join(temp,'{0}.shp'.format(name))
+    PRJ = join(temp,'{0}.prj'.format(name))
     images['basin outline']['path'] = SHP
     poly = geometry.Polygon(points)
 
@@ -645,15 +647,15 @@ def check_shp_file(images, epsg=None, temp=None):
     # Only accept .shp for now
     if basin_shapefile.split('.')[-1] != 'shp':
         images['basin outline']['path'] = \
-                            os.path.abspath(os.path.expanduser(basin_shapefile))
+                            abspath(expanduser(basin_shapefile))
 
-        fname = (os.path.basename(images['basin outline']['path'])).split('.')[0]
-        images['basin outline']['path'] = os.path.join(temp, fname + '.shp')
+        fname = (basename(images['basin outline']['path'])).split('.')[0]
+        images['basin outline']['path'] = join(temp, fname + '.shp')
         convert_shapefile(basin_shapefile, images['basin outline']['path'])
 
     else:
         images['basin outline']['path'] = \
-                            os.path.abspath(os.path.expanduser(basin_shapefile))
+                            abspath(expanduser(basin_shapefile))
 
     # Loop through basins and check projections
     for bsn in [img_name for img_name in images.keys() if 'basin' in img_name]:
@@ -662,8 +664,8 @@ def check_shp_file(images, epsg=None, temp=None):
         if epsg != None:
             out.msg("Reprojecting {} shapefile...".format(bsn))
             # Rename the resulting file
-            newfile = os.path.basename(images[bsn]['path'])
-            newfile = os.path.join(temp, newfile.split('.')[0]+"_epsg_{}.shp"
+            newfile = basename(images[bsn]['path'])
+            newfile = join(temp, newfile.split('.')[0]+"_epsg_{}.shp"
                                           "".format(epsg))
             cmd_args = ['ogr2ogr','-t_srs','EPSG:{}'.format(epsg), newfile,
                                   images[bsn]['path']]
@@ -703,7 +705,7 @@ def check_and_download(images,required_dirs):
     out.dbg("Checking file paths and downloads...")
     for image_name in ['vegetation type', 'vegetation height']:
         info = images[image_name]
-        info['path'] = os.path.abspath(os.path.expanduser(info['path']))
+        info['path'] = abspath(expanduser(info['path']))
         images[image_name] = info
 
         out.msg("Checking for {0} data in:\n\t{1}".format(image_name,
@@ -711,14 +713,14 @@ def check_and_download(images,required_dirs):
 
         #Cycle through all the downloads
         out.msg("Looking for: \n%s " % info['path'])
-        if not os.path.isdir(os.path.dirname(info['path'])):
+        if not isdir(dirname(info['path'])):
 
             # Missing downloaded data
             out.msg("Unzipped folder not found, check for zipped folder.")
-            zipped = (os.path.dirname(os.path.dirname(info['path'])) + '.zip')
+            zipped = (dirname(dirname(info['path'])) + '.zip')
             out.msg("Looking for:\n %s" % zipped)
 
-            if not os.path.isfile(zipped):
+            if not isfile(zipped):
                 # Zip file does not exist
                 out.warn("No data found!\nDownloading %s ..." % image_name)
                 out.warn("This could take up to 20mins, so sit back and relax.")
@@ -734,7 +736,7 @@ def check_and_download(images,required_dirs):
             out.respond("found!")
 
         # CSV map should be in the downloaded folder name
-        map_src = os.path.dirname(os.path.dirname(os.path.dirname(info['path'])))
+        map_src = dirname(dirname(dirname(info['path'])))
 
         out.msg("Searching for {0} map...".format(image_name))
 
@@ -742,7 +744,7 @@ def check_and_download(images,required_dirs):
             for f in filenames:
                 # Looking for the only csv
                 if f.split('.')[-1] == 'csv':
-                    info['map'] = os.path.join(root,f)
+                    info['map'] = join(root,f)
                     out.respond('{0} map found!\n\t{1}'.format(image_name,
                                                                info['map']))
                     break
@@ -819,7 +821,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
         else:
             shp_nm = msk.split('mask')[0] + "subbasin"
 
-        images[msk]['path'] = os.path.join(TEMP,'{}.tif'.format(fnm))
+        images[msk]['path'] = join(TEMP,'{}.tif'.format(fnm))
 
         # clips, sets resolution
         z = Popen(['gdal_rasterize', '-tr', str(cell_size), str(cell_size),
@@ -830,7 +832,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
 
 
         # Convert the mask to netcdf
-        NC = os.path.abspath(os.path.join(TEMP,
+        NC = abspath(join(TEMP,
                                 'clipped_{}.nc'.format(msk.replace(' ','_'))))
         s = Popen(['gdal_translate','-of', 'NETCDF', '-sds', images[msk]['path'],
                                                              NC], stdout=PIPE)
@@ -862,7 +864,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
 
         fname = name.replace(' ', '_')
 
-        CLIPPED = os.path.abspath(os.path.join(TEMP,'clipped_{0}.tif'
+        CLIPPED = abspath(join(TEMP,'clipped_{0}.tif'
                                                     ''.format(fname)))
         if name == "vegetation type":
             resample = "near"
@@ -936,7 +938,7 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
                                          extent[3],
                                          cell_size))
 
-    TOPO_PATH = os.path.join(output_dir, 'topo.nc')
+    TOPO_PATH = join(output_dir, 'topo.nc')
     topo = Dataset(TOPO_PATH, 'w', format='NETCDF4', clobber=True)
 
     #Add modification note
@@ -1021,7 +1023,7 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name = 'Mask'):
                 topo.variables[short_name][:] = image['path']
 
             # paths
-            elif image['path'] != None and os.path.isfile(image['path']):
+            elif image['path'] != None and isfile(image['path']):
                 d = Dataset(image['path'],'r')
                 try:
                     topo.variables[short_name][:] = d.variables['Band1'][:]
@@ -1110,7 +1112,7 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
     if veg_params != None:
         out.warn("Using the CSV file with vegetation parameters to define veg "
                  "tau and veg k")
-        if not os.path.isfile(veg_params):
+        if not isfile(veg_params):
             out.error("Vegetation parameters CSV file {} does not exist"
                       "".format(veg_params))
             sys.exit()
@@ -1248,9 +1250,9 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
     #Output a map for SMRF/AWSM USERS
     out.msg("Outputting a list of unique vegetation types...")
     veg_map = veg_map.sort_values(by='HEIGHT')
-    output_dir = os.path.dirname(topo.filepath(encoding='utf-8'))
+    output_dir = dirname(topo.filepath(encoding='utf-8'))
     veg_map[['VALUE','HEIGHT','CLASSNAME']].to_csv(
-                                         os.path.join(output_dir,'veg_map.csv'))
+                                         join(output_dir,'veg_map.csv'))
 
     # Output Veg Info
     return topo
@@ -1440,9 +1442,9 @@ def main():
     #===========================================================================
 
     # Check and setup for an output dir, downloads dir, and temp dir
-    required_dirs = {'output':args.output,
-                   'downloads':args.download,
-                   'temp':os.path.abspath(os.path.join(args.output,'temp'))}
+    required_dirs = {'output':abspath(expanduser(args.output)),
+                   'downloads':abspath(expanduser(args.download)),
+                   'temp':abspath(expanduser(join(args.output,'temp')))}
 
     TEMP = required_dirs['temp']
     images = setup_and_check(required_dirs, args.basin_shapefile, args.dem,
@@ -1469,8 +1471,8 @@ def main():
         # For point setup the only padding should be around the center pixel
         pad = 0
     else:
-        images['basin outline']['path'] = os.path.abspath(os.path.expanduser(
-                                                      args.basin_shapefile))
+        images['basin outline']['path'] = \
+                                    abspath(expanduser(args.basin_shapefile))
 
 
     images = check_shp_file(images, epsg=args.epsg, temp=TEMP)
@@ -1526,7 +1528,7 @@ def main():
     topo.close()
 
     out.msg('\nRequested output written to:')
-    out.respond('{0}'.format(os.path.join(required_dirs['output'], 'topo.nc')))
+    out.respond('{0}'.format(join(required_dirs['output'], 'topo.nc')))
     out.msg("Basin setup files complete!\n")
 
     # Don't Clean up if we are debugging so we can look at the steps
