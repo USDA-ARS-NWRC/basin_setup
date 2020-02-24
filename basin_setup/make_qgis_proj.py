@@ -220,6 +220,9 @@ class QGISLayerMaker(object):
         # Netcdf
         elif self.ext == 'nc':
             self.ftype = 'netcdf'
+            # Uncheck all netcdf products
+            checked = 'Unchecked'
+
             provider = 'gdal'
             template = join(template_dir, 'netcdf_template.xml')
 
