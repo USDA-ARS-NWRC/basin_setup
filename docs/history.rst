@@ -135,3 +135,10 @@ History
 .. _43: https://github.com/USDA-ARS-NWRC/basin_setup/issues/43
 .. _44: https://github.com/USDA-ARS-NWRC/basin_setup/issues/44
 .. _45: https://github.com/USDA-ARS-NWRC/basin_setup/issues/45
+
+
+0.15.0 (TBD)
+-------------------
+* Fixes for 46_
+
+.. _46: https://github.com/USDA-ARS-NWRC/basin_setup/issues/46
