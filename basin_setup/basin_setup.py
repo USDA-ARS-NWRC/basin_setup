@@ -717,7 +717,7 @@ def check_and_download(images,required_dirs):
 
             # Missing downloaded data
             out.msg("Unzipped folder not found, check for zipped folder.")
-            zipped = (dirname(dirname(info['path'])) + '.zip')
+            zipped = (dirname(dirname(dirname(info['path']))) + '.zip')
             out.msg("Looking for:\n %s" % zipped)
 
             if not isfile(zipped):
