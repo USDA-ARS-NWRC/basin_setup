@@ -50,8 +50,9 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-lint: ## check style with flake8
-	flake8 basin_setup tests
+lint: ## check style with isort and autopep8
+	isort basin_setup/*.py tests/*.py
+	autopep8 --aggressive --in-place basin_setup/*.py tests/*.py
 
 test: ## run tests quickly with the default Python
 	python setup.py test

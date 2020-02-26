@@ -7,11 +7,13 @@ test_basin_setup
 Tests for `basin_setup.basin_setup` module.
 """
 
-import unittest
-from basin_setup.basin_setup import *
-import shutil
 import os
+import shutil
+import unittest
 from subprocess import check_output
+
+from basin_setup.basin_setup import *
+
 
 class TestDelineate(unittest.TestCase):
 
@@ -23,7 +25,6 @@ class TestDelineate(unittest.TestCase):
         print("Executing {}".format(cmd))
         check_output(cmd, shell=True)
 
-
     # def test_parse_extent(self):
     #     """
     #     Tests our parse extent function
@@ -31,7 +32,8 @@ class TestDelineate(unittest.TestCase):
     #     parseable_files = {"tif":"rme_utm11_wgs_84.tif","shp":"rme_outline.shp"}
     #
     #     for k,v
-    #     extent = parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
+    # extent = parse_extent(fname, cellsize_return=False, x_field='x',
+    # y_field='y'):
 
 
 if __name__ == '__main__':

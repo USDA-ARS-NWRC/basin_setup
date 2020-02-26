@@ -10,10 +10,12 @@ output:
 
 """
 
-from subprocess import check_output
 import argparse
-import numpy as np
 from collections import OrderedDict
+from subprocess import check_output
+
+import numpy as np
+
 
 def main():
     # Manage arguments
@@ -27,7 +29,6 @@ def main():
 
     output = "./colormaps/dem_colormap.qml"
 
-
     print("Parsing dems max and min...")
     cmd = "gdalinfo -stats {}".format(args.dem)
     s = check_output(cmd, shell=True)
@@ -38,16 +39,17 @@ def main():
         ll = line.lower()
         if "statistics_" in ll:
             if "=" in ll:
-                name,value = ll.split("=")
+                name, value = ll.split("=")
                 name = name.split("_")[-1]
                 value = float(value.strip())
                 stats[name] = value
 
-    # Double color ramp, 0 transparent, 1-30% Dark green to light brown, to white
+    # Double color ramp, 0 transparent, 1-30% Dark green to light brown, to
+    # white
     colors = OrderedDict()
     colors[0.01] = [76, 119, 72]
-    colors[0.28] = [89,86,0]
-    colors[0.47] = [119,75,0]
+    colors[0.28] = [89, 86, 0]
+    colors[0.47] = [119, 75, 0]
     colors[0.7] = [146, 110, 49]
     colors[0.8] = [173, 146, 101]
     colors[0.85] = [255, 255, 255]
@@ -83,10 +85,10 @@ def main():
     color_entry = '          <item alpha="{0}" value="{1}" label="{1}" color="{2}"/>\n'
 
     # Grab the veg values for all the modeling domains in the sierras
-    with open(output,'w+') as fp:
+    with open(output, 'w+') as fp:
 
         # Write the upper portion of the file
-        fp.write(hdr.format(stats['maximum'],stats['minimum']))
+        fp.write(hdr.format(stats['maximum'], stats['minimum']))
 
         # Number of colors dictate the number of color separations
         n_colors = len(colors)
@@ -98,7 +100,8 @@ def main():
         for percent, rgb in colors.items():
 
             # Snag the value from the linspace
-            value = (stats['maximum'] - stats['minimum']) * percent + stats['minimum']
+            value = (stats['maximum'] - stats['minimum']) * \
+                percent + stats['minimum']
 
             # Form the hex value
             hex_v = '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
@@ -106,13 +109,15 @@ def main():
             # Output the data
             fp.write(color_entry.format(alpha, value, hex_v))
 
-        print("Built a colormap using {} colors to represent the dem.".format(len(colors.keys())))
+        print("Built a colormap using {} colors to represent the dem.".format(
+            len(colors.keys())))
 
         # Write the rest of the file
         fp.write(footer)
         fp.close()
 
     print("Complete!")
+
 
 if __name__ == 'main':
     main()

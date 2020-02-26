@@ -6,16 +6,18 @@ Usage:
     python make_veg_type_colormap.py ~/Downloads/US_140EVT_20180618
 """
 
-import pandas as pd
-import numpy as np
-from collections import OrderedDict
 import argparse
+from collections import OrderedDict
 from os.path import join
+
+import numpy as np
+import pandas as pd
 
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Generate a colormap for the Landfire data')
+    parser = argparse.ArgumentParser(
+        description='Generate a colormap for the Landfire data')
     parser.add_argument('veg_dir', help='Path to vegetation top level dir')
 
     args = parser.parse_args()
@@ -29,16 +31,16 @@ def main():
     print("Parsing vegetation types...")
     df = pd.read_csv(fname)
 
-    stats = {"minimum":df['VALUE'].min(), "maximum": df['VALUE'].max()}
+    stats = {"minimum": df['VALUE'].min(), "maximum": df['VALUE'].max()}
     norm = 100
-    cm_types = {'water':        {'alpha':200, 'color':[0, 50, 78], 'tags':['water']},
-                'forest':       {'alpha':norm, 'color':[1, 68, 33],'tags':['forest']},
-                'sage':         {'alpha':norm,'color':[161, 168, 143],'tags':['sagebrush']},
-                'snow':         {'alpha':norm,'color':[255, 231, 228],'tags':['snow']},
-                'developed':    {'alpha':norm, 'color':[92, 94, 88],'tags':['developed']},
-                #'barren':       {'alpha':norm, 'color':[131, 117, 96],'tags':['barren']},
+    cm_types = {'water': {'alpha': 200, 'color': [0, 50, 78], 'tags': ['water']},
+                'forest': {'alpha': norm, 'color': [1, 68, 33], 'tags': ['forest']},
+                'sage': {'alpha': norm, 'color': [161, 168, 143], 'tags': ['sagebrush']},
+                'snow': {'alpha': norm, 'color': [255, 231, 228], 'tags': ['snow']},
+                'developed': {'alpha': norm, 'color': [92, 94, 88], 'tags': ['developed']},
+                # 'barren':       {'alpha':norm, 'color':[131, 117, 96],'tags':['barren']},
                 # 'grass':        {'alpha':norm, 'color':[228, 242, 210],'tags':['grass']},
-                'lush':         {'alpha':norm, 'color':[58, 95, 11],'tags':['meadow','riparian']},
+                'lush': {'alpha': norm, 'color': [58, 95, 11], 'tags': ['meadow', 'riparian']},
                 # 'bush':         {'alpha':norm, 'color':[0, 144, 64], 'tags':['shrub']},
                 }
     df = df.set_index('VALUE').sort_index()
@@ -70,7 +72,7 @@ def main():
     color_entry = '          <item alpha="{0}" value="{1}" label="{2}" color="{3}"/>\n'
 
     # Grab the veg values for all the modeling domains in the sierras
-    with open(output,'w+') as fp:
+    with open(output, 'w+') as fp:
 
         # Write the upper portion of the file
         fp.write(hdr.format(stats['maximum'], stats['minimum']))
@@ -110,6 +112,7 @@ def main():
         fp.close()
 
     print("Complete!")
+
 
 if __name__ == 'main':
     main()

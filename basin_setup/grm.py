@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 
 import argparse
-import numpy as np
+import datetime
+import logging
 import os
-from subprocess import check_output
+import shutil
 import sys
 import time
-import datetime
-import shutil
+from subprocess import check_output
+
 import coloredlogs
 import netCDF4 as nc
+import numpy as np
+import pandas as pd
+from inicheck.utilities import mk_lst, remove_chars
 from spatialnc.topo import get_topo_stats
 from spatialnc.utilities import copy_nc, mask_nc
-import logging
-from inicheck.utilities import mk_lst, remove_chars
-import pandas as pd
+
 from basin_setup import __version__
 
-
-DEBUG=False
+DEBUG = False
 
 
 def parse_fname_date(fname):
@@ -43,7 +44,7 @@ def parse_gdalinfo(fname):
     """
 
     image_info = {}
-    info = check_output(["gdalinfo",fname], universal_newlines=True)
+    info = check_output(["gdalinfo", fname], universal_newlines=True)
     for line in info.split("\n"):
         if "=" in line:
             data = line.split("=")
@@ -60,7 +61,7 @@ def parse_gdalinfo(fname):
                     v = [data[1]]
 
                 for s in v:
-                    result.append(float(remove_chars(s,"()\n:")))
+                    result.append(float(remove_chars(s, "()\n:")))
 
                 image_info[data[0]] = mk_lst(result, unlst=True)
 
@@ -69,40 +70,40 @@ def parse_gdalinfo(fname):
 
 class GRM(object):
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
 
         # check kwargs
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
         # Setup external logging if need be
-        if not hasattr(self,'log'):
+        if not hasattr(self, 'log'):
             self.log = logging.getLogger(__name__)
 
         # Manage Logging
-        level="INFO"
+        level = "INFO"
 
         if hasattr(self, 'debug'):
             if self.debug:
-                level='DEBUG'
+                level = 'DEBUG'
             else:
                 self.debug = False
 
         # Assign some colors and formats
         coloredlogs.install(fmt='%(levelname)-5s %(message)s', level=level,
-                                                               logger=self.log)
+                            logger=self.log)
         self.log.info("Getting Topo attributes...")
         self.ts = get_topo_stats(self.topo)
         self.log.info("Using topo cell size which is {} {}"
-                                                  "".format(
-                                                        abs(int(self.ts['du'])),
-                                                        self.ts['units']))
+                      "".format(
+                          abs(int(self.ts['du'])),
+                          self.ts['units']))
         # Get aso super depth info
         self.image_info = parse_gdalinfo(self.image)
 
         # Titling
-        renames = {"brb":"boise river basin",
-                   "lakes":"mammoth lakes basin"}
+        renames = {"brb": "boise river basin",
+                   "lakes": "mammoth lakes basin"}
 
         if self.basin in renames.keys():
             self.basin = renames[self.basin]
@@ -130,10 +131,8 @@ class GRM(object):
         outfile = os.path.basename(self.image)
 
         self.log.info("Rescaling image raster from {} to {}"
-                    "".format(int(self.image_info['pixel size'][0]),
-                              abs(int(self.ts['du']))))
-
-
+                      "".format(int(self.image_info['pixel size'][0]),
+                                abs(int(self.ts['du']))))
 
         outfile, ext = outfile.split(".")
         outfile = outfile + ".nc"
@@ -168,7 +167,8 @@ class GRM(object):
         self.log.info("Output NetCDF does not exist, creating a new one!")
 
         # Exclude all variables except dimensions
-        ex_var = [v for v in self.topo_ds.variables if v.lower() not in ['x','y','projection']]
+        ex_var = [v for v in self.topo_ds.variables if v.lower() not in [
+            'x', 'y', 'projection']]
 
         # Copy a topo like netcdf image to add depths to
         self.ds = copy_nc(self.topo, self.outfile, exclude=ex_var)
@@ -176,32 +176,36 @@ class GRM(object):
 
         start_date = pd.to_datetime("{}-10-01".format(self.start_yr))
         self.log.debug("Using {} as start of water year for stamping netcdf"
-        "".format(start_date.isoformat()))
+                       "".format(start_date.isoformat()))
 
         # Assign time and count days since 10-1
         times = self.ds.createVariable('time', 'f', ('time'))
-        setattr(self.ds.variables['time'], 'units', 'hours since %s' % start_date)
+        setattr(
+            self.ds.variables['time'],
+            'units',
+            'hours since %s' %
+            start_date)
         setattr(self.ds.variables['time'], 'calendar', 'standard')
 
         # Add append a new image
         self.ds.createVariable("depth", "f", ("time", "y", "x"),
                                         chunksizes=(6, 10, 10), fill_value=np.nan)
 
-        self.ds['depth'].setncatts({"units":"meters",
-                                "long_name":"lidar sself.now depths",
-                                "short_name":'depth',
-                                "grid_mapping":"projection",
-                                "description":"Measured snow depth from ASO"
-                                              " lidar."})
+        self.ds['depth'].setncatts({"units": "meters",
+                                    "long_name": "lidar sself.now depths",
+                                    "short_name": 'depth',
+                                    "grid_mapping": "projection",
+                                    "description": "Measured snow depth from ASO"
+                                    " lidar."})
 
         # Adjust global attributes
-        self.ds.setncatts({"last_modified":self.now,
-                    "dateCreated":self.now,
-                    "Title":"ASO 50m Lidar Flights Over the {} for Water Year {}."
-                            "".format(self.basin, self.water_year),
-                    "history":"Created using Basin Setup v{}"
-                              "".format(__version__),
-                    })
+        self.ds.setncatts({"last_modified": self.now,
+                           "dateCreated": self.now,
+                           "Title": "ASO 50m Lidar Flights Over the {} for Water Year {}."
+                           "".format(self.basin, self.water_year),
+                           "history": "Created using Basin Setup v{}"
+                           "".format(__version__),
+                           })
 
         # Attribute gets copied over from the topo
         self.ds.delncattr("generation_command")
@@ -233,7 +237,7 @@ class GRM(object):
         self.outfile = os.path.join(self.output, "lidar_depths_wy{}.nc"
                                                  "".format(self.water_year))
         self.log.info("Lidar Flight for {}".format(
-                                           self.date.isoformat().split('T')[0]))
+            self.date.isoformat().split('T')[0]))
 
         if not hasattr(self, "epsg"):
             pass
@@ -241,10 +245,10 @@ class GRM(object):
         # Open the topo for gathering data from
         self.topo_ds = nc.Dataset(self.topo, mode='r')
 
-
         # Prexisting collection of lidar in netcdf found
-        if  os.path.isfile(self.outfile):
-            self.log.info("Output NetCDF exists, checking to see if everything matches.")
+        if os.path.isfile(self.outfile):
+            self.log.info(
+                "Output NetCDF exists, checking to see if everything matches.")
 
             # Retrieve existing dataset
             self.ds = nc.Dataset(self.outfile, mode='a')
@@ -269,7 +273,7 @@ class GRM(object):
         index = self.get_time_index()
 
         # Update the modified attribute
-        self.ds.setncatts({"last_modified":self.now})
+        self.ds.setncatts({"last_modified": self.now})
 
         # Open the newly convert depth and add it to the collection
         self.log.info("Extracting the new netcdf data...")
@@ -277,7 +281,7 @@ class GRM(object):
 
         # Fill values to np.nan
         idx = new_ds.variables['Band1'][:] == \
-                                            new_ds.variables['Band1']._FillValue
+            new_ds.variables['Band1']._FillValue
         new_ds.variables['Band1'][:][idx] = np.nan
 
         new_ds.variables['Band1'][:] = np.flipud(new_ds.variables['Band1'][:])
@@ -291,9 +295,11 @@ class GRM(object):
         depths = new_ds.variables['Band1'][:]
 
         # Save it to output
-        self.log.info("Adding masked lidar data to {}".format(self.ds.filepath()))
+        self.log.info(
+            "Adding masked lidar data to {}".format(
+                self.ds.filepath()))
 
-        self.ds.variables['depth'][index,:] = new_ds.variables['Band1'][:]
+        self.ds.variables['depth'][index, :] = new_ds.variables['Band1'][:]
         self.ds.sync()
 
         self.ds.close()
@@ -311,8 +317,8 @@ class GRM(object):
         times = self.ds.variables['time']
 
         tstep = pd.to_timedelta(1, unit='h')
-        t = nc.date2num(self.date+pd.to_timedelta(23, unit='h'), times.units,
-                                                                 times.calendar)
+        t = nc.date2num(self.date + pd.to_timedelta(23, unit='h'), times.units,
+                        times.calendar)
 
         # Figure out the time index
         if len(times) != 0:
@@ -341,7 +347,8 @@ class GRM(object):
         topo_mask = self.topo_ds.variables['mask'].long_name.lower()
 
         # Flexible naming convention in the topo to check for matches
-        keywords = [w for w in topo_mask.split(" ") if w not in ['river','basin']]
+        keywords = [w for w in topo_mask.split(" ") if w not in [
+            'river', 'basin']]
 
         for key in keywords:
             if key in self.basin.lower():
@@ -351,10 +358,9 @@ class GRM(object):
                 found = False
 
         self.handle_error("Topo's mask name matches the basin name.",
-                         ("Topo's mask ({}) is not associated to the {}."
-                                               "".format(topo_mask, self.basin)),
-                          error= not found)
-
+                          ("Topo's mask ({}) is not associated to the {}."
+                           "".format(topo_mask, self.basin)),
+                          error=not found)
 
     def check_water_year_match(self):
         """
@@ -370,8 +376,8 @@ class GRM(object):
 
         dbgmsg = "Input image water year matches prexisting netcdf's"
         errmsg = ("Attempting to add an image apart of water year {} "
-                 " to an existing lidar depths netcdf for water year {}"
-                 "".format(self.water_year, nc_wy))
+                  " to an existing lidar depths netcdf for water year {}"
+                  "".format(self.water_year, nc_wy))
 
         self.handle_error(dbgmsg, errmsg, error=error)
 
@@ -379,15 +385,14 @@ class GRM(object):
         """
         Checks that the basin name provided matches whats in the existing netcdf
         """
-        error =  not self.basin.lower() in self.ds.getncattr("Title").lower()
+        error = not self.basin.lower() in self.ds.getncattr("Title").lower()
 
         dbgmsg = "Basin entered matches the basin in the preexisting file."
         errmsg = ("The preexisting lidar depths file has a title of {} which"
-             " should contain {} to add this image."
-             "".format( self.ds.getncattr("Title"), self.basin))
+                  " should contain {} to add this image."
+                  "".format(self.ds.getncattr("Title"), self.basin))
 
         self.handle_error(dbgmsg, errmsg, error=error)
-
 
     def check_overwrite(self):
         """
@@ -413,42 +418,42 @@ def main():
                                             " for SMRF/AWSM")
 
     p.add_argument("-t", "--topo", dest="topo",
-                    required=True,
-                    help="Path to the topo.nc file used for modeling")
+                   required=True,
+                   help="Path to the topo.nc file used for modeling")
 
     p.add_argument("-i", "--images", dest="images",
-                    required=True, nargs='+',
-                    help="Path to lidar images for processing")
+                   required=True, nargs='+',
+                   help="Path to lidar images for processing")
 
     p.add_argument("-b", "--basin", dest="basin",
-                    required=True, choices=['brb', 'kaweah', 'kings', 'lakes',
-                                            'merced', 'sanjoaquin','tuolumne'],
-                    help="Name of the basin to use for metadata")
+                   required=True, choices=['brb', 'kaweah', 'kings', 'lakes',
+                                           'merced', 'sanjoaquin', 'tuolumne'],
+                   help="Name of the basin to use for metadata")
 
     p.add_argument("-o", "--output", dest="output",
-                    required=False,
-                    help="Path to output folder")
+                   required=False,
+                   help="Path to output folder")
 
     p.add_argument("-d", "--debug", dest="debug",
-                    required=False, action='store_true',
-                    help="Outputs more information and does not delete any"
+                   required=False, action='store_true',
+                   help="Outputs more information and does not delete any"
                          " working files generated during runs")
 
     p.add_argument("-dt", "--date", dest="date",
-                    required=False, default=None,
-                    help="Enables user to directly control the date.")
+                   required=False, default=None,
+                   help="Enables user to directly control the date.")
 
     p.add_argument("-e", "--allow_exceptions", dest="allow_exceptions",
-                    required=False, action="store_true",
-                    help="For Development purposes, allows it to be debugging"
-                    " but also enables the errors to NOT catch, which is useful"
-                    " for batch processing.")
+                   required=False, action="store_true",
+                   help="For Development purposes, allows it to be debugging"
+                   " but also enables the errors to NOT catch, which is useful"
+                   " for batch processing.")
     p.add_argument("-r", "--resample", dest="resample",
-                    choices= ['near', 'bilinear', 'cubic', 'cubicspline',
-                              'lanczos', 'average', 'mode',  'max', 'min',
-                              'med', 'Q1', 'Q3'],
-                    required=False, default="bilinear",
-                    help="Pass through the resample technique to use in"
+                   choices=['near', 'bilinear', 'cubic', 'cubicspline',
+                            'lanczos', 'average', 'mode', 'max', 'min',
+                            'med', 'Q1', 'Q3'],
+                   required=False, default="bilinear",
+                   help="Pass through the resample technique to use in"
                          " gdalwarp .")
 
     args = p.parse_args()
@@ -461,7 +466,7 @@ def main():
     skips = 0
 
     # Make sure our output folder exists
-    if args.output == None:
+    if args.output is None:
         output = './output'
     else:
         output = args.output
@@ -471,18 +476,17 @@ def main():
         os.mkdir(output)
 
     # Make the temp folder inside the output folder
-    temp = os.path.join(output,'tmp')
+    temp = os.path.join(output, 'tmp')
     if not os.path.isdir(temp):
-            os.mkdir(temp)
+        os.mkdir(temp)
 
-    if type(args.images) != list:
+    if not isinstance(args.images, list):
         args.images = [args.images]
-
 
     # Get logger and add color with a simple format
     log = logging.getLogger(__name__)
     coloredlogs.install(fmt='%(levelname)-5s %(message)s', level="INFO",
-                                                           logger=log)
+                        logger=log)
     # Print a nice header with version number
     msg = "\n\nGrid Resizing and Matching Script v{}".format(__version__)
     header = "=" * (len(msg) + 1)
@@ -491,7 +495,7 @@ def main():
     # We need to sort the images by date so create a dictionary of the two here
     log.info("Calculating dates and sorting images for processing...")
     dates = [parse_fname_date(f) for f in args.images]
-    image_dict = {k:v for (k,v) in zip(dates, args.images)}
+    image_dict = {k: v for (k, v) in zip(dates, args.images)}
 
     # Loop through all images provided
     log.info("Number of images being processed: {}".format(len(args.images)))
@@ -505,27 +509,27 @@ def main():
         if not DEBUG or args.allow_exceptions:
             try:
                 g = GRM(image=f, topo=args.topo, basin=args.basin,
-                                                          debug=args.debug,
-                                                          output=output,
-                                                          temp=temp,
-                                                          resample=args.resample,
-                                                          log=log)
+                        debug=args.debug,
+                        output=output,
+                        temp=temp,
+                        resample=args.resample,
+                        log=log)
                 g.grid_match()
                 g.add_to_collection()
 
             except Exception as e:
                 log.warning("Skipping {} due to error".format(
-                                                           os.path.basename(f)))
+                    os.path.basename(f)))
                 log.error(e)
-                skips +=1
+                skips += 1
 
         else:
             g = GRM(image=f, topo=args.topo, basin=args.basin,
-                                                      debug=args.debug,
-                                                      output=args.output,
-                                                      temp=temp,
-                                                      resample=args.resample,
-                                                      log=log)
+                    debug=args.debug,
+                    output=args.output,
+                    temp=temp,
+                    resample=args.resample,
+                    log=log)
             g.grid_match()
             g.add_to_collection()
     stop = time.time()
@@ -536,11 +540,12 @@ def main():
 
     g.log.info("Grid Resizing and Matching Complete. {1}/{2} files processed."
                " Elapsed Time {0:0.1f}s"
-            "".format(stop-start, len(args.images) - skips, len(args.images)))
+               "".format(stop - start, len(args.images) - skips, len(args.images)))
 
     if not DEBUG:
-       log.info('Cleaning up temporary files.')
-       shutil.rmtree(g.temp)
+        log.info('Cleaning up temporary files.')
+        shutil.rmtree(g.temp)
+
 
 if __name__ == '__main__':
     main()

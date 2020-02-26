@@ -10,12 +10,15 @@ Author: Micah Johnson
 Last Date Modified: 01-24-2020
 """
 
-import datetime
 import argparse
-from os.path import basename, split, join, dirname
+import datetime
 import pprint
+from os.path import basename, dirname, join, split
+
 import requests
+
 from basin_setup.basin_setup import parse_extent
+
 
 def get_xml_spatial_ref(epsg):
     """
@@ -31,27 +34,28 @@ def get_xml_spatial_ref(epsg):
 
     for value in proj4.split(" "):
         if 'no_def' not in value:
-            val_str = value.replace('+','')
-            k,v = val_str.split("=")
+            val_str = value.replace('+', '')
+            k, v = val_str.split("=")
             data[k] = str(v)
 
     sp_ref = (
-    '\t\t\t<spatialrefsys>\n'
-    '\t\t\t\t<proj4>[PROJ4]</proj4>\n'
-    '\t\t\t\t<authid>EPSG:[EPSG]</authid>\n'
-    '\t\t\t\t<description>[DATUM] / UTM zone [ZONE]N</description>\n'
-    '\t\t\t\t<projectionacronym>utm</projectionacronym>\n'
-    '\t\t\t\t<ellipsoidacronym>[DATUM_NO_SPACE]</ellipsoidacronym>\n'
-    '\t\t\t\t<geographicflag>false</geographicflag>\n'
-    '\t\t\t</spatialrefsys>\n')
+        '\t\t\t<spatialrefsys>\n'
+        '\t\t\t\t<proj4>[PROJ4]</proj4>\n'
+        '\t\t\t\t<authid>EPSG:[EPSG]</authid>\n'
+        '\t\t\t\t<description>[DATUM] / UTM zone [ZONE]N</description>\n'
+        '\t\t\t\t<projectionacronym>utm</projectionacronym>\n'
+        '\t\t\t\t<ellipsoidacronym>[DATUM_NO_SPACE]</ellipsoidacronym>\n'
+        '\t\t\t\t<geographicflag>false</geographicflag>\n'
+        '\t\t\t</spatialrefsys>\n')
 
     replacement = {"PROJ4": proj4,
-                   "EPSG":str(epsg),
-                   "DATUM":data['ellps'],
-                   "DATUM_NO_SPACE":data['ellps'].replace(" ",'').upper(),
-                   "ZONE":data['zone']
+                   "EPSG": str(epsg),
+                   "DATUM": data['ellps'],
+                   "DATUM_NO_SPACE": data['ellps'].replace(" ", '').upper(),
+                   "ZONE": data['zone']
                    }
     return str_swap(sp_ref, replacement)
+
 
 def get_extent_str(fname):
     """
@@ -65,9 +69,9 @@ def get_extent_str(fname):
         x = []
         y = []
         for l in lines:
-            #Ignore any lines with quotes in it
+            # Ignore any lines with quotes in it
             if '"' not in l:
-                cx,cy = (float(c) for c in l.strip().split(','))
+                cx, cy = (float(c) for c in l.strip().split(','))
                 x.append(cx)
                 y.append(cy)
         xmin = min(x)
@@ -78,10 +82,10 @@ def get_extent_str(fname):
     else:
         xmin, ymin, xmax, ymax = parse_extent(fname)
 
-    ext =('\t\t\t<xmin>{}</xmin>\n'
-          '\t\t\t<ymin>{}</ymin>\n'
-          '\t\t\t<xmax>{}</xmax>\n'
-          '\t\t\t<ymax>{}</ymax>').format(xmin, ymin, xmax, ymax)
+    ext = ('\t\t\t<xmin>{}</xmin>\n'
+           '\t\t\t<ymin>{}</ymin>\n'
+           '\t\t\t<xmax>{}</xmax>\n'
+           '\t\t\t<ymax>{}</ymax>').format(xmin, ymin, xmax, ymax)
     return ext
 
 
@@ -100,12 +104,13 @@ def str_swap(str_raw, replace_dict):
 
     info = str_raw
 
-    for k,v in replace_dict.items():
+    for k, v in replace_dict.items():
         search_str = '[{}]'.format(k)
 
-        info = info.replace(search_str,v)
+        info = info.replace(search_str, v)
 
     return info
+
 
 def get_now_str():
     """
@@ -124,6 +129,7 @@ def get_now_str():
 
     return str_now
 
+
 class QGISLayerMaker(object):
     def __init__(self, path, epsg, **kwargs):
         """
@@ -139,18 +145,18 @@ class QGISLayerMaker(object):
         self.str_now = get_now_str()
 
         # Template declaration for a layer. Is inserted near the top of project
-        self.declaration =(
-        '\t\t<layer-tree-layer expanded="0" providerKey="[PROVIDER]" '
-        'checked="Qt::[CHECKED]" id="[NAME][ID]" source="[PATH]" name="[NAME]">\n'
-        '\t\t\t<customproperties/>\n'
-        '\t\t</layer-tree-layer>\n')
+        self.declaration = (
+            '\t\t<layer-tree-layer expanded="0" providerKey="[PROVIDER]" '
+            'checked="Qt::[CHECKED]" id="[NAME][ID]" source="[PATH]" name="[NAME]">\n'
+            '\t\t\t<customproperties/>\n'
+            '\t\t</layer-tree-layer>\n')
 
         self.legend = (
-        '\t\t<legendlayer drawingOrder="-1" open="true" checked="Qt::[CHECKED]" name="[NAME]" showFeatureCount="0">\n'
-        '\t\t\t\t<filegroup open="true" hidden="false">\n'
-        '\t\t\t\t\t<legendlayerfile isInOverview="0" layerid="[NAME][ID]" visible="[VISIBLE]"/>\n'
-        '\t\t\t\t</filegroup>\n'
-        '\t\t</legendlayer>\n')
+            '\t\t<legendlayer drawingOrder="-1" open="true" checked="Qt::[CHECKED]" name="[NAME]" showFeatureCount="0">\n'
+            '\t\t\t\t<filegroup open="true" hidden="false">\n'
+            '\t\t\t\t\t<legendlayerfile isInOverview="0" layerid="[NAME][ID]" visible="[VISIBLE]"/>\n'
+            '\t\t\t\t</filegroup>\n'
+            '\t\t</legendlayer>\n')
 
         # Create an order entry which is getting added to the layers order
         self.order = "\t\t\t<item>[NAME][ID]</item>\n"
@@ -194,16 +200,16 @@ class QGISLayerMaker(object):
 
                 # Add a label for the project subbasins
                 if 'subbasin' in path:
-                    display_name = name.split('subbasin')[0].replace('_', ' ').title()
-
+                    display_name = name.split('subbasin')[
+                        0].replace('_', ' ').title()
 
             self.replacements = {"PATH": path,
-                                "NAME": name,
-                                "EPSG": str(epsg),
-                                "ID": self.str_now,
-                                "LINE_TYPE":line_type,
-                                "PROVIDER":provider,
-                                "DISPLAY_NAME":display_name}
+                                 "NAME": name,
+                                 "EPSG": str(epsg),
+                                 "ID": self.str_now,
+                                 "LINE_TYPE": line_type,
+                                 "PROVIDER": provider,
+                                 "DISPLAY_NAME": display_name}
 
         elif self.ext == 'tif':
             self.ftype = 'geotiff'
@@ -212,10 +218,10 @@ class QGISLayerMaker(object):
             template = join(template_dir, 'raster_template.xml')
 
             self.replacements = {"PATH": path,
-                                "NAME": name,
-                                "EPSG": str(epsg),
-                                "ID": self.str_now,
-                                "PROVIDER":provider}
+                                 "NAME": name,
+                                 "EPSG": str(epsg),
+                                 "ID": self.str_now,
+                                 "PROVIDER": provider}
 
         # Netcdf
         elif self.ext == 'nc':
@@ -235,11 +241,11 @@ class QGISLayerMaker(object):
                 '\t\t</layer-tree-layer>\n')
 
             self.replacements = {"PATH": path,
-                                "NAME": name,
-                                "VARIABLE":kwargs['variable'],
-                                "EPSG": str(epsg),
-                                "ID": self.str_now,
-                                "PROVIDER":provider}
+                                 "NAME": name,
+                                 "VARIABLE": kwargs['variable'],
+                                 "EPSG": str(epsg),
+                                 "ID": self.str_now,
+                                 "PROVIDER": provider}
         else:
             raise ValueError("Unrecognized file format {}".format(self.ext))
 
@@ -275,14 +281,14 @@ class QGISLayerMaker(object):
             # Search the variable name for the kewords
             search_str = self.replacements['VARIABLE'].lower()
         else:
-            #Search the path
+            # Search the path
             search_str = self.replacements['PATH'].lower()
 
         ###### Universally choose colors ############
-        qgis_templates = join(dirname(__file__),'qgis_templates')
+        qgis_templates = join(dirname(__file__), 'qgis_templates')
         # Use simple gray scale for hillshade rasters
         if 'hillshade' in search_str:
-            color = join(qgis_templates,'hillshade.xml')
+            color = join(qgis_templates, 'hillshade.xml')
 
         # Use Custom dem colrmap for the elevation rasters
         elif 'dem' in search_str:
@@ -290,7 +296,7 @@ class QGISLayerMaker(object):
 
         # Use Custom dem colrmap for the elevation rasters
         elif 'veg_type' in search_str:
-            color = join(qgis_templates,'veg_type_colormap.xml')
+            color = join(qgis_templates, 'veg_type_colormap.xml')
 
         # streams
         elif "net_thresh" in search_str:
@@ -310,14 +316,15 @@ class QGISLayerMaker(object):
 
         # If we have a colormap file use it only if it is a raster
         if color:
-            if self.replacements['PROVIDER']=='gdal':
+            if self.replacements['PROVIDER'] == 'gdal':
                 # parse the colormap and inject it in to the qgis project
                 with open(color) as fp:
                     lines = fp.readlines()
                     fp.close()
 
-                    # Find the index in the colormap where pipe is an self.extract between the two of them
-                    idx = [i for i,l in enumerate(lines) if 'pipe' in l]
+                    # Find the index in the colormap where pipe is an
+                    # self.extract between the two of them
+                    idx = [i for i, l in enumerate(lines) if 'pipe' in l]
                     lines = lines[idx[0] + 1:idx[1]]
                     color = "\t\t".join(lines)
 
@@ -335,7 +342,9 @@ class QGISLayerMaker(object):
 
         return declaration, order, layer_def, legend
 
-def create_layer_strings(files, epsg, variables=[], declarations='', order='', layers='', legends=''):
+
+def create_layer_strings(files, epsg, variables=[],
+                         declarations='', order='', layers='', legends=''):
     """
     Create three strings to insert in to the qgis project
 
@@ -353,7 +362,7 @@ def create_layer_strings(files, epsg, variables=[], declarations='', order='', l
         layers: String representing the layer definitions
         legend: String representing the legend entries
     """
-    if type(files) != list:
+    if not isinstance(files, list):
         files = [files]
 
     if variables:
@@ -381,68 +390,71 @@ def create_layer_strings(files, epsg, variables=[], declarations='', order='', l
 
     return declarations, order, layers, legends
 
+
 def main():
 
     parser = argparse.ArgumentParser(description='Build a qgis project for '
-                                    'setting up a basin')
-    parser.add_argument('-t','--geotiff', dest='tifs', nargs='+', required=True,
+                                     'setting up a basin')
+    parser.add_argument('-t', '--geotiff', dest='tifs', nargs='+', required=True,
                         help='Paths to the geotifs to add, specifically looking'
                              ' for a hillshade and dem')
-    parser.add_argument('-s','--shapefiles', dest='shapefiles', nargs='+',
+    parser.add_argument('-s', '--shapefiles', dest='shapefiles', nargs='+',
                         help='Paths to the shapefiles')
-    parser.add_argument('-n','--netcdf', dest='netcdf',
+    parser.add_argument('-n', '--netcdf', dest='netcdf',
                         help='Path to the input topo file for AWSM')
-    parser.add_argument('-v','--variables', dest='variables', nargs='+',
+    parser.add_argument('-v', '--variables', dest='variables', nargs='+',
                         help='Variable names in the netcdf to add to the'
                              ' project')
-    parser.add_argument('-e','--epsg', dest='epsg', required=True,
-                     help='Paths to the shapefiles')
+    parser.add_argument('-e', '--epsg', dest='epsg', required=True,
+                        help='Paths to the shapefiles')
 
     args = parser.parse_args()
     epsg = args.epsg
 
-    if args.shapefiles != None:
+    if args.shapefiles is not None:
         print("\n\nAdding shapefiles to the project...")
-        declarations, order, layers, legends = create_layer_strings(args.shapefiles, epsg)
+        declarations, order, layers, legends = create_layer_strings(
+            args.shapefiles, epsg)
     else:
         declarations = ''
         order = ''
         layers = ''
         legends = ''
 
-    if args.netcdf != None and args.variables != None:
+    if args.netcdf is not None and args.variables is not None:
         print("\n\nAdding variables from a netcdf to the project...")
         declarations, order, layers, legends = create_layer_strings(args.netcdf, epsg,
-                                                        variables=args.variables,
-                                                        declarations=declarations,
-                                                        order=order,
-                                                        layers=layers,
-                                                        legends=legends)
-    if args.tifs != None:
+                                                                    variables=args.variables,
+                                                                    declarations=declarations,
+                                                                    order=order,
+                                                                    layers=layers,
+                                                                    legends=legends)
+    if args.tifs is not None:
         print("\n\nAdding geotiffs to the project...")
         declarations, order, layers, legend = create_layer_strings(args.tifs, epsg,
-                                                            declarations=declarations,
-                                                            order=order,
-                                                            layers=layers,
-                                                            legends=legends)
+                                                                   declarations=declarations,
+                                                                   order=order,
+                                                                   layers=layers,
+                                                                   legends=legends)
     else:
-        raise IOError("Must have at least one geotiff to define the project extent")
+        raise IOError(
+            "Must have at least one geotiff to define the project extent")
     # Populate replacement info
     replacements = \
-    {
-    "DECLARATIONS":declarations,
-    "ORDER": order,
-    "LAYERS": layers,
-    "LEGEND": legend,
-    "EXTENT": get_extent_str(args.tifs[0])
-    }
+        {
+            "DECLARATIONS": declarations,
+            "ORDER": order,
+            "LAYERS": layers,
+            "LEGEND": legend,
+            "EXTENT": get_extent_str(args.tifs[0])
+        }
     replacements['SPATIAL_REF'] = get_xml_spatial_ref(epsg)
     template_dir = join(dirname(__file__), 'qgis_templates')
 
     # Open the template
     fname = join(template_dir, 'template.xml')
 
-    with open(fname,'r') as fp:
+    with open(fname, 'r') as fp:
         lines = fp.readlines()
         fp.close()
 
@@ -452,9 +464,10 @@ def main():
 
     out = "setup.qgs"
 
-    with open(out,'w+') as fp:
+    with open(out, 'w+') as fp:
         fp.write(info)
         fp.close()
+
 
 if __name__ == '__main__':
     main()
