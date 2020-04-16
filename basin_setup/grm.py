@@ -169,7 +169,6 @@ class GRM(object):
         # Exclude all variables except dimensions
         ex_var = [v for v in self.topo_ds.variables if v.lower() not in [
             'x', 'y', 'projection']]
-
         # Copy a topo like netcdf image to add depths to
         self.ds = copy_nc(self.topo, self.outfile, exclude=ex_var)
         self.ds.createDimension("time", None)
@@ -234,8 +233,8 @@ class GRM(object):
             self.water_year += 1
 
         # output netcdf
-        self.outfile = os.path.join(self.output, "lidar_depths_wy{}.nc"
-                                                 "".format(self.water_year))
+        self.outfile = os.path.join(self.output,("lidar_depths_wy{}.nc"
+                                                 "".format(self.water_year)))
         self.log.info("Lidar Flight for {}".format(
             self.date.isoformat().split('T')[0]))
 

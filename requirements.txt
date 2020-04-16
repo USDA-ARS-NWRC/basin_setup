@@ -6,6 +6,6 @@ Shapely==1.6.4.post1
 geopandas==0.4.0
 utm==0.4.2
 coloredlogs==10.0
-spatialnc>=0.2.10,<0.3.0
+spatialnc>=0.3.0,<0.4.0
 inicheck>=0.3.3,<0.4.0
 netCDF4==1.4.1
