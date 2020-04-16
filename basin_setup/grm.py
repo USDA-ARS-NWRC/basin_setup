@@ -450,6 +450,8 @@ def run_grm(**kwargs):
     g = GRM(**kwargs)
     g.grid_match()
     g.add_to_collection()
+    return g
+
 
 def main():
 
@@ -556,7 +558,7 @@ def main():
 
         if not DEBUG or args.allow_exceptions:
             try:
-                run_grm(**kwargs)
+                g = run_grm(**kwargs)
 
             except Exception as e:
                 log.warning("Skipping {} due to error".format(
@@ -565,7 +567,7 @@ def main():
                 skips += 1
 
         else:
-            run_grm(**kwargs)
+            g = run_grm(**kwargs)
 
     stop = time.time()
 
@@ -579,7 +581,7 @@ def main():
 
     if not DEBUG:
         log.info('Cleaning up temporary files.')
-        shutil.rmtree(g.temp)
+        shutil.rmtree(temp)
 
 
 if __name__ == '__main__':
