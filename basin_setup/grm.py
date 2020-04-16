@@ -255,6 +255,9 @@ class GRM(object):
             # Check for matching basins
             self.check_basin_match()
 
+            # Check the incoming topo matches the previous images domain
+            self.check_domain_match()
+
             # Check for matching water years
             self.check_water_year_match()
 
@@ -262,7 +265,7 @@ class GRM(object):
             self.check_overwrite()
 
             # Check the basin mask in the topo matches for the dataset
-            self.check_topo_match()
+            self.check_topo_basin_name()
 
         # Create a netcdf
         else:
@@ -337,7 +340,7 @@ class GRM(object):
 
         return index
 
-    def check_topo_match(self):
+    def check_topo_basin_name(self):
         """
         Checks to see if the topo masks long name matches the basin name of the
         image
@@ -409,6 +412,45 @@ class GRM(object):
         self.handle_error(dbgmsg, errmsg, error=error)
 
 
+    def check_domain_match(self):
+        """
+        Checks that the topo coming in matches the domain of the current
+        netcdf being modified
+        """
+        errmsg = ("This lidar file was not initially created with"
+                  " this topo. Domain mismatch. Either delete the existing"
+                  " lidar netcdf you adding to, or find the correct topo.")
+        error = False
+        dbgmsg = 'Topo domain and resolution matches the current lidar netCDF!'
+
+        # Check that domain extents are the same
+        for v in ['x','y']:
+            for fn in [np.max, np.min]:
+                v_topo = fn(self.topo_ds.variables[v][:])
+                v_lidar = fn(self.ds.variables[v][:])
+
+                if v_topo != v_lidar:
+                    error = True
+                    dbgmsg = ("ERROR: Domain mismatch, Topo {0} {1} != Lidar NetCDF {0} {1}"
+                              "".format(v, fn.__name__))
+
+            # Check that the topo and the current lidar netcdf have the same nx,ny
+            if len(self.topo_ds.variables[v][:]) != len(self.ds.variables[v][:]):
+                    error = True
+                    dbgmsg = ("ERROR Domain Mismatch: Topo n{0} != Lidar NetCDF n{0}"
+                              "".format(v))
+
+        self.handle_error(dbgmsg, errmsg, error=error)
+
+
+def run_grm(**kwargs):
+    '''
+    Run GRM for one image
+    '''
+    g = GRM(**kwargs)
+    g.grid_match()
+    g.add_to_collection()
+
 def main():
 
     p = argparse.ArgumentParser(description="Modifies existing images to a"
@@ -430,7 +472,7 @@ def main():
                    help="Name of the basin to use for metadata")
 
     p.add_argument("-o", "--output", dest="output",
-                   required=False,
+                   required=False, default='output',
                    help="Path to output folder")
 
     p.add_argument("-d", "--debug", dest="debug",
@@ -505,16 +547,16 @@ def main():
         log.info("")
         log.info("Processing {}".format(os.path.basename(f)))
 
+        kwargs = { 'image':f, 'topo':args.topo, 'basin':args.basin,
+                                                'debug':args.debug,
+                                                'output':output,
+                                                'temp':temp,
+                                                'resample':args.resample,
+                                                'log':log}
+
         if not DEBUG or args.allow_exceptions:
             try:
-                g = GRM(image=f, topo=args.topo, basin=args.basin,
-                        debug=args.debug,
-                        output=output,
-                        temp=temp,
-                        resample=args.resample,
-                        log=log)
-                g.grid_match()
-                g.add_to_collection()
+                run_grm(**kwargs)
 
             except Exception as e:
                 log.warning("Skipping {} due to error".format(
@@ -523,21 +565,15 @@ def main():
                 skips += 1
 
         else:
-            g = GRM(image=f, topo=args.topo, basin=args.basin,
-                    debug=args.debug,
-                    output=args.output,
-                    temp=temp,
-                    resample=args.resample,
-                    log=log)
-            g.grid_match()
-            g.add_to_collection()
+            run_grm(**kwargs)
+
     stop = time.time()
 
     # Throw a warning when all get skipped
     if skips == len(args.images):
         log.warning("No images were processed!")
 
-    g.log.info("Grid Resizing and Matching Complete. {1}/{2} files processed."
+    log.info("Grid Resizing and Matching Complete. {1}/{2} files processed."
                " Elapsed Time {0:0.1f}s"
                "".format(stop - start, len(args.images) - skips, len(args.images)))
 
