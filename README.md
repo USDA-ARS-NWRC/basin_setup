@@ -1,4 +1,4 @@
-# BASIN SETUP TOOL v0.14.2
+# BASIN SETUP TOOL v0.14.3
 [![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.python.org/basin_setup/ansicolortags/)
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
 
