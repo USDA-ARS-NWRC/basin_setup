@@ -139,9 +139,10 @@ History
 
 0.15.0 (TBD)
 -------------------
-* Fixes for 30_, 46_, 47_
+* Fixes for 30_, 46_, 47_, 49_
 * Added in linting with isort and autopep8
 
 .. _30: https://github.com/USDA-ARS-NWRC/basin_setup/issues/30
 .. _46: https://github.com/USDA-ARS-NWRC/basin_setup/issues/46
 .. _47: https://github.com/USDA-ARS-NWRC/basin_setup/issues/47
+.. _49: https://github.com/USDA-ARS-NWRC/basin_setup/issues/49
