@@ -523,8 +523,11 @@ def main():
                          " working files generated during runs")
 
     p.add_argument("-dt", "--date", dest="date",
-                   required=False, default=None,
-                   help="Enables user to directly control the date.")
+                   required=False, default=[], nargs='+'
+                   help="Enables user to directly control the date. Should be "
+                        "a list as long as the images argument. If left empty "
+                        "GRM will attempt to find the date in the file name of "
+                        "the image")
 
     p.add_argument("-e", "--allow_exceptions", dest="allow_exceptions",
                    required=False, action="store_true",
@@ -577,14 +580,26 @@ def main():
 
     # We need to sort the images by date so create a dictionary of the two here
     log.info("Calculating dates and sorting images for processing...")
-    dates = [parse_fname_date(f) for f in args.images]
+    if args.dates:
+        dates = args.date
+
+    else:
+        dates = [parse_fname_date(f) for f in args.images]
+
+    # Confirm there as many dates as images
+    if len(dates) != len(args.images):
+        raise Exception("Provided dates must either be in the image filename"
+                        " in the format YYYYMMDD or provided using --date."
+                        " If using the date flag, there must be as many dates"
+                        " as images.")
+
     image_dict = {k: v for (k, v) in zip(dates, args.images)}
 
     # Loop through all images provided
     log.info("Number of images being processed: {}".format(len(args.images)))
 
-    for k in sorted(image_dict.keys()):
-        f = image_dict[k]
+    for d in sorted(image_dict.keys()):
+        f = image_dict[d]
 
         log.info("")
         log.info("Processing {}".format(os.path.basename(f)))
@@ -594,6 +609,7 @@ def main():
                                                 'output':output,
                                                 'temp':temp,
                                                 'resample':args.resample,
+                                                'date':d,
                                                 'log':log}
 
         if not DEBUG or args.allow_exceptions:
