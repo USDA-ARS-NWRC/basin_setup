@@ -100,7 +100,7 @@ ENV/
 # mypy
 .mypy_cache/
 
-#Result in examples
+# Result in examples
 examples/**/output/**
 **/delineation/**
 examples/**/basin_setup/**
@@ -116,7 +116,8 @@ output/*
 examples/**.xml
 tests/**.xml
 **.aux.**
-
+**/veg_map.csv
 scripts/*.pdf
 scripts/*.csv
 scripts/*.md
+

@@ -21,18 +21,50 @@ from basin_setup import __version__
 
 DEBUG = False
 
-
 def parse_fname_date(fname):
     """
-    Attempts to parse the date from the filename
-    """
-    bname = os.path.basename(fname)
-    if "_" in bname:
-        bname = bname.split("_")[0]
+    Attempts to parse the date from the filename using underscores. This assumes
+    there is a parseable date that can be found between underscores and can be
+    determined with only numeric characters. E.g. 20200414. An example of this
+    is in a file would be:
 
-    # Only grab the numbers in the basename
-    str_dt = "".join([c for c in bname if c.isnumeric()])
-    dt = pd.to_datetime(str_dt)
+     USCASJ20200414_SUPERsnow_depth_50p0m_agg.tif
+
+     Args:
+        fname: File name containing a completely numeric date string in it
+
+    Return:
+        dt: Datetime object if pareable string was found, otherwise none
+    """
+
+    bname = os.path.basename(fname)
+
+    # Remove the extension
+    bname = bname.split('.')[0]
+
+    dt = None
+
+    if "_" in bname:
+
+        # Assum underscores act like spaces
+        bname = bname.split("_")
+
+    else:
+        bname = [bname]
+
+    # Attempt to parse a date in the filename one at a time
+    for w in bname:
+        # Grab only numbers and letters
+        dt_str = "".join([c for c in w if c.isnumeric()])
+
+        try:
+            # Successful datestring found, break out
+            if dt_str:
+                dt = pd.to_datetime(dt_str)
+                break
+
+        except:
+            pass
 
     return dt
 
@@ -220,6 +252,14 @@ class GRM(object):
 
         if not hasattr(self, "date"):
             self.date = parse_fname_date(self.image)
+
+            # No date was parsed
+            if self.date is None:
+                msg = ('Unable to parse date from filename {}.'
+                       ''.format(self.image))
+                self.log.error('{}, Please use the --date flag to manually '
+                               'enforce the date'.format(msg))
+                raise Exception(msg)
 
         else:
             self.date = pd.to_datetime(self.date)
