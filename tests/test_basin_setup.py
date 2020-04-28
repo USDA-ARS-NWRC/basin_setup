@@ -14,10 +14,22 @@ from os.path import abspath, join
 from subprocess import check_output
 
 from basin_setup.basin_setup import *
+from .basin_setup_test_case import BSTestCase
 
 
-class TestBasinSetup(unittest.TestCase):
-    test_data = join("tests", "RME")
+class TestBasinSetupCLI(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        self.gfname = 'topo.nc'
+        self.cfname = join('output', self.gfname)
+        super().setUpClass()
+
+        self.dem = join(self.data_path, 'dem_epsg_32611_100m.tif')
+        self.shp = join(self.gold_path, 'basin_outline.shp')
+
+        self.cmd = ('basin_setup -dm {} -f {} -o {} --cell_size 150'
+                   ''.format(self.dem,self.shp, self.output))
 
     def test_ensemble(self):
         """

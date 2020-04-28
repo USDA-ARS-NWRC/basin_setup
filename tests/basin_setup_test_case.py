@@ -7,10 +7,11 @@ from os.path import abspath, join, dirname, isdir
 from netCDF4 import Dataset
 import numpy as np
 import shutil
+import geopandas as gpd
+import pandas as pd
 
 class BSTestCase(unittest.TestCase):
 
-        # Assign self.gold and self.compare netcdf datasets in setup
     @classmethod
     def setUpClass(self):
         super().setUpClass()
@@ -23,15 +24,29 @@ class BSTestCase(unittest.TestCase):
             shutil.rmtree(self.output)
 
     def close(self):
-        self.gold.close()
-        self.compare.close()
+        if self.ext == 'nc':
+            self.gold.close()
+            self.compare.close()
 
     def open(self):
         '''
         Open the netcdfs
         '''
-        self.gold = Dataset( join(self.gold_path, self.gfname))
-        self.compare = Dataset(join(self.data_path, self.cfname))
+        self.ext = self.gfname.split('.')[-1]
+
+        gf =  join(self.gold_path, self.gfname)
+        cf =  join(join(self.data_path, self.cfname))
+        if self.ext == 'nc':
+            self.gold = Dataset(gf)
+            self.compare = Dataset(cf)
+
+        elif self.ext == 'shp':
+            self.gold = gpd.read_file(gf)
+            self.compare = gpd.read_file(cf)
+
+        else:
+            raise Exception("File with ext == {} not implemented".format(self.ext))
+
 
     def run_test(self, cmd):
         print("Running: {}".format(cmd))
@@ -52,11 +67,14 @@ class BSTestCase(unittest.TestCase):
             vgold: Numpy array of the gold dataset
 
         '''
-        for v in self.gold.variables.keys():
-            compare_nan = np.count_nonzero(np.isnan(self.compare.variables[v][:]))
-            gold_nan = np.count_nonzero(np.isnan(self.gold.variables[v][:]))
-            self.assertTrue(compare_nan == gold_nan)
+        if self.ext == 'nc':
+            for v in self.gold.variables.keys():
+                compare_nan = np.count_nonzero(np.isnan(self.compare.variables[v][:]))
+                gold_nan = np.count_nonzero(np.isnan(self.gold.variables[v][:]))
+                self.assertTrue(compare_nan == gold_nan)
 
+        elif self.ext == 'shp':
+            pass
 
     def assert_all_images_equal(self, decimal=8):
         '''
@@ -66,9 +84,11 @@ class BSTestCase(unittest.TestCase):
         Args:
             decimal: Number of decimals to worry about with comparison
         '''
-
-        for v in self.gold.variables.keys():
-            if v not in ['projection']:
-                np.testing.assert_almost_equal(self.compare.variables[v][:],
-                                                self.gold.variables[v][:],
-                                                decimal=decimal)
+        if self.ext == 'nc':
+            for v in self.gold.variables.keys():
+                if v not in ['projection']:
+                    np.testing.assert_almost_equal(self.compare.variables[v][:],
+                                                    self.gold.variables[v][:],
+                                                    decimal=decimal)
+        elif self.ext == 'shp':
+            pd.testing.assert_frame_equal(self.compare, self.gold)

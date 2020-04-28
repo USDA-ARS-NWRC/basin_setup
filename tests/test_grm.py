@@ -7,10 +7,10 @@ import pandas as pd
 from subprocess import check_output
 from os.path import join
 import numpy as np
-from basin_setup_test_case import BSTestCase
+from .basin_setup_test_case import BSTestCase
 
 
-class TestGRM(BSTestCase):
+class TestGRMCLI(BSTestCase):
 
     @classmethod
     def setUpClass(self):
@@ -65,26 +65,28 @@ class TestGRM(BSTestCase):
         self.assertTrue(np.all(t==24))
         self.close()
 
-# class TestGRM(BSTestCase):
-#
-#     def test_parse_fname_date(self):
-#         """
-#         Test the parsing of dates
-#         """
-#
-#         parseable = ['20200414.tif',
-#                      'ASO_SanJoaquin_20200414_SUPERsnow_depth_50p0m_agg.tif',
-#                      'USCATE20200414_ARS_MERGED_depth_50p0m_agg.tif']
-#
-#         not_parseable = ['ASO_SanJoaquin_2020Apr14_SUPERsnow_depth_50p0m_agg.tif',
-#                          'ASO_SanJoaquin_20205030_SUPERsnow_depth_50p0m_agg.tif',
-#                          '04142020.tif']
-#         true_dt = pd.to_datetime('2020-04-14')
-#
-#         for p in parseable:
-#             dt = parse_fname_date(p)
-#             assert dt == true_dt
-#
-#         for p in not_parseable:
-#             dt = parse_fname_date(p)
-#             assert dt is None
+class TestGRM(unittest.TestCase):
+    '''
+    Tests for running the test class
+    '''
+    def test_parse_fname_date(self):
+        """
+        Test the parsing of dates
+        """
+
+        parseable = ['20200414.tif',
+                     'ASO_SanJoaquin_20200414_SUPERsnow_depth_50p0m_agg.tif',
+                     'USCATE20200414_ARS_MERGED_depth_50p0m_agg.tif']
+
+        not_parseable = ['ASO_SanJoaquin_2020Apr14_SUPERsnow_depth_50p0m_agg.tif',
+                         'ASO_SanJoaquin_20205030_SUPERsnow_depth_50p0m_agg.tif',
+                         '04142020.tif']
+        true_dt = pd.to_datetime('2020-04-14')
+
+        for p in parseable:
+            dt = parse_fname_date(p)
+            assert dt == true_dt
+
+        for p in not_parseable:
+            dt = parse_fname_date(p)
+            assert dt is None
