@@ -5,7 +5,6 @@ import os
 import shutil
 import unittest
 from subprocess import check_output
-
 from basin_setup.basin_setup import *
 from .basin_setup_test_case import BSTestCase
 
@@ -32,16 +31,6 @@ class TestDelineateCLI(BSTestCase):
         """
         cmd = self.cmd_str + ' -t 1000'
         self.run_test(self.cmd_str)
-
-    # def test_parse_extent(self):
-    #     """
-    #     Tests our parse extent function
-    #     """
-    #     parseable_files = {"tif":"rme_utm11_wgs_84.tif","shp":"rme_outline.shp"}
-    #
-    #     for k,v
-    # extent = parse_extent(fname, cellsize_return=False, x_field='x',
-    # y_field='y'):
 
 
 if __name__ == '__main__':

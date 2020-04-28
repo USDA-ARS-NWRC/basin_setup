@@ -57,13 +57,15 @@ class TestGRMCLI(BSTestCase):
                                   self.topo,
                                   self.output,
                                   " ".join(['20190326','20190502']))
-        # check_output(cmd, shell=True)
+
         print(cmd)
         check_output(cmd, shell=True)
         self.open()
         t = self.compare.variables['time'][:] - self.gold.variables['time'][:]
+        print(t)
         self.assertTrue(np.all(t==24))
         self.close()
+
 
 class TestGRM(unittest.TestCase):
     '''
