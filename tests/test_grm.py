@@ -22,12 +22,6 @@ class BSTestCase(unittest.TestCase):
         if isdir(self.output):
             shutil.rmtree(self.output)
 
-    @classmethod
-    def tearDown(self):
-        super().setUpClass()
-        shutil.rmtree(self.output)
-
-
     def close(self):
         self.gold.close()
         self.compare.close()
@@ -39,11 +33,14 @@ class BSTestCase(unittest.TestCase):
         self.gold = Dataset( join(self.gold_path, self.gfname))
         self.compare = Dataset(join(self.data_path, self.cfname))
 
-    def run_test(self):
+    def run_test(self, cmd):
+        print("Running: {}".format(cmd))
+        check_output(cmd, shell=True)
         self.open()
         self.assert_nan_count_same()
         self.assert_all_images_equal()
         self.close()
+        shutil.rmtree(self.output)
 
     def assert_nan_count_same(self):
         '''
@@ -84,18 +81,52 @@ class TestGRM(BSTestCase):
         self.cfname = join('output', self.gfname)
         super().setUpClass()
 
+        self.image_1 = join(self.data_path, 'USCALB20190325_test_100m.tif')
+        self.image_2 = join(self.data_path, 'USCALB20190501_test_100m.tif')
+        self.topo = join(self.gold_path, 'topo.nc')
+        self.cmd_str = 'grm -i {} -t {} -b lakes -o {}'
+
 
     def test_lidar_images(self):
         '''
-        run GRM with no special flags with one file
+        run GRM with no special flags with 2 lidar flights
         '''
+
         # Add both images at once
-        image = join(self.data_path, 'USCALB*_test_100m.tif')
-        topo = join(self.gold_path, 'topo.nc')
-        cmd = 'grm -i {} -t {} -b lakes --o {}'.format(image, topo, self.output)
-        print("Running: {}".format(cmd))
+        cmd = self.cmd_str.format(" ".join([self.image_1, self.image_2]),
+                                                          self.topo,
+                                                          self.output)
+        self.run_test(cmd)
+
+    def test_appending_lidar_images(self):
+        '''
+        run GRM with no special flags with 2 lidar flights added separately
+        '''
+
+        # Add 1 image and run without testing
+        cmd = self.cmd_str.format(self.image_1, self.topo, self.output)
         check_output(cmd, shell=True)
-        self.run_test()
+
+        # Append the next and test
+        cmd = self.cmd_str.format(self.image_2, self.topo, self.output)
+        self.run_test(cmd)
+
+
+    def test_manual_dates(self):
+        # Add both images at once, use dates shift by a day to check the dates
+        # ... in the file
+        cmd_str = self.cmd_str + ' -dt {}'
+        cmd = cmd_str.format(" ".join([self.image_1, self.image_2]),
+                                  self.topo,
+                                  self.output,
+                                  " ".join(['20190326','20190502']))
+        # check_output(cmd, shell=True)
+        print(cmd)
+        check_output(cmd, shell=True)
+        self.open()
+        t = self.compare.variables['time'][:] - self.gold.variables['time'][:]
+        self.assertTrue(np.all(t==24))
+        self.close()
 
 # class TestGRM(BSTestCase):
 #

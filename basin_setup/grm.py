@@ -506,7 +506,7 @@ def main():
 
     p.add_argument("-i", "--images", dest="images",
                    required=True, nargs='+',
-                   help="Path to lidar images for processing")
+                   help="Path(s) to lidar images for processing")
 
     p.add_argument("-b", "--basin", dest="basin",
                    required=True, choices=['brb', 'kaweah', 'kings', 'lakes',
@@ -522,18 +522,19 @@ def main():
                    help="Outputs more information and does not delete any"
                          " working files generated during runs")
 
-    p.add_argument("-dt", "--date", dest="date",
-                   required=False, default=[], nargs='+'
-                   help="Enables user to directly control the date. Should be "
-                        "a list as long as the images argument. If left empty "
-                        "GRM will attempt to find the date in the file name of "
-                        "the image")
+    p.add_argument("-dt", "--dates", dest="dates",
+                   required=False, default=[], nargs='+',
+                   help="Enables user to directly control the date(s). Should "
+                        " be a list as long as the images argument. If left"
+                        " empty GRM will attempt to find the date in the file"
+                        " name of the image")
 
     p.add_argument("-e", "--allow_exceptions", dest="allow_exceptions",
                    required=False, action="store_true",
                    help="For Development purposes, allows it to be debugging"
                    " but also enables the errors to NOT catch, which is useful"
                    " for batch processing.")
+
     p.add_argument("-r", "--resample", dest="resample",
                    choices=['near', 'bilinear', 'cubic', 'cubicspline',
                             'lanczos', 'average', 'mode', 'max', 'min',
@@ -552,10 +553,7 @@ def main():
     skips = 0
 
     # Make sure our output folder exists
-    if args.output is None:
-        output = './output'
-    else:
-        output = args.output
+    output = args.output
 
     # Make the output folder
     if not os.path.isdir(output):
@@ -581,7 +579,7 @@ def main():
     # We need to sort the images by date so create a dictionary of the two here
     log.info("Calculating dates and sorting images for processing...")
     if args.dates:
-        dates = args.date
+        dates = args.dates
 
     else:
         dates = [parse_fname_date(f) for f in args.images]
