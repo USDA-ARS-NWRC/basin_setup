@@ -30,7 +30,7 @@ class TestBasinSetupCLI(BSTestCase):
 
         self.cmd_str = 'basin_setup -dm {} -f {} -o {} --cell_size 150'
 
-
+    @unittest.skip('Awaiting new feature for bringing in independent veg data images')
     def test_plain_basin_setup(self):
        '''
        Test basin setup without any special flags
