@@ -101,7 +101,7 @@ ENV/
 .mypy_cache/
 
 # Result in examples
-examples/**/output/**
+**/output/**
 **/delineation/**
 examples/**/basin_setup/**
 tests/**/basin_setup/**
