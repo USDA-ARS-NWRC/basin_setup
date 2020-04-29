@@ -1,11 +1,12 @@
-# BASIN SETUP TOOL v0.14.6
-[![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.python.org/basin_setup/ansicolortags/)
+# Basin Setup Tools v0.14.6
+[![PyPI version](https://badge.fury.io/py/basin-setup.svg)](https://badge.fury.io/py/basin-setup)
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
 [![Travis Tests](https://travis-ci.com/USDA-ARS-NWRC/basin_setup.svg?branch=master)](https://travis-ci.com/USDA-ARS-NWRC/basin_setup)
 
 The basin setup tools is a set of CLI tools designed to create the required
 inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and
-[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations and GIS projects
+[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations and QGIS projects
+for looking at the resulting data.
 
 
 # Package Features
@@ -139,7 +140,7 @@ outputs a single netcdf file containing:
  - Basin Vegetation type (From Landfire)
  - Basin Vegetation Height (From Landfire)
  - Basin Vegetation Tau (radiation parameters)
- - Basin Vegetation K(radiation parameters)
+ - Basin Vegetation K (radiation parameters)
  -
 #### General Usage
 
