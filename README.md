@@ -1,16 +1,56 @@
 # BASIN SETUP TOOL v0.14.5
 [![PyPI version fury.io](https://badge.fury.io/py/ansicolortags.svg)](https://pypi.python.org/basin_setup/ansicolortags/)
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
+[![Travis Tests](https://travis-ci.com/USDA-ARS-NWRC/basin_setup.svg?branch=master)](https://travis-ci.com/USDA-ARS-NWRC/basin_setup)
 
-The basin setup tool is a python script designed to create the required
+The basin setup tools is a set of CLI tools designed to create the required
 inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and
-[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations.
+[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations and GIS projects
 
-## INSTALL
+
+# Package Features
+There are 6 commands that come with basin setup
+
+1. [delineate](#delineate) - Automatically delineates a new basin given a pour_points file and a DEM.
+2. [basin_setup](#basin\_setup) - Creates all the images in a single netcdf for running SMRF/AWSM, often referred to as the topo.nc
+3. [grm](#grm) - Aggregates Lidar snow depths into a single netcdf.
+4. [make_qgis_proj](#make_qgis_proj) - Adds files to a xml file to be used in QGIS
+5. [make_dem_colormap](#Making-Colormaps) - Makes a custom colormap for a dem specifically making nice maps
+6. [make_veg_type_colormap](#Making-Colormaps) - Makes a custom colormap from the landfire data set specifically for maps
+
+
+# Getting These Tools
+
+## Using Docker
+Building GDAL can sometimes be a headache if you are unfamiliar with
+normal build practices. If you would like to just use the tool with no
+questions asked, then use the docker command. However note that the file
+structure is what is represented inside the docker. So you must mount
+local directories to docker ones fortunately we have created a data
+folder for you to do just that. Mounting these will also ensure files
+you generate persist.
+
+The commands listed in this README are used the same but with
+extra:
+
+``` bash
+$ docker run -it --rm  --entrypoint <COMMAND> -v $(pwd):/data -v <DOWNLOADS>/:/data/downloads usdaarsnwrc/basin_setup <ARGS>
+```
+
+The command above is performing the following:
+
+  - Mounting the current working directory to the ```/data``` folder
+    inside docker (linux only, otherwise use absolute paths)
+  - Mounting the current working directory to the
+    ```/data/downloads``` folder inside docker
+  - Running the COMMAND with the ARGS
+
+## Install From Source
 
 **Prequisites**:
 
   - GDAL 2.3.2
+  - Ubuntu 16.04, 18.04
   - Python\>=3.5
   - pip 19.2.1
 
@@ -21,7 +61,15 @@ provided at:
 
 <http://trac.osgeo.org/gdal/wiki/BuildHints>
 
-Once GDAL is installed, install the python requirements using pip:
+Once GDAL is installed, install the python requirements create a virtualenv
+using python3:
+
+```bash
+
+$ virtualenv -p python3 basinenv
+$ source basinenv/bin/activate
+
+```
 
 ``` bash
 $ pip install -r requirements.txt
@@ -41,15 +89,44 @@ without having to reinstall
 $ python setup.py develop
 ```
 
-## Commands
-There are 6 commands that are installed after installing using the make file.
+# Commands
 
-1. [basin_setup](#basin\_setup) - creates all the images for running SMRF/AWSM
-2. [delineate](#delineate) - Automatically delineates a new basin.
-3. [grm](#grm) - Aggregates Lidar snow depths into a single netcdf
-4. [make_qgis_proj](#make_qgis_proj) - Adds files to a xml file to be used in QGIS
-5. [make_dem_colormap](#make_dem_colormap) - Makes a custom colormap for a dem specifically making nice maps
-6. [make_veg_type_colormap](#make_veg_type_colormap) - Makes a custom colormap from the landfire data set specifically for maps
+----
+## delineate
+----
+
+The delineation script automatically delineates a basin using pour points and
+a dem. The tool simply wraps the tools from [TaudDEM](http://hydrology.usu.edu/taudem/taudem5/index.html)
+and streamlines the process.
+
+The script will produce shapefiles of all the subbasins using a threshold(s).
+It also saves data to allow for re-running faster.
+
+#### Features
+
+* Auto basin delineation.
+* Multiruns with multiple thresholds.
+* Rerun functionality to reduce computation time.
+* Outputs Shapefiles for basins and subbasins
+* Runs in parallel
+
+#### General Usage
+
+* Pour points must be in a BNA format. The name of the points in the BNA file
+  will be used as the name for the output files.
+* DEM must be a .tif
+* Threshold is the number of cells that would drain through a single pour point, the smaller the number the more subbasins.
+
+``` bash
+$ delineate -p pour_points.bna -d dem.tif --rerun -t 2000000 -n 2 --debug
+```
+
+Using the debug flag will leave lots of extra files that were generated on the
+way in a folder named delineation
+
+To get files necessary for streamflow add --streamflow flag to the command which will
+preserve streamflow files like reaches and tree files.
+
 
 ----
 ## basin\_setup
@@ -61,8 +138,8 @@ outputs a single netcdf file containing:
  - Basin DEM
  - Basin Vegetation type (From Landfire)
  - Basin Vegetation Height (From Landfire)
- - Basin Vegetation Tau
- - Basin Vegetation K
+ - Basin Vegetation Tau (radiation parameters)
+ - Basin Vegetation K(radiation parameters)
  -
 #### General Usage
 
@@ -146,61 +223,88 @@ choose a different elevation than what an image can provide. E.g.
 $  basin_setup -p 519976,4768323 -dm 1000 --epsg 2153 --uniform
 ```
 
-#### Using it in Docker
-
-Building GDAL can sometimes be a headache if you are unfamiliar with
-normal build practices. If you would like to just use the tool with no
-questions asked, then use the docker command. However note that the file
-structure is what is represented inside the docker. So you must mount
-local directories to docker ones fortunately we have created a data
-folder for you to do just that. Mounting these will also ensure files
-you generate persist.
-
-The commands are used the same but with
-extra:
-
-``` bash
-$ docker run -it --rm -v $(pwd):/data -v <DOWNLOADS>/:/data/downloads usdaarsnwrc/basin_setup:develop -f SHAPEFILE -dm DME_IMG -d /data/downloads
-```
-
-The command above is:
-
-  - Mounting the current working directory to the ```/data``` folder
-    inside docker
-  - Mounting the current working directory to the
-    ```/data/downloads``` folder inside docker
-  - Running basin_setup with the dowloads pointing to the docker side.
-
 ----
-## delineate
+## grm
 ----
 
-The delineation script automatically delineates a basin using pour points and
-a dem. The tool is based on [TaudDEM](http://hydrology.usu.edu/taudem/taudem5/index.html).
-
-The script will produce shapefiles of all the subbasins using a threshold.
-It also saves data to allow for re-running faster.
+The GRM tool aggregates lidar geotiffs into a single netcdf for each water year.
+The images are stored in time according to hours from the 10-01-YYYY
 
 #### Features
 
-* Auto delineation.
-* Multiruns with multiple thresholds.
-* Rerun functionality to reduce computation time.
-* Outputs Shapefiles for basins and subbasins
-* Runs in parallel
+* Add any number Lidar geotiffs in a single command.
+* Append any number of lidar geotifs to an existing lidar netcdf
+* Autodetect dates for images filenames containing date format YYYYMMDD
+* Reprojects, resize, resample, and crop domains according to the topo.nc
+* Assign nan values where -9999 or nans were provided.
+* Check netcdf features to insure overwriting previous images data fidelity
+* Manually pass in dates
 
 #### General Usage
 
-* pour points must be in a BNA format. The name of the points in the BNA file
-  will be used as the name for the output files.
-* DEM must be a .tif
-*
+The following will generate a netcdf named lidar_depths_wy2020.nc with two
+flights stored at 4-11-2020 and 4-15-2020 as determined by the image filenames.
 
-``` bash
-$ delineate -p pour_points.bna -d dem.tif --rerun -t 2000000 -n 2 --debug
+```bash
+grm -t topo.nc -i 20200411_SuperDepths.tif 20200415_superDepths.tif -b lakes
 ```
 
-Using the debug flag will leave lots of extra files that were generated on the
-way in a folder named delineation
+----
+## make_qgis_proj
+----
 
-To get files necessary for streamflow add --streamflow flag to the command
+Script builds a .qgs file for opening in QGIS. The templates are built on QGIS 2.17
+but have worked in 3.4 and more. The script makes the projects assuming you're
+examining delineations.
+
+#### Features
+
+* Command accepts geotifs, shapefiles, BNA point files, multi-image netcdf
+* Use keywords in your filenames to assign colormaps to streams, points, DEM, hillshades and veg data.
+* Select specific netcdf variables to add, key words here also apply the same colormaps
+
+#### General Usage
+
+* Pour points must be in a BNA format. The name of the points in the BNA file
+  will be used as the name for the output files.
+* DEM must be a .tif
+* Threshold is the number of cells that would drain through a single pour point, the smaller the number the more subbasins.
+
+``` bash
+$ 	make_qgis_proj -t veg_type.tif dem.tif ./dem/hillshade.tif \
+										-s pour_points.bna \
+                    ./delineation/basin_outline.shp \
+										./delineation/streamflow/thresh_10000/net_thresh_10000.shp
+										-n basin_setup/topo.nc \
+										-v veg_type dem \
+										--epsg 32611
+```
+
+The result will be a file named setup.qgs which can be opened in QGIS.
+
+**NOTE:**  Colormaps can be added to a folder in the same path of execution
+titled colormaps.
+
+----
+## Making Colormaps
+----
+
+There are two scripts for making colormaps.
+1. make_dem_colormap - Makes a custom, map quality colormap based on DEM
+2. make_veg_type_colormap - Makes a custom, map quality colormap for Landfire veg types (Water is blue, forest is green, bare is brown, snow/ice is white, grass is light green)
+
+#### Features
+
+* Command accepts geotifs, shapefiles, BNA point files, multi-image netcdf
+* Use keywords in your filenames to assign colormaps to streams, points, DEM, hillshades and veg data.
+* Select specific netcdf variables to add, key words here also apply the same colormaps
+
+#### General Usage
+
+``` bash
+make_dem_colormap dem.tif
+make_veg_type_colormap  ~/Downloads/US_140EVT_20180618/
+```
+
+Both of these will produce a .qml and put it in a folder caller colormaps in the
+same directory this runs.
