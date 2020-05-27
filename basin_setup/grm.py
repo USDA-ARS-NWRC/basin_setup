@@ -21,6 +21,7 @@ from basin_setup import __version__
 
 DEBUG = False
 
+
 def parse_fname_date(fname):
     """
     Attempts to parse the date from the filename using underscores. This assumes
@@ -63,7 +64,7 @@ def parse_fname_date(fname):
                 dt = pd.to_datetime(dt_str)
                 break
 
-        except:
+        except BaseException:
             pass
 
     return dt
@@ -273,8 +274,8 @@ class GRM(object):
             self.water_year += 1
 
         # output netcdf
-        self.outfile = os.path.join(self.output,("lidar_depths_wy{}.nc"
-                                                 "".format(self.water_year)))
+        self.outfile = os.path.join(self.output, ("lidar_depths_wy{}.nc"
+                                                  "".format(self.water_year)))
         self.log.info("Lidar Flight for {}".format(
             self.date.isoformat().split('T')[0]))
 
@@ -451,7 +452,6 @@ class GRM(object):
         dbgmsg = ("Incoming date appears to be unique to the dataset.")
         self.handle_error(dbgmsg, errmsg, error=error)
 
-
     def check_domain_match(self):
         """
         Checks that the topo coming in matches the domain of the current
@@ -464,7 +464,7 @@ class GRM(object):
         dbgmsg = 'Topo domain and resolution matches the current lidar netCDF!'
 
         # Check that domain extents are the same
-        for v in ['x','y']:
+        for v in ['x', 'y']:
             for fn in [np.max, np.min]:
                 v_topo = fn(self.topo_ds.variables[v][:])
                 v_lidar = fn(self.ds.variables[v][:])
@@ -474,11 +474,13 @@ class GRM(object):
                     dbgmsg = ("ERROR: Domain mismatch, Topo {0} {1} != Lidar NetCDF {0} {1}"
                               "".format(v, fn.__name__))
 
-            # Check that the topo and the current lidar netcdf have the same nx,ny
-            if len(self.topo_ds.variables[v][:]) != len(self.ds.variables[v][:]):
-                    error = True
-                    dbgmsg = ("ERROR Domain Mismatch: Topo n{0} != Lidar NetCDF n{0}"
-                              "".format(v))
+            # Check that the topo and the current lidar netcdf have the same
+            # nx,ny
+            if len(self.topo_ds.variables[v][:]) != len(
+                    self.ds.variables[v][:]):
+                error = True
+                dbgmsg = ("ERROR Domain Mismatch: Topo n{0} != Lidar NetCDF n{0}"
+                          "".format(v))
 
         self.handle_error(dbgmsg, errmsg, error=error)
 
@@ -602,13 +604,13 @@ def main():
         log.info("")
         log.info("Processing {}".format(os.path.basename(f)))
 
-        kwargs = { 'image':f, 'topo':args.topo, 'basin':args.basin,
-                                                'debug':args.debug,
-                                                'output':output,
-                                                'temp':temp,
-                                                'resample':args.resample,
-                                                'date':d,
-                                                'log':log}
+        kwargs = {'image': f, 'topo': args.topo, 'basin': args.basin,
+                  'debug': args.debug,
+                  'output': output,
+                  'temp': temp,
+                  'resample': args.resample,
+                  'date': d,
+                  'log': log}
 
         if not DEBUG or args.allow_exceptions:
             try:
@@ -630,8 +632,8 @@ def main():
         log.warning("No images were processed!")
 
     log.info("Grid Resizing and Matching Complete. {1}/{2} files processed."
-               " Elapsed Time {0:0.1f}s"
-               "".format(stop - start, len(args.images) - skips, len(args.images)))
+             " Elapsed Time {0:0.1f}s"
+             "".format(stop - start, len(args.images) - skips, len(args.images)))
 
     if not DEBUG:
         log.info('Cleaning up temporary files.')

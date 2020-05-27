@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from basin_setup.grm import *
 import unittest
-import pandas as pd
-from subprocess import check_output
 from os.path import join
+from subprocess import check_output
+
 import numpy as np
+import pandas as pd
+
+from basin_setup.grm import *
+
 from .basin_setup_test_case import BSTestCase
 
 
@@ -23,7 +26,6 @@ class TestGRMCLI(BSTestCase):
         self.topo = join(self.gold_path, 'topo.nc')
         self.cmd_str = 'grm -i {} -t {} -b lakes -o {}'
 
-
     def test_lidar_images(self):
         '''
         run GRM with no special flags with 2 lidar flights
@@ -31,8 +33,8 @@ class TestGRMCLI(BSTestCase):
 
         # Add both images at once
         cmd = self.cmd_str.format(" ".join([self.image_1, self.image_2]),
-                                                          self.topo,
-                                                          self.output)
+                                  self.topo,
+                                  self.output)
         self.run_test(cmd)
 
     def test_appending_lidar_images(self):
@@ -48,22 +50,21 @@ class TestGRMCLI(BSTestCase):
         cmd = self.cmd_str.format(self.image_2, self.topo, self.output)
         self.run_test(cmd)
 
-
     def test_manual_dates(self):
         # Add both images at once, use dates shift by a day to check the dates
         # ... in the file
         cmd_str = self.cmd_str + ' -dt {}'
         cmd = cmd_str.format(" ".join([self.image_1, self.image_2]),
-                                  self.topo,
-                                  self.output,
-                                  " ".join(['20190326','20190502']))
+                             self.topo,
+                             self.output,
+                             " ".join(['20190326', '20190502']))
 
         print(cmd)
         check_output(cmd, shell=True)
         self.open()
         t = self.compare.variables['time'][:] - self.gold.variables['time'][:]
         print(t)
-        self.assertTrue(np.all(t==24))
+        self.assertTrue(np.all(t == 24))
         self.close()
 
 
@@ -71,6 +72,7 @@ class TestGRM(unittest.TestCase):
     '''
     Tests for running the test class
     '''
+
     def test_parse_fname_date(self):
         """
         Test the parsing of dates

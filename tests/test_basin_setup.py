@@ -14,6 +14,7 @@ from os.path import abspath, join
 from subprocess import check_output
 
 from basin_setup.basin_setup import *
+
 from .basin_setup_test_case import BSTestCase
 
 
@@ -30,13 +31,14 @@ class TestBasinSetupCLI(BSTestCase):
 
         self.cmd_str = 'basin_setup -dm {} -f {} -o {} --cell_size 150'
 
-    @unittest.skip('Awaiting new feature for bringing in independent veg data images')
+    @unittest.skip(
+        'Awaiting new feature for bringing in independent veg data images')
     def test_plain_basin_setup(self):
-       '''
-       Test basin setup without any special flags
-       '''
-       cmd = self.cmd_str.format(self.dem, self.shp, self.output)
-       self.run_test(cmd)
+        '''
+        Test basin setup without any special flags
+        '''
+        cmd = self.cmd_str.format(self.dem, self.shp, self.output)
+        self.run_test(cmd)
 
     # def test_parse_extent(self):
     #     """

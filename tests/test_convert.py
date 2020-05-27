@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from basin_setup.grm import *
 import unittest
-import pandas as pd
+from os.path import join
 from subprocess import check_output
-from os.path import join
+
 import numpy as np
+import pandas as pd
+
+from basin_setup.grm import *
+
 from .basin_setup_test_case import FunctionalRunCase
-from os.path import join
+
 
 class TestConvertCLI(FunctionalRunCase):
 
@@ -27,7 +30,6 @@ class TestConvertCLI(FunctionalRunCase):
         s = self.run_cmd(cmd)
         assert 'error' not in s.lower()
 
-
     def test_nc2shp_w_variables(self):
         '''
         Run the nc2shp command with variables
@@ -36,6 +38,7 @@ class TestConvertCLI(FunctionalRunCase):
         cmd = self.cmd_str.format(self.topo)
         s = self.run_cmd(cmd + ' -v mask')
         assert 'error' not in s.lower()
+
 
 if __name__ == '__main__':
     import sys
