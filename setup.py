@@ -55,7 +55,8 @@ setup(
         'pconvert=basin_setup.pconvert:main',
         'make_dem_colormap=basin_setup.make_dem_colormap:main',
         'make_veg_type_colormap=basin_setup.make_veg_type_colormap:main',
-        'make_qgis_proj=basin_setup.make_qgis_proj:main'
+        'make_qgis_proj=basin_setup.make_qgis_proj:main',
+        'nc2shp=basin_setup.convert:nc_masks_to_shp_cli'
     ]},
     setup_requires=setup_requirements,
     test_suite='tests',

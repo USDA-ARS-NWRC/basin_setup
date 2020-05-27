@@ -1,7 +1,10 @@
 from netCDF4 import Dataset
-from subproccess import check_output
+from subprocess import check_output
 from basin_setup.basin_setup import Messages
 import time
+import argparse
+
+DEBUG = True
 
 def nc_masks_to_shp(fname, variables=None):
     '''
@@ -35,15 +38,15 @@ def nc_masks_to_shp(fname, variables=None):
     out.msg("Extracting {} varaibles...".format(len(variables)))
     for v in variables:
 
-        file_out = '{}_{}m.shp'.format(v.lower().replace(' ','_'), res)
-        cmd  = 'gdal_polygonize.py -f "ESRI Shapefile" NETCDF:"topo.nc":"{}" {}'.format(v,file_out)
+        file_out = '{}_{:d}m.shp'.format(v.lower().replace(' ','_'), int(res))
+        cmd  = 'gdal_polygonize.py -f "ESRI Shapefile" NETCDF:"{}":"{}" {}'.format(fname, v, file_out)
 
         out.msg("Converting NETCDF variable {} to shapefile and outputting to {}".format(v, file_out))
         out.dbg("Executing:\n{}".format(cmd))
 
         s = check_output(cmd, shell=True)
 
-    out.msg("Finished! Elapsed {:d}s".format(time.time() - start))
+    out.msg("Finished! Elapsed {:d}s".format(int(time.time() - start)))
 
 def nc_masks_to_shp_cli():
     '''
@@ -52,9 +55,10 @@ def nc_masks_to_shp_cli():
 
     p = argparse.ArgumentParser(description='Exports netcdf masks as shapefiles')
 
-    p.add_argument("-f", "--file", dest='file', help="Path to a netcdf")
+    p.add_argument("-f", "--file", required=True, dest='file', help="Path to a netcdf")
     p.add_argument("-v", "--variables", dest='variables', nargs='+',
                   default=None, help="Variables names in netcdf to output as"
                   " shapefiles, if left none, will default to all variables"
                   " with mask in their name")
-      
+    args = p.parse_args()
+    nc_masks_to_shp(args.file, variables=args.variables)
