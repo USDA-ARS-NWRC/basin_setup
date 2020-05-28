@@ -2,17 +2,16 @@ import argparse
 import time
 from shutil import rmtree
 from subprocess import check_output
-
+import logging
+import coloredlogs
 from netCDF4 import Dataset
 
-from basin_setup.basin_setup import Messages
-
+import os
+from os.path import abspath, isdir, join
 from . import __version__
 
-DEBUG = True
 
-
-def nc_masks_to_shp(fname, variables=None):
+def nc_masks_to_shp(fname, variables=None, output='output', debug=False):
     '''
     Converts all variables in a netcdf to shapefiles. If variables is left to
     default, the variable names will be populated with any variables containing
@@ -23,47 +22,62 @@ def nc_masks_to_shp(fname, variables=None):
         variables: List of variables in the netcdf to convert to shapefiles.
                    None is the default which will look for all variables
                    containing the keyword mask
+        output: Folder to output the shapefiles. If it does not exist it will be created
     '''
-    out = Messages()
+    # Get logger and add color with a simple format
+    if debug:
+        level = 'DEBUG'
+    else:
+        level='INFO'
+
+    log = logging.getLogger(__name__)
+    coloredlogs.install(fmt='%(levelname)-5s %(message)s', level=level,
+                        logger=log)
     # Print a nice header
     msg = "Basin Setup NetCDF Mask To Shapefile Tool v{0}".format(__version__)
-    m = "=" * (len(msg) + 1)
-    out.msg(m, 'header')
-    out.msg(msg, 'header')
-    out.msg(m, 'header')
+    header = "=" * (len(msg) + 1)
+    log.info(msg + "\n" + header + "\n")
     start = time.time()
 
     ds = Dataset(fname)
 
     # Check for none then check for lists
     if variables is None:
-        out.msg("No variables provided, extracting all variables with keyword mask...")
+        log.info("No variables provided, extracting all variables with keyword mask...")
         variables = [v for v in ds.variables.keys() if 'mask' in v]
 
     elif not isinstance(variables, list):
         variables = [variables]
+
+    # Create output folder if it doesn't exist
+    output = abspath(output)
+    if not isdir(output):
+        log.debug("Creating output folder at {}...".format(output))
+        os.mkdir(output)
 
     # Grab the file resolution for filenaming
     res = abs(ds.variables['x'][1] - ds.variables['x'][0])
 
     # Loop over all the variables and generate the string commands for
     # gdal_polygonize
-    out.msg("Extracting {} variables...".format(len(variables)))
+    log.info("Extracting {} variables...".format(len(variables)))
     for v in variables:
 
         file_out = '{}_{:d}m.shp'.format(v.lower().replace(' ', '_'), int(res))
+        file_out = join(output, file_out)
+
         cmd = 'gdal_polygonize.py NETCDF:"{}":"{}" -f "ESRI Shapefile" {}'.format(
             fname, v, file_out)
 
-        out.msg(
+        log.info(
             "Converting NETCDF variable {} to shapefile and outputting to {}".format(
                 v,
                 file_out))
-        out.dbg("Executing:\n{}".format(cmd))
+        log.debug("Executing:\n{}".format(cmd))
 
         s = check_output(cmd, shell=True)
 
-    out.msg("Finished! Elapsed {:d}s".format(int(time.time() - start)))
+    log.info("Finished! Elapsed {:d}s".format(int(time.time() - start)))
 
 
 def nc_masks_to_shp_cli():
@@ -84,5 +98,11 @@ def nc_masks_to_shp_cli():
                    default=None, help="Variables names in netcdf to output as"
                    " shapefiles, if left none, will default to all variables"
                    " with mask in their name")
+    p.add_argument("-o", "--output", dest='output', default='output',
+                   help="Name of a folder to output data, default is output")
+    p.add_argument("-d", "--debug", dest="debug",
+                   required=False, action='store_true')
+
     args = p.parse_args()
-    nc_masks_to_shp(args.file, variables=args.variables)
+
+    nc_masks_to_shp(args.file, variables=args.variables, output=args.output, debug=args.debug)

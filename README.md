@@ -18,7 +18,7 @@ There are 6 commands that come with basin setup
 4. [make_qgis_proj](#make_qgis_proj) - Adds files to a xml file to be used in QGIS
 5. [make_dem_colormap](#Making-Colormaps) - Makes a custom colormap for a dem specifically making nice maps
 6. [make_veg_type_colormap](#Making-Colormaps) - Makes a custom colormap from the landfire data set specifically for maps
-
+7. [nc2shp](#Extracting-Shapefiles-from-NetCDF-Masks) - Convert NetCDF masks to shapefiles
 
 # Getting These Tools
 
@@ -141,7 +141,8 @@ outputs a single netcdf file containing:
  - Basin Vegetation Height (From Landfire)
  - Basin Vegetation Tau (radiation parameters)
  - Basin Vegetation K (radiation parameters)
- -
+ - Subbasin masks (optional)
+
 #### General Usage
 
 To use basin\_setup you only need a shapefile of your basins boundary
@@ -309,3 +310,28 @@ make_veg_type_colormap  ~/Downloads/US_140EVT_20180618/
 
 Both of these will produce a .qml and put it in a folder caller colormaps in the
 same directory this runs.
+
+----
+## Extracting Shapefiles from NetCDF Masks
+----
+
+nc2shp is a command that allows users to extract masks from a NetCDF and convert
+and convert them to ESRI shapefiles
+
+#### Features
+
+* Extract all variables from a NetCDF containing the word mask in the name.
+* Specify variables to convert
+
+#### General Usage
+
+To extract all variables with the word mask in its name:
+``` bash
+nc2shp -f topo.nc --debug --output ./output
+```
+
+To extract specific variables use:
+
+``` bash
+nc2shp -f topo.nc --debug --output ./output -v my_custom_variable
+```

@@ -46,16 +46,19 @@ class BSTestCase(FunctionalRunCase):
 
     def open(self):
         '''
-        Open the netcdfs
+        Open the netcdfs datsets and shapefiles (as geopandas)
         '''
         self.ext = self.gfname.split('.')[-1]
 
         gf = join(self.gold_path, self.gfname)
         cf = join(join(self.data_path, self.cfname))
+
+        # Netcdf comparison, retrieve the dataset
         if self.ext == 'nc':
             self.gold = Dataset(gf)
             self.compare = Dataset(cf)
 
+        #Shapefile comparison, open using geopandas and make dataframes
         elif self.ext == 'shp':
             self.gold = gpd.read_file(gf)
             self.compare = gpd.read_file(cf)
