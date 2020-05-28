@@ -139,14 +139,16 @@ History
 
 0.15.0 (TBD)
 -------------------
-* Fixes for 30_, 46_, 47_, 49_ 50_,  51_, 52_
+* Fixes for 30_, 46_, 47_, 49_ 50_,  51_, 52_, 54_
 * Added in linting with isort and autopep8
 * Added integration tests on travis for delineate grm and basin_setup CLI tools
+* Added conversion tool to extract masks into shapefiles
 
 .. _30: https://github.com/USDA-ARS-NWRC/basin_setup/issues/30
 .. _46: https://github.com/USDA-ARS-NWRC/basin_setup/issues/46
 .. _47: https://github.com/USDA-ARS-NWRC/basin_setup/issues/47
 .. _49: https://github.com/USDA-ARS-NWRC/basin_setup/issues/49
 .. _50: https://github.com/USDA-ARS-NWRC/basin_setup/issues/50
+.. _54: https://github.com/USDA-ARS-NWRC/basin_setup/issues/54
 .. _51: https://github.com/USDA-ARS-NWRC/basin_setup/issues/51
 .. _52: https://github.com/USDA-ARS-NWRC/basin_setup/issues/52
