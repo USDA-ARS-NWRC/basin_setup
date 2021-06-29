@@ -11,15 +11,15 @@ with open('README.md') as readme_file:
 with open('docs/history.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = []
 
-setup_requirements = [ ]
+setup_requirements = []
 
-test_requirements = [ ]
+test_requirements = []
 
 setup(
-    author="Micah Johnson",
-    author_email='micah.johnson150@gmail.com',
+    author="USDA ARS NWRC",
+    author_email='snow@ars.usda.gov',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -34,30 +34,30 @@ setup(
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     long_description_content_type='text/markdown',
-    package_data={'basin_setup':['./landfire_veg_param.csv',
-                                 'qgis_templates/hillshade.xml',
-                                 'qgis_templates/veg_type_colormap.xml',
-                                 'qgis_templates/netcdf_template.xml',
-                                 'qgis_templates/points_template.xml',
-                                 'qgis_templates/raster_template.xml',
-                                 'qgis_templates/stream_template.xml',
-                                 'qgis_templates/shapefile_template.xml',
-                                 'qgis_templates/template.xml',
-                                 ]},
-    keywords=['basin_setup','delineation','topo','qgis'],
+    package_data={'basin_setup': ['./landfire_veg_param.csv',
+                                  'qgis_templates/hillshade.xml',
+                                  'qgis_templates/veg_type_colormap.xml',
+                                  'qgis_templates/netcdf_template.xml',
+                                  'qgis_templates/points_template.xml',
+                                  'qgis_templates/raster_template.xml',
+                                  'qgis_templates/stream_template.xml',
+                                  'qgis_templates/shapefile_template.xml',
+                                  'qgis_templates/template.xml',
+                                  ]},
+    keywords=['basin_setup', 'delineation', 'topo', 'qgis'],
     name='basin_setup',
     packages=find_packages(include=['basin_setup']),
     entry_points={
-    'console_scripts': [
-        'basin_setup=basin_setup.basin_setup:main',
-        'delineate=basin_setup.delineate:main',
-        'grm=basin_setup.grm:main',
-        'pconvert=basin_setup.pconvert:main',
-        'make_dem_colormap=basin_setup.make_dem_colormap:main',
-        'make_veg_type_colormap=basin_setup.make_veg_type_colormap:main',
-        'make_qgis_proj=basin_setup.make_qgis_proj:main',
-        'nc2shp=basin_setup.convert:nc_masks_to_shp_cli'
-    ]},
+        'console_scripts': [
+            'basin_setup=basin_setup.basin_setup:main',
+            'delineate=basin_setup.delineate:main',
+            'grm=basin_setup.grm:main',
+            'pconvert=basin_setup.pconvert:main',
+            'make_dem_colormap=basin_setup.make_dem_colormap:main',
+            'make_veg_type_colormap=basin_setup.make_veg_type_colormap:main',
+            'make_qgis_proj=basin_setup.make_qgis_proj:main',
+            'nc2shp=basin_setup.convert:nc_masks_to_shp_cli'
+        ]},
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
