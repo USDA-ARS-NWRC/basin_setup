@@ -13,19 +13,42 @@ def main():
     """
     Provides the command line interface for convert points
     """
-    p = argparse.ArgumentParser(description='Converts points from lat long to utm'
-                                            ' and vice versa')
+    p = argparse.ArgumentParser(
+        description='Converts points from lat long to utm'
+        ' and vice versa'
+    )
 
-    p.add_argument("-c", "--coords", dest='coordinates', nargs=2,
+    p.add_argument("-c",
+                   "--coords",
+                   dest='coordinates',
+                   nargs=2,
                    help="Provide either lat long or utm coordinates")
-    p.add_argument("-t", "--type", dest="type", default='latlong', help='Specify whether'
-                   'you are using latlong or utm coordinates, default is latlong')
-    p.add_argument("-z", "--zone", dest="zone", default='latlong', help='Specify whether'
-                   'you are using latlong or utm coordinates, default is latlong')
-    p.add_argument("-l", "--letter", dest="letter", default='N', help='Specify whether'
-                   'you are using north or south for UTM default=N')
-    p.add_argument("-f", "--file", dest="file", help='Specify a file containing '
-                   ' coordinates')
+
+    p.add_argument("-t",
+                   "--type",
+                   dest="type",
+                   default='latlong',
+                   help='Specify whether to use latlong or utm coordinates,'
+                   ' default is latlong')
+
+    p.add_argument("-z",
+                   "--zone",
+                   dest="zone",
+                   default='latlong',
+                   help='Specify whether to use latlong or utm coordinates,'
+                   ' default is latlong')
+
+    p.add_argument("-l",
+                   "--letter",
+                   dest="letter",
+                   default='N',
+                   help='Specify whether to use north or south for UTM,'
+                   ' default is N')
+
+    p.add_argument("-f",
+                   "--file",
+                   dest="file",
+                   help='Specify a file containing  coordinates')
 
     args = p.parse_args()
 
@@ -37,8 +60,17 @@ def main():
 
         df = pd.read_csv(args.file)
 
-        possible_names = {'latlong': [['lat', 'lon'], ['lat', 'long'], ['latitude', 'longitude']],
-                          'utm': [['x', 'y'], ['northing', 'easting']]}
+        possible_names = {
+            'latlong': [
+                ['lat', 'lon'],
+                ['lat', 'long'],
+                ['latitude', 'longitude']
+            ],
+            'utm': [
+                ['x', 'y'],
+                ['northing', 'easting']
+            ]
+        }
 
         for k, nms in possible_names.items():
             matches = []
@@ -53,7 +85,8 @@ def main():
                 break
 
         if len(matches) != 2:
-            print("Error: No lat/longs or x/y's were found in the file. Available columns:\n{})".format(df.columns))
+            print("Error: No lat/longs or x/y's were found in the file. "
+                  "Available columns: \n{})".format(df.columns))
             sys.exit()
 
         if coord_type == 'utm':
@@ -66,7 +99,8 @@ def main():
 
         # Lat long check
         elif coord_type == 'latlong':
-            print('File contains lat,long columns... assuming lat/long coords provided!')
+            print("File contains lat,long columns... assuming "
+                  "lat/long coords provided!")
 
             # Add appropriate columns
             print("Adding lat long columns for converted values")
@@ -85,7 +119,8 @@ def main():
 
         # Check for correct type being provided
         if coord_type not in ['utm', 'latlong']:
-            print("Error: Please specify coordinates type as either utm or latlong.")
+            print("Error: Please specify coordinates type as either "
+                  "utm or latlong.")
             sys.exit()
 
     # Loop through the data
@@ -93,7 +128,8 @@ def main():
         if coord_type == 'utm':
             # Check for zone and utm are provided
             if args.zone is None:
-                print("Error: Please provide a zone number with your UTM coordinates.")
+                print("Error: Please provide a zone number with your"
+                      " UTM coordinates.")
                 sys.exit()
 
             data = utm.to_latlon(
@@ -115,6 +151,6 @@ def main():
 
     if args.file is not None:
         fname = 'converted_{}'.format(os.path.basename(args.file))
-        print("Outputting new file with converted coordinates to:\n{}".format(fname))
+        print("Outputting new file with converted coordinates to:\n{}".format(fname))  # noqa
         df = df.drop(columns=matches)
         df.to_csv(fname, index=False)

@@ -7,10 +7,8 @@ Usage:
 """
 
 import argparse
-from collections import OrderedDict
 from os.path import join
 
-import numpy as np
 import pandas as pd
 
 
@@ -24,7 +22,7 @@ def main():
 
     fname = join(args.veg_dir, "CSV_Data/LF_140EVT_09152016.csv")
 
-    print("Creating a new colormap for QGIS based on the vegetation type values.")
+    print("Creating a new colormap for QGIS based on the vegetation type values.")  # noqa
 
     output = "./veg_colormap.qml"
 
@@ -33,18 +31,40 @@ def main():
 
     stats = {"minimum": df['VALUE'].min(), "maximum": df['VALUE'].max()}
     norm = 100
-    cm_types = {'water': {'alpha': 200, 'color': [0, 50, 78], 'tags': ['water']},
-                'forest': {'alpha': norm, 'color': [1, 68, 33], 'tags': ['forest']},
-                'sage': {'alpha': norm, 'color': [161, 168, 143], 'tags': ['sagebrush']},
-                'snow': {'alpha': norm, 'color': [255, 231, 228], 'tags': ['snow']},
-                'developed': {'alpha': norm, 'color': [92, 94, 88], 'tags': ['developed']},
-                # 'barren':       {'alpha':norm, 'color':[131, 117, 96],'tags':['barren']},
-                # 'grass':        {'alpha':norm, 'color':[228, 242, 210],'tags':['grass']},
-                'lush': {'alpha': norm, 'color': [58, 95, 11], 'tags': ['meadow', 'riparian']},
-                # 'bush':         {'alpha':norm, 'color':[0, 144, 64], 'tags':['shrub']},
-                }
+    cm_types = {
+        'water': {
+            'alpha': 200,
+            'color': [0, 50, 78],
+            'tags': ['water']
+        },
+        'forest': {
+            'alpha': norm,
+            'color': [1, 68, 33],
+            'tags': ['forest']
+        },
+        'sage': {
+            'alpha': norm,
+            'color': [161, 168, 143],
+            'tags': ['sagebrush']
+        },
+        'snow': {
+            'alpha': norm,
+            'color': [255, 231, 228],
+            'tags': ['snow']
+        },
+        'developed': {
+            'alpha': norm,
+            'color': [92, 94, 88],
+            'tags': ['developed']
+        },
+        'lush': {
+            'alpha': norm,
+            'color': [58, 95, 11],
+            'tags': ['meadow', 'riparian']
+        },
+    }
     df = df.set_index('VALUE').sort_index()
-    print("Creating a new colormap for QGIS based on the DEM found in the topos")
+    print("Creating a new colormap for QGIS based on the DEM found in the topos")  # noqa
 
     # Upper portion of the style file right up to the color ramp
     hdr = """
@@ -69,7 +89,7 @@ def main():
     </qgis>
     """
 
-    color_entry = '          <item alpha="{0}" value="{1}" label="{2}" color="{3}"/>\n'
+    color_entry = '          <item alpha="{0}" value="{1}" label="{2}" color="{3}"/>\n'  # noqa
 
     # Grab the veg values for all the modeling domains in the sierras
     with open(output, 'w+') as fp:
@@ -84,7 +104,6 @@ def main():
             classname = row['CLASSNAME']
 
             # SPecify defaults
-            legend_name = 'N/A'
             alpha = 0
             rgb = [0, 0, 0]
 
@@ -96,7 +115,6 @@ def main():
                     # Snag the value from the linspace
                     rgb = details['color']
                     alpha = details['alpha']
-                    legend_name = name
                     break
 
             # Form the hex value

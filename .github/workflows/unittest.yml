@@ -23,10 +23,10 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          flake8 basin_setup || True
+          flake8 basin_setup
 
   unittest:
-    # needs: flake8
+    needs: flake8
     name: Docker unittest
     runs-on: ubuntu-latest
     steps:
@@ -36,6 +36,6 @@ jobs:
        run: docker build  -t usdaarsnwrc/basin_setup .
 
      - name: Run tests inside the container
-       run: docker run -it --rm --entrypoint make --workdir /code/basin_setup usdaarsnwrc/basin_setup test
+       run: docker run --rm --entrypoint make --workdir /code/basin_setup usdaarsnwrc/basin_setup test
 
 

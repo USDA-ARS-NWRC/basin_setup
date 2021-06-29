@@ -121,3 +121,4 @@ scripts/*.pdf
 scripts/*.csv
 scripts/*.md
 
+.vscode
