@@ -28,6 +28,7 @@ jobs:
   unittest:
     needs: flake8
     name: Docker unittest
+    runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@v2
 
