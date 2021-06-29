@@ -23,10 +23,10 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          flake8 inicheck || True
+          flake8 basin_setup || True
 
   unittest:
-    needs: flake8
+    # needs: flake8
     name: Docker unittest
     runs-on: ubuntu-latest
     steps:
