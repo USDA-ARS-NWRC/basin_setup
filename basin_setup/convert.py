@@ -1,12 +1,13 @@
 import argparse
-import time
-from subprocess import check_output
 import logging
+import os
+import time
+from os.path import abspath, isdir, join
+from subprocess import check_output
+
 import coloredlogs
 from netCDF4 import Dataset
 
-import os
-from os.path import abspath, isdir, join
 from . import __version__
 
 
