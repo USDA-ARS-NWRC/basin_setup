@@ -4,20 +4,18 @@ import argparse
 import io
 import os
 import sys
-import threading
 import urllib
 import zipfile
 from datetime import datetime
 from os.path import abspath, basename, dirname, expanduser, isdir, isfile, join
 from shutil import copyfile, rmtree
 from subprocess import PIPE, Popen, check_output
-from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
 import requests
 import shapefile
-from colorama import Back, Fore, Style, init
+from colorama import Fore, Style, init
 from netCDF4 import Dataset
 from shapely import geometry
 from spatialnc.proj import add_proj
@@ -68,7 +66,7 @@ class Messages():
             a_msg = ', '.join([str(s) for s in a_msg])
 
         if not isinstance(a_msg, str):
-            a = str(a_msg)
+            a_msg = str(a_msg)
 
         return a_msg
 
@@ -129,7 +127,7 @@ def shapely_to_pyshp(shapelygeom):
     """
 
     try:
-        shapelytogeojson = shapely.geometry.mapping
+        shapelytogeojson = shapely.geometry.mapping  # noqa
     except BaseException:
         import shapely.geometry
         shapelytogeojson = shapely.geometry.mapping
@@ -190,10 +188,12 @@ def condition_extent(extent, cell_size):
     domain so cells fit evenly.
 
     Args:
-        extent: A list of 4 values representing the domain in left,bottom, right,top
+        extent: A list of 4 values representing the domain in
+            left,bottom, right,top
         cell_size: integer of the resolution
     Returns:
-        result: a list of 4 values representing the domain with evenly fitting cells
+        result: a list of 4 values representing the domain with evenly
+            fitting cells
     """
     result = []
     rl_adjustment = 0.
@@ -234,13 +234,15 @@ def condition_extent(extent, cell_size):
 def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
     """
     Author: Micah Johnson, mod. by Ernesto Trujillo
-    Uses ogr to parse the information of some GIS file and returns a list of the
-    response of the things important to this script.
+    Uses ogr to parse the information of some GIS file and returns a list of
+    the response of the things important to this script.
+
     Args:
         fname: Full path point to file containing GIS information
-        cellsize_return: Optional (deafault = False). True will add cellsize as the
-                         last element of the return list. Option only for '.asc'
-                         and '.nc' data types
+        cellsize_return: Optional (deafault = False). True will add cellsize
+            as the last element of the return list. Option only for '.asc'
+            and '.nc' data types
+
     Returns:
         extent: containing images extent in list type
         [x_ll, y_ll, x_ur, y_ur, cellsize (optional)]
@@ -252,9 +254,9 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
         parse_list = basin_shp_info.split('\n')
 
         # Parse extents from basin info
-        for l in parse_list:
-            if 'extent:' in l.lower():
-                k, v = l.split(':')
+        for line in parse_list:
+            if 'extent:' in line.lower():
+                k, v = line.split(':')
                 parseable = v.replace(' - ', ',')
                 parseable = ''.join(c for c in parseable if c not in ' ()\n')
 
@@ -272,8 +274,8 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                                       universal_newlines=True)
         parse_list = basin_shp_info.split('\n')
         extent = []
-        for l in parse_list:
-            ll = l.lower()
+        for line in parse_list:
+            ll = line.lower()
 
             # Look for the kw pixel
             if 'pixel size' in ll:
@@ -283,8 +285,8 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                     w = ''.join(c for c in v if c not in ' ()\n')
                     cellsize = float(w.split(',')[0])
 
-            if 'lower left' in l.lower() or 'upper right' in l.lower():
-                for w in l.split(' '):
+            if 'lower left' in ll or 'upper right' in ll:
+                for w in line.split(' '):
                     try:
                         if len(extent) <= 4:
                             parseable = \
@@ -293,7 +295,7 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                     except BaseException:
                         pass
 
-        if cellsize_return == True:
+        if cellsize_return:
             extent.append(cellsize)
 
     elif file_type == 'asc':
@@ -313,25 +315,22 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
         y_ll = 0
         cellsize = 0
 
-        for l in parse_list:
-            if 'xllcorner' in l.lower():
-                w = l.split(' ')
+        for line in parse_list:
+            ll = line.lower()
+            w = line.split(' ')
+            if 'xllcorner' in ll:
                 w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 x_ll = float(w[-1])
-            elif 'yllcorner' in l.lower():
-                w = l.split(' ')
+            elif 'yllcorner' in ll:
                 w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 y_ll = float(w[-1])
-            elif 'ncols' in l.lower():
-                w = l.split(' ')
+            elif 'ncols' in ll:
                 w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 n_cols = float(w[-1])
-            elif 'nrows' in l.lower():
-                w = l.split(' ')
+            elif 'nrows' in ll:
                 w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 n_rows = float(w[-1])
-            elif 'cellsize' in l.lower():
-                w = l.split(' ')
+            elif 'cellsize' in ll:
                 w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 cellsize = float(w[-1])
 
@@ -339,7 +338,7 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
                       x_ll + (n_cols) * cellsize,
                       y_ll + (n_rows) * cellsize]
 
-            if cellsize_return == True:
+            if cellsize_return:
                 extent.append(cellsize)
 
     elif file_type == 'nc':
@@ -363,18 +362,22 @@ def parse_extent(fname, cellsize_return=False, x_field='x', y_field='y'):
 
         n_cols = len(x_vector)
         n_rows = len(y_vector)
-        # Be careful if coordinate system is lat-lon and southern hemisphere, etc.
+        # Be careful if coordinate system is lat-lon and southern
+        # hemisphere, etc.
         # Should be in meters (projected coordinate system)
         dx = abs(x_vector[1] - x_vector[0])  # in meters
         dy = abs(y_vector[1] - y_vector[0])  # in meters
-        x_ll = x_vector.min() - dx / 2  # the nc_file uses center of cell coords
-        y_ll = y_vector.min() - dy / 2  # Change if not cell center coords
+
+        # the nc_file uses center of cell coords
+        # Change if not cell center coords
+        x_ll = x_vector.min() - dx / 2
+        y_ll = y_vector.min() - dy / 2
 
         extent = [x_ll, y_ll,
                   x_ll + (n_cols) * dx,
                   y_ll + (n_rows) * dy]
 
-        if cellsize_return == True:
+        if cellsize_return:
             extent += [dx, dy]
 
         ncfile.close()
@@ -392,10 +395,11 @@ def download_zipped_url(url, downloads):
     """
     r = requests.get(url, stream=True)
     if r.status_code == 404:
-        out.error("It appears the downloadable image no longer exists, please "
-                  "submit an issue at "
-                  "https://github.com/USDA-ARS-NWRC/basin_setup/issues.\nStatus"
-                  " 404 found on request from:\n{}".format(url))
+        out.error(
+            "It appears the downloadable image no longer exists, please "
+            "submit an issue at "
+            "https://github.com/USDA-ARS-NWRC/basin_setup/issues.\nStatus"
+            " 404 found on request from:\n{}".format(url))
         sys.exit()
 
     z = zipfile.ZipFile(io.BytesIO(r.content))
@@ -479,21 +483,50 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
     Return:
         images: dictionary of paths relevant to the final products.
     """
-    # Setup a workspace
-    TEMP = required_dirs['temp']
 
     # Filename and paths and potential sources
-    images = {'dem': {'path': None, 'source': None},
-              'basin outline': {'path': None, 'source': None, 'epsg': None},
-              'mask': {'path': None, 'source': None, 'short_name': 'mask'},
-              'vegetation type': {'path': None, 'source': None, 'map': None,
-                                  'short_name': 'veg_type'},
-              'vegetation height': {'path': None, 'source': None, 'map': None,
-                                    'short_name': 'veg_height'},
-              'vegetation k': {'path': None, 'source': None, 'short_name': 'veg_k'},
-              'vegetation tau': {'path': None, 'source': None,
-                                 'short_name': 'veg_tau'},
-              'maxus': {'path': None, 'source': None}}
+    images = {
+        'dem': {
+            'path': None,
+            'source': None
+        },
+        'basin outline': {
+            'path': None,
+            'source': None,
+            'epsg': None
+        },
+        'mask': {
+            'path': None,
+            'source': None,
+            'short_name': 'mask'
+        },
+        'vegetation type': {
+            'path': None,
+            'source': None,
+            'map': None,
+            'short_name': 'veg_type'
+        },
+        'vegetation height': {
+            'path': None,
+            'source': None,
+            'map': None,
+            'short_name': 'veg_height'
+        },
+        'vegetation k': {
+            'path': None,
+            'source': None,
+            'short_name': 'veg_k'
+        },
+        'vegetation tau': {
+            'path': None,
+            'source': None,
+            'short_name': 'veg_tau'
+        },
+        'maxus': {
+            'path': None,
+            'source': None
+        }
+    }
 
     if is_float(dem):
         # Single float value provided
@@ -510,7 +543,6 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
 
         for zz, sb in enumerate(subbasins):
             base = basename(sb).split('.')[0].lower()
-            fname = base.replace(' ', '_')
             name = base.replace('_outline', '')
             name = name.replace('_subbasin', '')
             name = name.replace('  ', '')  # remove any double spaces
@@ -528,10 +560,10 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
 
     # Populate images for downloaded sources
     images['vegetation type']['source'] = \
-        'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_20180618.zip&TYPE=landfire'
+        'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_20180618.zip&TYPE=landfire'  # noqa
 
     images['vegetation height']['source'] = \
-        'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_20180618.zip&TYPE=landfire'
+        'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_20180618.zip&TYPE=landfire'  # noqa
 
     images['vegetation type']['path'] = \
         join(required_dirs['downloads'],
@@ -584,8 +616,7 @@ def setup_point(images, point, cell_size, temp, pad, epsg_code):
         temp: temporary folder for working files,
         pad: extra cells to keep for the point run
     """
-    xs = []
-    ys = []
+
     point = [float(p) for p in point.split(',')]
 
     # Check for asymetric padding request in a point model.
@@ -597,8 +628,8 @@ def setup_point(images, point, cell_size, temp, pad, epsg_code):
     cell_size = int(cell_size)
     padding = cell_size * int(pad[0])
     points = []
-    x0 = point[0] - half_width - padding
     half_width = cell_size / 2
+    x0 = point[0] - half_width - padding
     y0 = point[1] - half_width - padding
     x1 = point[0] + half_width + padding
     y1 = point[1] + half_width + padding
@@ -612,7 +643,6 @@ def setup_point(images, point, cell_size, temp, pad, epsg_code):
     SHP = join(temp, '{0}.shp'.format(name))
     PRJ = join(temp, '{0}.prj'.format(name))
     images['basin outline']['path'] = SHP
-    poly = geometry.Polygon(points)
 
     point_shp = geometry.Polygon(points)
     shp_writer = shapefile.Writer()
@@ -709,8 +739,9 @@ def check_and_download(images, required_dirs):
         info['path'] = abspath(expanduser(info['path']))
         images[image_name] = info
 
-        out.msg("Checking for {0} data in:\n\t{1}".format(image_name,
-                                                          required_dirs['downloads']))
+        out.msg("Checking for {0} data in:\n\t{1}".format(
+            image_name,
+            required_dirs['downloads']))
 
         # Cycle through all the downloads
         out.msg("Looking for: \n%s " % info['path'])
@@ -723,8 +754,8 @@ def check_and_download(images, required_dirs):
 
             if not isfile(zipped):
                 # Zip file does not exist
-                out.warn("No data found!\nDownloading %s ..." % image_name)
-                out.warn("This could take up to 20mins, so sit back and relax.")
+                out.warn("No data found!\nDownloading {} ...".format(image_name))  # noqa
+                out.warn("This could take up to 20mins, so sit back and relax.")  # noqa
                 download_zipped_url(info['source'], required_dirs['downloads'])
 
             # Downloaded but not unzipped
@@ -772,11 +803,12 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
                  format = [ LEFT, BOTTOM, RIGHT, TOP]
 
     Returns:
-        images: dictionary containing the path to the latest image for each key.
+        images: dictionary containing the path to the latest image for
+            each key.
         extents: The list of the bottom left and upper right image extents plus
                 padding or whatever was requested specifically.
     """
-    out_of_bounds = False
+
     cell_size = int(cell_size)
     # Gather general info for basin shape file
     out.msg("Retrieving basin outline info...\n")
@@ -833,8 +865,8 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
         # Convert the mask to netcdf
         NC = abspath(join(TEMP,
                           'clipped_{}.nc'.format(msk.replace(' ', '_'))))
-        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds', images[msk]['path'],
-                   NC], stdout=PIPE)
+        s = Popen(['gdal_translate', '-of', 'NETCDF', '-sds',
+                   images[msk]['path'], NC], stdout=PIPE)
         s.wait()
 
         images[msk]['path'] = NC
@@ -858,8 +890,7 @@ def process(images, TEMP, cell_size, pad=None, extents=None, epsg=None):
         # Get data loaded in
         out.msg("Getting {0} image info...".format(name))
 
-        img_info = check_output(['gdalinfo', img['path']],
-                                universal_newlines=True)
+        check_output(['gdalinfo', img['path']], universal_newlines=True)
 
         fname = name.replace(' ', '_')
 
@@ -912,8 +943,8 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name='Mask'):
     out.msg("\nCreating final output for netcdf...")
 
     # Setup the extent using the files we just generated. The extent is decided
-    # oddly in gdal so it was tough to generate the extents manually, this way we
-    # let gdal manage it.
+    # oddly in gdal so it was tough to generate the extents manually, this way
+    # we let gdal manage it.
 
     ds = Dataset(images["mask"]['path'])
     x = ds.variables['x'][:]
@@ -1035,21 +1066,25 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name='Mask'):
 
                     if short_name == 'dem':
                         out.error("Size of {} is {} versus size of final topo"
-                                  " netcdf which is {}".format(short_name,
-                                                               d.variables['Band1'][:].shape,
-                                                               topo.variables[short_name][:].shape))
+                                  " netcdf which is {}".format(
+                                      short_name,
+                                      d.variables['Band1'][:].shape,
+                                      topo.variables[short_name][:].shape))
 
-                        out.msg("{}\n\nHint: This maybe caused by the default"
-                                " padding creating extents bigger than the original DEM"
-                                " image. \nTry decreasing the padding using the --pad"
-                                " or -pd flag.\n".format(str(e)))
+                        out.msg(
+                            "{}\n\nHint: This maybe caused by the default"
+                            " padding creating extents bigger than the"
+                            " original DEM image. \nTry decreasing the padding"
+                            "  using the --pad or -pd flag.\n".format(str(e)))
                         sys.exit()
 
                     elif 'mask' in short_name:
-                        out.error("Size of {} is {} versus size of final topo"
-                                  " netcdf which is {}".format(short_name,
-                                                               d.variables['Band1'][:].shape,
-                                                               topo.variables[short_name][:].shape))
+                        out.error(
+                            "Size of {} is {} versus size of final topo"
+                            " netcdf which is {}".format(
+                                short_name,
+                                d.variables['Band1'][:].shape,
+                                topo.variables[short_name][:].shape))
                     else:
                         raise(e)
 
@@ -1060,13 +1095,16 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name='Mask'):
     topo.setncattr_string('Conventions', 'CF-1.6')
     topo.setncattr_string('dateCreated', datetime.now().strftime(fmt))
     topo.setncattr_string('Title', 'Topographic Images for SMRF/AWSM')
-    topo.setncattr_string('history', '[{}] Create netCDF4 file using '
-                                     'Basin Setup v{}'
-                                     ''.format(datetime.now().strftime(fmt),
-                                               __version__))
-    topo.setncattr_string('institution',
-                          'USDA Agricultural Research Service, Northwest Watershed Research'
-                          ' Center')
+    topo.setncattr_string(
+        'history',
+        '[{}] Create netCDF4 file using Basin Setup v{}'.format(
+            datetime.now().strftime(fmt),
+            __version__)
+    )
+    topo.setncattr_string(
+        'institution',
+        'USDA Agricultural Research Service, Northwest Watershed Research'
+        ' Center')
     topo.setncattr_string(
         'generation_command',
         '{}'.format(
@@ -1076,22 +1114,23 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name='Mask'):
     return topo
 
 
-def calculate_height_tau_k(topo, images, height_method='average', veg_params=None,
-                           bypass_veg_check=False):
+def calculate_height_tau_k(topo, images, height_method='average',
+                           veg_params=None, bypass_veg_check=False):
     """
     Calculates the images for veg height, veg tau and veg K and adds them  to
     the netcdf.
 
     Args:
-        topo: NetCDF Dataset object containing variables for veg_height,veg_tau,
-              and veg_k
+        topo: NetCDF Dataset object containing variables for veg_height,
+            veg_tau, and veg_k
         images: dictionary containing the paths for each image
-        height_method: Determines the way veg_height is calculated given the veg
-                       height data. Each method is using the range provided.
-                       Options are average, max, randomized
+        height_method: Determines the way veg_height is calculated given the
+                       veg height data. Each method is using the range
+                       provided. Options are average, max, randomized
         veg_params: path to another interpretation of the vegetation radiation
                     parameters
-        bypass_veg_check: Flag to skip the error in the event a veg parameter is missing.
+        bypass_veg_check: Flag to skip the error in the event a veg parameter
+            is missing.
     """
 
     out.msg('Calculating veg_tau and veg_k...')
@@ -1135,7 +1174,8 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
                    "").format(veg_params, ", ".join([str(v) for v in missing]))
             out.error(err)
             out.warn(
-                "To accept missing data in the tau/K layers use '--bypass_veg_check'")
+                "To accept missing data in the tau/K layers use"
+                " '--bypass_veg_check'")
             raise IOError(err)
 
         # Cycle through values and assign them
@@ -1145,31 +1185,37 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
                 veg_k[veggies == value] = df_veg['k'].loc[value]
             else:
                 out.error(
-                    "Bypassing not assigning any tau/k values for veg parameter {}".format(value))
+                    "Bypassing not assigning any tau/k values for veg parameter {}".format(value))  # noqa
 
     # use the keywords and dictionaries to guess at the tau and K
     else:
-        out.warn("Assuming Veg K and Tau values using keywords found in veg data set")
+        out.warn("Assuming Veg K and Tau values using keywords"
+                 " found in veg data set")
         # Vegetation Tau and K table from Link and Marks 1999
-        # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract
-        tau = {'open': 1.0,
-               'deciduous': 0.44,
-               'mixed conifer and deciduous': 0.30,
-               'medium conifer': 0.20,
-               'dense conifer': 0.16}
-        mu = {'open': 0.0,
-              'deciduous': 0.025,
-              'mixed conifer and deciduous': 0.033,
-              'medium conifer': 0.040,
-              'dense conifer': 0.074}
+        # http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1099-1085(199910)13:14/15%3C2439::AID-HYP866%3E3.0.CO;2-1/abstract # noqa
+        tau = {
+            'open': 1.0,
+            'deciduous': 0.44,
+            'mixed conifer and deciduous': 0.30,
+            'medium conifer': 0.20,
+            'dense conifer': 0.16
+        }
+        mu = {
+            'open': 0.0,
+            'deciduous': 0.025,
+            'mixed conifer and deciduous': 0.033,
+            'medium conifer': 0.040,
+            'dense conifer': 0.074
+        }
 
         # Keywords for landfire data sets
-        veg_keywords = \
-            {'open': ['Sparsely vegetated', 'graminoid'],
-             'deciduous': ['Deciduous open tree canopy'],
-             'mixed conifer and deciduous': ['Mixed evergreen-deciduous shrubland'],
-             'medium conifer': ['Mixed evergreen-deciduous open tree canopy'],
-             'dense conifer': ['Evergreen closed tree canopy', 'conifer']}
+        veg_keywords = {
+            'open': ['Sparsely vegetated', 'graminoid'],
+            'deciduous': ['Deciduous open tree canopy'],
+            'mixed conifer and deciduous': ['Mixed evergreen-deciduous shrubland'],  # noqa
+            'medium conifer': ['Mixed evergreen-deciduous open tree canopy'],
+            'dense conifer': ['Evergreen closed tree canopy', 'conifer']
+        }
 
         # Cycle through the key words in the table used for conversion/assign
         # values
@@ -1214,7 +1260,8 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
             except BaseException:
 
                 # Exceptions to veg heights not provided with a height
-                if description in ['Sparse Vegetation Height', 'NASS-Row Crop',
+                if description in ['Sparse Vegetation Height',
+                                   'NASS-Row Crop',
                                    ' NASS-Close Grown Crop']:
                     height_range = [0, 0.1]
                 elif description in ['Developed-Upland Deciduous Forest',
@@ -1222,10 +1269,12 @@ def calculate_height_tau_k(topo, images, height_method='average', veg_params=Non
                                      'Developed - Medium Intensity']:
                     height_range = [0, 5]
 
-                elif description in ['Developed-Upland Shrubland', 'NASS-Vineyard']:
+                elif description in ['Developed-Upland Shrubland',
+                                     'NASS-Vineyard']:
                     height_range = [0, 2]
 
-                elif description in ['Developed-Upland Herbaceous', 'NASS-Wheat']:
+                elif description in ['Developed-Upland Herbaceous',
+                                     'NASS-Wheat']:
                     height_range = [0, 1]
 
         height_map[row['VALUE']] = height_range
@@ -1355,85 +1404,146 @@ def flip_image(topo):
 def main():
 
     # Parge command line arguments
-    p = argparse.ArgumentParser(description='Setup a new basin for SMRF/AWSM.'
-                                ' Creates all the required static files'
-                                ' required for running a basin. The output is a'
-                                ' topo.nc containing: dem, mask, veg height,'
-                                ' veg type, veg tau, and veg k')
+    p = argparse.ArgumentParser(
+        description='Setup a new basin for SMRF/AWSM.'
+        ' Creates all the required static files'
+        ' required for running a basin. The output is a'
+        ' topo.nc containing: dem, mask, veg height,'
+        ' veg type, veg tau, and veg k')
 
-    p.add_argument('-f', '--basin_shapefile', dest='basin_shapefile',
+    p.add_argument('-f',
+                   '--basin_shapefile',
+                   dest='basin_shapefile',
                    required=False,
                    help="Path to shapefile that defines the basin in UTM "
                    " projection")
 
-    p.add_argument('-c', '--cell_size', dest='cell_size', required=False,
+    p.add_argument('-c',
+                   '--cell_size',
+                   dest='cell_size',
+                   required=False,
                    default=50,
                    help="Pixel size to use for the basin in meters,"
-                         " Default: 50m")
+                   " Default: 50m")
 
-    p.add_argument('-dm', '--dem', dest='dem', required=True,
+    p.add_argument('-dm',
+                   '--dem',
+                   dest='dem',
+                   required=True,
                    help="Digital elevation map file in geotiff or a single "
                    " value for point models")
 
-    p.add_argument('-d', '--download', dest='download', required=False,
+    p.add_argument('-d',
+                   '--download',
+                   dest='download',
+                   required=False,
                    default='~/Downloads',
                    help="Location to check for veg data or download vegetation"
-                         " data, default: ~/Downloads")
+                   " data, default: ~/Downloads")
 
-    p.add_argument('-o', '--output', dest='output', required=False,
+    p.add_argument('-o',
+                   '--output',
+                   dest='output',
+                   required=False,
                    default='./basin_setup',
                    help="Location to output data")
 
-    p.add_argument('-p', '--point', dest='point', required=False, default=None,
+    p.add_argument('-p',
+                   '--point',
+                   dest='point',
+                   required=False,
+                   default=None,
                    help='Center of location to setup "point" model')
 
-    p.add_argument('-pd', '--pad', dest='pad', required=False, default=5,
+    p.add_argument('-pd',
+                   '--pad',
+                   dest='pad',
+                   required=False,
+                   default=5,
                    help="Number of cells to add on to the domain from the"
                    " extents of the basin shapfile, default: 5")
 
-    p.add_argument('-apd', '--asym_pad', dest='apad', nargs=4, required=False,
+    p.add_argument('-apd',
+                   '--asym_pad',
+                   dest='apad',
+                   nargs=4,
+                   required=False,
                    help="Number of cells to add on to the domain for each"
                    " side. Format is [Left, Bottom, Right, Top]")
 
-    p.add_argument('-u', '--uniform', dest='uniform', action='store_true',
+    p.add_argument('-u',
+                   '--uniform',
+                   dest='uniform',
+                   action='store_true',
                    help="Specifies whether for point runs to use a uniform"
                    "elevation and veg values in the 'point' domain")
 
-    p.add_argument('-e', '--epsg', dest='epsg', help="epsg code for the point"
-                   " run, see http://spatialreference.org/ref/epsg/ for options")
+    p.add_argument('-e',
+                   '--epsg',
+                   dest='epsg',
+                   help="epsg code for the point run, see "
+                   "http://spatialreference.org/ref/epsg/ for options")
 
-    p.add_argument('-dbg', '--debug', dest='debug', action='store_true',
+    p.add_argument('-dbg',
+                   '--debug',
+                   dest='debug',
+                   action='store_true',
                    help="Debug flag prints out more info and doesn't delete"
                    " the working folder")
 
-    p.add_argument('-hl', '--hill', dest='hill', action='store_true',
+    p.add_argument('-hl',
+                   '--hill',
+                   dest='hill',
+                   action='store_true',
                    help='For point models drops all cells except the center'
                    'cell by 1mm')
 
-    p.add_argument('-fl', '--noflip', dest='noflip', action='store_true',
+    p.add_argument('-fl',
+                   '--noflip',
+                   dest='noflip',
+                   action='store_true',
                    help='Do not flip arrays across the x axis')
 
-    p.add_argument('-sb', '--subbasins', dest='subbasins', nargs='+',
+    p.add_argument('-sb',
+                   '--subbasins',
+                   dest='subbasins',
+                   nargs='+',
                    help='provide a file list of subassin '
                    'shapefiles you want to be added as'
                    ' masks')
-    p.add_argument('-bn', '--basin_name', dest='basin_name', nargs='+',
+
+    p.add_argument('-bn',
+                   '--basin_name',
+                   dest='basin_name',
+                   nargs='+',
                    help='provide a long name for the basin'
                    ' total mask')
-    p.add_argument('-vc', '--veg_params', dest='veg_params', default=None,
+
+    p.add_argument('-vc',
+                   '--veg_params',
+                   dest='veg_params',
+                   default=None,
                    help=('Provide a csv defining veg tau and veg'
                          'k values for the available vegetation'
                          ' classes, any veg classes found in the '
                          ' topo not listed in the csv will throw '
                          ' an error'))
-    p.add_argument('-bp', '--bypass_veg_check', dest='bypass_veg_check',
+
+    p.add_argument('-bp',
+                   '--bypass_veg_check',
+                   dest='bypass_veg_check',
                    action='store_true',
                    help='Allows the user to bypass error raised when the tau/k'
                    ' layers are missing data. For research purposes only.')
 
-    p.add_argument('-ex', '--extents', dest='desired_extents', nargs=4, required=False,
+    p.add_argument('-ex',
+                   '--extents',
+                   dest='desired_extents',
+                   nargs=4,
+                   required=False,
                    help="Number of cells to add on to the domain for each"
                    " side. Format is [Left, Bottom, Right, Top]")
+
     args = p.parse_args()
 
     # Global debug variable
@@ -1473,7 +1583,7 @@ def main():
         else:
             pad = [int(i) for i in args.apad]
 
-    #--------- OPTIONAL POINT MODEL SETUP ---------- #
+    # --------- OPTIONAL POINT MODEL SETUP ---------- #
     if args.point is not None:
         out.msg("Point model setup requested!")
         images = setup_point(images, args.point, args.cell_size, TEMP, pad,

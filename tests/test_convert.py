@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from os.path import join
+from os.path import dirname, join
 from subprocess import check_output
 
 import numpy as np
@@ -11,7 +11,7 @@ import pandas as pd
 from basin_setup.convert import *
 
 from .basin_setup_test_case import BSTestCase
-from os.path import dirname
+
 
 class TestConvertCLI(BSTestCase):
 

@@ -1,13 +1,13 @@
 import argparse
-import time
-from shutil import rmtree
-from subprocess import check_output
 import logging
+import os
+import time
+from os.path import abspath, isdir, join
+from subprocess import check_output
+
 import coloredlogs
 from netCDF4 import Dataset
 
-import os
-from os.path import abspath, isdir, join
 from . import __version__
 
 
@@ -22,13 +22,14 @@ def nc_masks_to_shp(fname, variables=None, output='output', debug=False):
         variables: List of variables in the netcdf to convert to shapefiles.
                    None is the default which will look for all variables
                    containing the keyword mask
-        output: Folder to output the shapefiles. If it does not exist it will be created
+        output: Folder to output the shapefiles. If it does not exist it will
+            be created
     '''
     # Get logger and add color with a simple format
     if debug:
         level = 'DEBUG'
     else:
-        level='INFO'
+        level = 'INFO'
 
     log = logging.getLogger(__name__)
     coloredlogs.install(fmt='%(levelname)-5s %(message)s', level=level,
@@ -43,7 +44,8 @@ def nc_masks_to_shp(fname, variables=None, output='output', debug=False):
 
     # Check for none then check for lists
     if variables is None:
-        log.info("No variables provided, extracting all variables with keyword mask...")
+        log.info(
+            "No variables provided, extracting all variables with keyword mask...")  # noqa
         variables = [v for v in ds.variables.keys() if 'mask' in v]
 
     elif not isinstance(variables, list):
@@ -66,16 +68,16 @@ def nc_masks_to_shp(fname, variables=None, output='output', debug=False):
         file_out = '{}_{:d}m.shp'.format(v.lower().replace(' ', '_'), int(res))
         file_out = join(output, file_out)
 
-        cmd = 'gdal_polygonize.py NETCDF:"{}":"{}" -f "ESRI Shapefile" {}'.format(
+        cmd = 'gdal_polygonize.py NETCDF:"{}":"{}" -f "ESRI Shapefile" {}'.format(  # noqa
             fname, v, file_out)
 
         log.info(
-            "Converting NETCDF variable {} to shapefile and outputting to {}".format(
+            "Converting NETCDF variable {} to shapefile and outputting to {}".format(  # noqa
                 v,
                 file_out))
         log.debug("Executing:\n{}".format(cmd))
 
-        s = check_output(cmd, shell=True)
+        check_output(cmd, shell=True)
 
     log.info("Finished! Elapsed {:d}s".format(int(time.time() - start)))
 
@@ -105,4 +107,9 @@ def nc_masks_to_shp_cli():
 
     args = p.parse_args()
 
-    nc_masks_to_shp(args.file, variables=args.variables, output=args.output, debug=args.debug)
+    nc_masks_to_shp(
+        args.file,
+        variables=args.variables,
+        output=args.output,
+        debug=args.debug
+    )

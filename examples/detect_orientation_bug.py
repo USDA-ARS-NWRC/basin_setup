@@ -1,8 +1,7 @@
-from netCDF4 import Dataset
 import matplotlib.pyplot as plt
-from numpy import meshgrid
 import numpy as np
-
+from netCDF4 import Dataset
+from numpy import meshgrid
 
 data = {"RME":'/home/micahjohnson/projects/basin_setup/examples/reynolds_moutain_east/output/topo.nc'}
 point = {}

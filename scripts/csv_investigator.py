@@ -1,7 +1,6 @@
+import numpy as np
 import pandas as pd
 from netCDF4 import Dataset
-import numpy as np
-
 
 #name = "veg_type"
 name = 'veg_height'

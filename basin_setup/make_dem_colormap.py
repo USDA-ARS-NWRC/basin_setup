@@ -14,17 +14,19 @@ import argparse
 from collections import OrderedDict
 from subprocess import check_output
 
-import numpy as np
-
 
 def main():
     # Manage arguments
     parser = argparse.ArgumentParser(description='Create a colormap for a dem')
-    parser.add_argument('dem', metavar='d',
-                        help='Path to a dem images that can be evaluated by gdal_info')
+    parser.add_argument(
+        'dem',
+        metavar='d',
+        help='Path to a dem images that can be evaluated by gdal_info'
+    )
     args = parser.parse_args()
 
-    print("Creating a new colormap for QGIS based on the veg values found in the topos")
+    print("Creating a new colormap for QGIS based on the veg values found"
+          " in the topos")
     cmd = "gdal_info -stats {}".format(args.dem)
 
     output = "./colormaps/dem_colormap.qml"
@@ -82,16 +84,13 @@ def main():
     </qgis>
     """
 
-    color_entry = '          <item alpha="{0}" value="{1}" label="{1}" color="{2}"/>\n'
+    color_entry = '          <item alpha="{0}" value="{1}" label="{1}" color="{2}"/>\n'  # noqa
 
     # Grab the veg values for all the modeling domains in the sierras
     with open(output, 'w+') as fp:
 
         # Write the upper portion of the file
         fp.write(hdr.format(stats['maximum'], stats['minimum']))
-
-        # Number of colors dictate the number of color separations
-        n_colors = len(colors)
 
         # Always add a 0-1 thats transparent
         hex_v = '#%02x%02x%02x' % (255, 255, 255)

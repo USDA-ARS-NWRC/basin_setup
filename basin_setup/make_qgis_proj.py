@@ -12,8 +12,7 @@ Last Date Modified: 01-24-2020
 
 import argparse
 import datetime
-import pprint
-from os.path import basename, dirname, join, split
+from os.path import basename, dirname, join
 
 import requests
 
@@ -68,10 +67,10 @@ def get_extent_str(fname):
             fp.close()
         x = []
         y = []
-        for l in lines:
+        for line in lines:
             # Ignore any lines with quotes in it
-            if '"' not in l:
-                cx, cy = (float(c) for c in l.strip().split(','))
+            if '"' not in line:
+                cx, cy = (float(c) for c in line.strip().split(','))
                 x.append(cx)
                 y.append(cy)
         xmin = min(x)
@@ -95,8 +94,10 @@ def str_swap(str_raw, replace_dict):
     keys in brackets and replaces them with the values
 
     Args:
-        str_raw: Original string to replace keywords in using the replace_dictionary
-        replace_dict: dictionary containing keywords to replace with full strings from the values
+        str_raw: Original string to replace keywords in using the
+            replace_dictionary
+        replace_dict: dictionary containing keywords to replace with
+            full strings from the values
 
     Returns:
         info: string with keywords that are populated with values
@@ -147,14 +148,14 @@ class QGISLayerMaker(object):
         # Template declaration for a layer. Is inserted near the top of project
         self.declaration = (
             '\t\t<layer-tree-layer expanded="0" providerKey="[PROVIDER]" '
-            'checked="Qt::[CHECKED]" id="[NAME][ID]" source="[PATH]" name="[NAME]">\n'
+            'checked="Qt::[CHECKED]" id="[NAME][ID]" source="[PATH]" name="[NAME]">\n'  # noqa
             '\t\t\t<customproperties/>\n'
             '\t\t</layer-tree-layer>\n')
 
         self.legend = (
-            '\t\t<legendlayer drawingOrder="-1" open="true" checked="Qt::[CHECKED]" name="[NAME]" showFeatureCount="0">\n'
+            '\t\t<legendlayer drawingOrder="-1" open="true" checked="Qt::[CHECKED]" name="[NAME]" showFeatureCount="0">\n'  # noqa
             '\t\t\t\t<filegroup open="true" hidden="false">\n'
-            '\t\t\t\t\t<legendlayerfile isInOverview="0" layerid="[NAME][ID]" visible="[VISIBLE]"/>\n'
+            '\t\t\t\t\t<legendlayerfile isInOverview="0" layerid="[NAME][ID]" visible="[VISIBLE]"/>\n'  # noqa
             '\t\t\t\t</filegroup>\n'
             '\t\t</legendlayer>\n')
 
@@ -213,7 +214,6 @@ class QGISLayerMaker(object):
 
         elif self.ext == 'tif':
             self.ftype = 'geotiff'
-            ftype = 'geotiff'
             provider = 'gdal'
             template = join(template_dir, 'raster_template.xml')
 
@@ -273,7 +273,8 @@ class QGISLayerMaker(object):
         color decisions
 
         Returns:
-            color: string to be used to replace the keyword color in the templates
+            color: string to be used to replace the keyword color in
+                the templates
         """
 
         # String we are searching for kw to decide on colors
@@ -284,7 +285,7 @@ class QGISLayerMaker(object):
             # Search the path
             search_str = self.replacements['PATH'].lower()
 
-        ###### Universally choose colors ############
+        # Universally choose colors
         qgis_templates = join(dirname(__file__), 'qgis_templates')
         # Use simple gray scale for hillshade rasters
         if 'hillshade' in search_str:
@@ -349,12 +350,17 @@ def create_layer_strings(files, epsg, variables=[],
     Create three strings to insert in to the qgis project
 
     Args:
-        files: List of paths to georeferences tifs or shapefiles, all files should be in the EPSG projection
-        epsg: EPSG value for the project (just for search replace, no reprojections occur)
+        files: List of paths to georeferences tifs or shapefiles, all files
+            should be in the EPSG projection
+        epsg: EPSG value for the project (just for search replace, no
+            reprojections occur)
         variables: Switch to netcdf type and loop over variables
-        declarations: String for adding on to provided to force the order of a layer if need be
-        order: String for adding on to provided to force the order of a layer if need be
-        layers: String for adding on to provided to force the order of a layer if need be
+        declarations: String for adding on to provided to force the order of
+            a layer if need be
+        order: String for adding on to provided to force the order of a layer
+            if need be
+        layers: String for adding on to provided to force the order of a layer
+            if need be
         legend: String for extending to force the order of a legend entry
     Returns:
         declarations: String representing layer declarations
@@ -395,17 +401,36 @@ def main():
 
     parser = argparse.ArgumentParser(description='Build a qgis project for '
                                      'setting up a basin')
-    parser.add_argument('-t', '--geotiff', dest='tifs', nargs='+', required=True,
-                        help='Paths to the geotifs to add, specifically looking'
-                             ' for a hillshade and dem')
-    parser.add_argument('-s', '--shapefiles', dest='shapefiles', nargs='+',
+    parser.add_argument('-t',
+                        '--geotiff',
+                        dest='tifs',
+                        nargs='+',
+                        required=True,
+                        help='Paths to the geotifs to add, specifically'
+                             ' looking for a hillshade and dem')
+
+    parser.add_argument('-s',
+                        '--shapefiles',
+                        dest='shapefiles',
+                        nargs='+',
                         help='Paths to the shapefiles')
-    parser.add_argument('-n', '--netcdf', dest='netcdf',
+
+    parser.add_argument('-n',
+                        '--netcdf',
+                        dest='netcdf',
                         help='Path to the input topo file for AWSM')
-    parser.add_argument('-v', '--variables', dest='variables', nargs='+',
+
+    parser.add_argument('-v',
+                        '--variables',
+                        dest='variables',
+                        nargs='+',
                         help='Variable names in the netcdf to add to the'
                              ' project')
-    parser.add_argument('-e', '--epsg', dest='epsg', required=True,
+
+    parser.add_argument('-e',
+                        '--epsg',
+                        dest='epsg',
+                        required=True,
                         help='Paths to the shapefiles')
 
     args = parser.parse_args()
@@ -423,19 +448,25 @@ def main():
 
     if args.netcdf is not None and args.variables is not None:
         print("\n\nAdding variables from a netcdf to the project...")
-        declarations, order, layers, legends = create_layer_strings(args.netcdf, epsg,
-                                                                    variables=args.variables,
-                                                                    declarations=declarations,
-                                                                    order=order,
-                                                                    layers=layers,
-                                                                    legends=legends)
+        declarations, order, layers, legends = create_layer_strings(
+            args.netcdf,
+            epsg,
+            variables=args.variables,
+            declarations=declarations,
+            order=order,
+            layers=layers,
+            legends=legends)
+
     if args.tifs is not None:
         print("\n\nAdding geotiffs to the project...")
-        declarations, order, layers, legend = create_layer_strings(args.tifs, epsg,
-                                                                   declarations=declarations,
-                                                                   order=order,
-                                                                   layers=layers,
-                                                                   legends=legends)
+        declarations, order, layers, legend = create_layer_strings(
+            args.tifs,
+            epsg,
+            declarations=declarations,
+            order=order,
+            layers=layers,
+            legends=legends)
+
     else:
         raise IOError(
             "Must have at least one geotiff to define the project extent")

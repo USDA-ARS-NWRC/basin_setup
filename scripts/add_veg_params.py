@@ -2,16 +2,18 @@
 Script will add veg types to a csv. Its designed to help users walk through
 the decision making process fro veg tau and K
 """
-from tabulate import tabulate
-import pandas as pd
 import argparse
-from os.path import dirname, basename, join, abspath, expanduser
-from collections import OrderedDict
-import basin_setup
-import sys
 import os
-import time
 import subprocess as sp
+import sys
+import time
+from collections import OrderedDict
+from os.path import abspath, basename, dirname, expanduser, join
+
+import pandas as pd
+from tabulate import tabulate
+
+import basin_setup
 
 
 def clear_term():

@@ -1,7 +1,6 @@
 # Basin Setup Tools v0.14.6
-[![PyPI version](https://badge.fury.io/py/basin-setup.svg)](https://badge.fury.io/py/basin-setup)
+
 [![Docker Build Status](https://img.shields.io/docker/build/usdaarsnwrc/basin_setup.svg)](https://hub.docker.com/r/usdaarsnwrc/basin_setup/)
-[![Travis Tests](https://travis-ci.com/USDA-ARS-NWRC/basin_setup.svg?branch=master)](https://travis-ci.com/USDA-ARS-NWRC/basin_setup)
 
 The basin setup tools is a set of CLI tools designed to create the required
 inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and

@@ -5,7 +5,6 @@ import datetime
 import logging
 import os
 import shutil
-import sys
 import time
 from subprocess import check_output
 
@@ -24,10 +23,10 @@ DEBUG = False
 
 def parse_fname_date(fname):
     """
-    Attempts to parse the date from the filename using underscores. This assumes
-    there is a parseable date that can be found between underscores and can be
-    determined with only numeric characters. E.g. 20200414. An example of this
-    is in a file would be:
+    Attempts to parse the date from the filename using underscores. This
+    assumes there is a parseable date that can be found between underscores
+    and can be determined with only numeric characters. E.g. 20200414. An
+    example of this is in a file would be:
 
      USCASJ20200414_SUPERsnow_depth_50p0m_agg.tif
 
@@ -188,13 +187,14 @@ class GRM(object):
                outfile]
 
         self.log.debug("Executing: {}".format(" ".join(cmd)))
-        s = check_output(" ".join(cmd), shell=True)
+        check_output(" ".join(cmd), shell=True)
 
         self.working_file = outfile
 
     def create_lidar_netcdf(self):
         """
-        Creates a new lidar netcdf to contain all the flights for one water year.
+        Creates a new lidar netcdf to contain all the flights for one
+        water year.
         """
 
         self.log.info("Output NetCDF does not exist, creating a new one!")
@@ -211,7 +211,7 @@ class GRM(object):
                        "".format(start_date.isoformat()))
 
         # Assign time and count days since 10-1
-        times = self.ds.createVariable('time', 'f', ('time'))
+        self.ds.createVariable('time', 'f', ('time'))
         setattr(
             self.ds.variables['time'],
             'units',
@@ -221,23 +221,27 @@ class GRM(object):
 
         # Add append a new image
         self.ds.createVariable("depth", "f", ("time", "y", "x"),
-                                        chunksizes=(6, 10, 10), fill_value=np.nan)
+                                        chunksizes=(6, 10, 10),
+                                        fill_value=np.nan)
 
-        self.ds['depth'].setncatts({"units": "meters",
-                                    "long_name": "lidar sself.now depths",
-                                    "short_name": 'depth',
-                                    "grid_mapping": "projection",
-                                    "description": "Measured snow depth from ASO"
-                                    " lidar."})
+        self.ds['depth'].setncatts({
+            "units": "meters",
+            "long_name": "lidar sself.now depths",
+            "short_name": 'depth',
+            "grid_mapping": "projection",
+            "description": "Measured snow depth from ASO"
+            " lidar."
+        })
 
         # Adjust global attributes
-        self.ds.setncatts({"last_modified": self.now,
-                           "dateCreated": self.now,
-                           "Title": "ASO 50m Lidar Flights Over the {} for Water Year {}."
-                           "".format(self.basin, self.water_year),
-                           "history": "Created using Basin Setup v{}"
-                           "".format(__version__),
-                           })
+        self.ds.setncatts({
+            "last_modified": self.now,
+            "dateCreated": self.now,
+            "Title": "ASO 50m Lidar Flights Over the {} for Water Year {}."
+            "".format(self.basin, self.water_year),
+            "history": "Created using Basin Setup v{}"
+            "".format(__version__),
+        })
 
         # Attribute gets copied over from the topo
         self.ds.delncattr("generation_command")
@@ -335,8 +339,6 @@ class GRM(object):
         self.log.info("Masking lidar data...")
         new_ds = mask_nc(self.working_file, self.topo, output=self.temp)
 
-        depths = new_ds.variables['Band1'][:]
-
         # Save it to output
         self.log.info(
             "Adding masked lidar data to {}".format(
@@ -351,16 +353,16 @@ class GRM(object):
 
     def get_time_index(self):
         """
-        Calculates the time based index in hours for current image to go into the
-        existing netcdf for lidar depths
+        Calculates the time based index in hours for current image to go into
+        the existing netcdf for lidar depths
         """
         # Get the timestep in hours. Set all images to 2300
         self.log.debug("Calculating the time index...")
 
         times = self.ds.variables['time']
 
-        tstep = pd.to_timedelta(1, unit='h')
-        t = nc.date2num(self.date + pd.to_timedelta(23, unit='h'), times.units,
+        t = nc.date2num(self.date + pd.to_timedelta(23, unit='h'),
+                        times.units,
                         times.calendar)
 
         # Figure out the time index
@@ -426,7 +428,8 @@ class GRM(object):
 
     def check_basin_match(self):
         """
-        Checks that the basin name provided matches whats in the existing netcdf
+        Checks that the basin name provided matches whats in the existing
+        netcdf
         """
         error = not self.basin.lower() in self.ds.getncattr("Title").lower()
 
@@ -471,7 +474,7 @@ class GRM(object):
 
                 if v_topo != v_lidar:
                     error = True
-                    dbgmsg = ("ERROR: Domain mismatch, Topo {0} {1} != Lidar NetCDF {0} {1}"
+                    dbgmsg = ("ERROR: Domain mismatch, Topo {0} {1} != Lidar NetCDF {0} {1}"  # noqa
                               "".format(v, fn.__name__))
 
             # Check that the topo and the current lidar netcdf have the same
@@ -479,7 +482,7 @@ class GRM(object):
             if len(self.topo_ds.variables[v][:]) != len(
                     self.ds.variables[v][:]):
                 error = True
-                dbgmsg = ("ERROR Domain Mismatch: Topo n{0} != Lidar NetCDF n{0}"
+                dbgmsg = ("ERROR Domain Mismatch: Topo n{0} != Lidar NetCDF n{0}"  # noqa
                           "".format(v))
 
         self.handle_error(dbgmsg, errmsg, error=error)
@@ -492,7 +495,7 @@ def run_grm(**kwargs):
     g = GRM(**kwargs)
     g.grid_match()
     g.add_to_collection()
-    return g
+    # return g
 
 
 def main():
@@ -614,7 +617,7 @@ def main():
 
         if not DEBUG or args.allow_exceptions:
             try:
-                g = run_grm(**kwargs)
+                run_grm(**kwargs)
 
             except Exception as e:
                 log.warning("Skipping {} due to error".format(
@@ -623,7 +626,7 @@ def main():
                 skips += 1
 
         else:
-            g = run_grm(**kwargs)
+            run_grm(**kwargs)
 
     stop = time.time()
 
@@ -633,7 +636,11 @@ def main():
 
     log.info("Grid Resizing and Matching Complete. {1}/{2} files processed."
              " Elapsed Time {0:0.1f}s"
-             "".format(stop - start, len(args.images) - skips, len(args.images)))
+             "".format(
+                 stop - start,
+                 len(args.images) - skips,
+                 len(args.images)
+             ))
 
     if not DEBUG:
         log.info('Cleaning up temporary files.')

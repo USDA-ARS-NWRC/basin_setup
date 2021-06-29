@@ -1,8 +1,6 @@
 # Basin Setup requires GDAL
 FROM geographica/gdal2:2.3.2
 
-MAINTAINER Micah Johnson <micah.johnson150@gmail.com>
-
 ENV TAUDEM_HASH f927ca639a1834565a76cb3df5acbcd2909d6d0d
 
 ADD https://github.com/dtarb/TauDEM/archive/${TAUDEM_HASH}.tar.gz .

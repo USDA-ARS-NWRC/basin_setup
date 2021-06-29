@@ -6,12 +6,10 @@ import os
 import shutil
 import sys
 import time
-from subprocess import PIPE, STDOUT, Popen, check_output
+from subprocess import check_output
 
 import geopandas as gpd
 import numpy as np
-import pandas as pd
-from colorama import Back, Fore, Style, init
 
 from basin_setup import __version__
 from basin_setup.basin_setup import Messages
@@ -34,7 +32,7 @@ def check_path(filename, outfile=False):
     """
     folder = os.path.dirname(filename)
 
-    if outfile == True and not os.path.isdir(folder):
+    if outfile and not os.path.isdir(folder):
         out.error("Directory provided for output location does not exist!"
                   "\nMissing----->{}".format(filename))
         sys.exit()
@@ -43,29 +41,6 @@ def check_path(filename, outfile=False):
         out.error("Input file does not exist!\nMissing----->{}"
                   "".format(filename))
         sys.exit()
-
-
-def rename_file(original, add_tag):
-    """
-    Takes a filename and renames the file based on the add tag.
-    E.g.
-    original file = test.tif
-    add_tag = new
-    results in test_new.tif
-
-    Args:
-        original: original filename
-        add_tag: appends to the original filename to make the new one unique
-    Returns:
-        rename: new filename containing the unqiqu filename
-    """
-    path = original.split('.')
-    if len(path) > 2:
-        out.error("Avoid using paths with extra '.' in  them.\n"
-                  "Attempted to rename: {0}".format(original))
-        sys.exit()
-
-    p = path[0] + "_{}".format(add_tag) + path[-1]
 
 
 def run_cmd(cmd, nthreads=None):
@@ -81,29 +56,6 @@ def run_cmd(cmd, nthreads=None):
 
     s = check_output(cmd, shell=True, universal_newlines=True)
     out.dbg(s)
-
-
-def get_docker_bash(cmd, nthreads=None):
-    """
-    Returns the string command for running in a docker.
-
-    Args:
-        cmd: string command that you would run in side of a terminal without mpi
-        nthreads: Number of cores to use for mpiexec
-    """
-    # Added in threaded business
-    if nthreads is not None:
-        cmd = 'mpiexec -n {0} --allow-run-as-root '.format(nthreads) + cmd
-
-    # Docker has to entrypoint on the command and th args passed to the image
-    args = cmd.split(' ')
-
-    # make entrypoint take in the tau commands call
-    action = ('docker run --rm -ti -w /home -v $(pwd):/home --entrypoint {0}'
-              ' quay.io/wikiwatershed/taudem {1}').format(args[0],
-                                                          " ".join(args[1:]))
-
-    return action
 
 
 def pitremove(demfile, outfile=None, nthreads=None):
@@ -126,7 +78,7 @@ def pitremove(demfile, outfile=None, nthreads=None):
     check_path(outfile, outfile=True)
 
     CMD = "pitremove -z {0} -fel {1}".format(demfile, outfile)
-    ## action = get_docker_bash(CMD, nthreads=nthreads)
+
     run_cmd(CMD, nthreads=nthreads)
 
 
@@ -153,7 +105,7 @@ def calcD8Flow(filled_dem, d8dir_file=None, d8slope_file=None, nthreads=None):
     CMD = "d8flowdir -fel {0} -p {1} -sd8 {2}".format(filled_dem,
                                                       d8dir_file,
                                                       d8slope_file)
-    # action = get_docker_bash(CMD, nthreads=nthreads)
+
     run_cmd(CMD, nthreads=nthreads)
 
 
@@ -170,7 +122,7 @@ def calcD8DrainageArea(d8flowdir, areaD8_out=None, nthreads=None):
     check_path(d8flowdir)
     check_path(areaD8_out, outfile=True)
     CMD = "aread8 -p {0} -ad8 {1}".format(d8flowdir, areaD8_out)
-    # action = get_docker_bash(CMD, nthreads=nthreads)
+
     run_cmd(CMD, nthreads=nthreads)
 
 
@@ -188,14 +140,16 @@ def defineStreamsByThreshold(areaD8, threshold_streams_out=None, threshold=100,
         nthreads: Number of cores to use for mpiexec
     """
     out.msg(
-        "Performing stream estimation using threshold of {0}".format(threshold))
+        "Performing stream estimation using threshold of {0}".format(
+            threshold))
     check_path(areaD8)
     check_path(threshold_streams_out, outfile=True)
 
-    CMD = "threshold -ssa {0} -src {1} -thresh {2}".format(areaD8,
-                                                           threshold_streams_out,
-                                                           threshold)
-    # action = get_docker_bash(CMD, nthreads=nthreads)
+    CMD = "threshold -ssa {0} -src {1} -thresh {2}".format(
+        areaD8,
+        threshold_streams_out,
+        threshold)
+
     run_cmd(CMD, nthreads=nthreads)
 
 
@@ -204,7 +158,8 @@ def outlets_2_streams(d8flowdir, threshold_streams, pour_points,
                       nthreads=None):
     """
     STEP #5  Move Outlets to Streams, so as to move the catchment outlet point
-    on one of the DEM cells identified by TauDEM as belonging to the stream network
+    on one of the DEM cells identified by TauDEM as belonging to the
+    stream network
 
     Args:
         d8flowdir: Path to the D8 Flow direction image
@@ -223,7 +178,7 @@ def outlets_2_streams(d8flowdir, threshold_streams, pour_points,
         threshold_streams,
         pour_points,
         new_pour_points)
-    # action = get_docker_bash(CMD, nthreads=nthreads)
+
     run_cmd(CMD, nthreads=nthreads)
 
 
@@ -247,15 +202,17 @@ def calcD8DrainageAreaBasin(d8flowdir, basin_outlets_moved, areaD8_out=None,
     check_path(basin_outlets_moved)
     check_path(areaD8_out, outfile=True)
 
-    CMD = 'aread8 -p {0} -o {1} -ad8 {2}'.format(d8flowdir, basin_outlets_moved,
+    CMD = 'aread8 -p {0} -o {1} -ad8 {2}'.format(d8flowdir,
+                                                 basin_outlets_moved,
                                                  areaD8_out)
-    # action = get_docker_bash(CMD, nthreads=nthreads)
+
     run_cmd(CMD, nthreads=nthreads)
 
 
 def delineate_streams(dem, d8flowdir, basin_drain_area, threshold_streams,
-                      basin_outlets_moved, stream_orderfile=None, treefile=None,
-                      coordfile=None, netfile=None, wfile=None, nthreads=None):
+                      basin_outlets_moved, stream_orderfile=None,
+                      treefile=None, coordfile=None, netfile=None,
+                      wfile=None, nthreads=None):
     """
     STEP #8 Stream Reach And Watershed
     Args:
@@ -351,7 +308,9 @@ def produce_shapefiles(watershed_tif, corrected_points,
                 out.msg("Creating the subbasin outline for {}...".format(nm))
 
                 df.to_file(os.path.join(output_dir, '{}_subbasin.shp'
-                                        ''.format((nm.lower()).replace(' ', '_'))))
+                                        ''.format(
+                                            (nm.lower()).replace(' ', '_'))
+                                        ))
 
     # Output the full basin outline
     out.msg("Creating the entire basin outline...")
@@ -371,9 +330,9 @@ def create_readme(sysargs, output_dir):
     """
     dt = ((datetime.datetime.today()).isoformat()).split('T')[0]
     out_str = (
-        "########################################################################\n"
+        "###################################################################\n"
         "# BASIN DELINEATION TOOL V{0}\n"
-        "########################################################################\n"
+        "###################################################################\n"
         "\n The files in this folder were generated on {1}.\n"
         "This was accomplished using the following command:\n"
         "\n$ {2}\n"
@@ -396,8 +355,8 @@ def cleanup(output_dir, at_start=False):
 
     Args:
         output_dir: folder to lookin for cleanup
-        at_start: If at the beginning we cleanup a lot more files versus than at
-                  the end of a run.
+        at_start: If at the beginning we cleanup a lot more files versus
+            than at the end of a run.
 
     """
     out.msg("Cleaning up files...")
@@ -480,12 +439,12 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir,
     """
     today = (datetime.datetime.today().date()).isoformat()
 
-    header = ("##############################################################\n"
+    header = ("#############################################################\n"
               " Basin Catchment File for USDA-ARS-NWRC Streamflow modeling. \n"
               " Delineatation Threshold: {}\n"
               " Date Created: {}\n"
               " Created using basin_setup v{}\n"
-              "##############################################################\n"
+              "#############################################################\n"
               "\n".format(threshold, today,
                           __version__)
               )
@@ -494,15 +453,15 @@ def create_ars_streamflow_files(treefile, coordfile, threshold, wshp, netdir,
         fp.write(header)
         fp.close()
 
-    tree_names = ['link', 'start number', 'end number', 'downstream',
-                  'upstream',
-                  'strahler',
-                  'monitor point',
-                  'network magnitude']
-    coord_names = ['dummy', 'x', 'y', 'distance', 'elevation', 'area']
+    # tree_names = ['link', 'start number', 'end number', 'downstream',
+    #               'upstream',
+    #               'strahler',
+    #               'monitor point',
+    #               'network magnitude']
+    # coord_names = ['dummy', 'x', 'y', 'distance', 'elevation', 'area']
 
-    dftree = pd.read_csv(treefile, delimiter='\t', names=tree_names)
-    dfcoord = pd.read_csv(coordfile, delimiter='\t', names=coord_names)
+    # dftree = pd.read_csv(treefile, delimiter='\t', names=tree_names)
+    # dfcoord = pd.read_csv(coordfile, delimiter='\t', names=coord_names)
     dfwshp = gpd.read_file(wshp)
 
     # Get the network shpapefile which lives under a folder named after the
@@ -528,7 +487,8 @@ def output_streamflow(imgs, threshold, wshp, temp="temp",
                       output_dir='streamflow'):
     """
     Outputs files necessary for streamflow modeling. This will create a file
-    structure under a folder defined by output_dir and the threshold. E.g. streamflow/thresh_10000000
+    structure under a folder defined by output_dir and the threshold.
+    E.g. streamflow/thresh_10000000
 
     Args:
         imgs: Dictionary containing a files to be outputted.
@@ -549,15 +509,6 @@ def output_streamflow(imgs, threshold, wshp, temp="temp",
     if not os.path.isdir(final_output):
         out.msg("Making streamflow threshold directory...")
         os.mkdir(final_output)
-
-    # Move all the threshold images from temp to streamflow
-    # thresh_files = [os.path.join(temp,p) for p in os.listdir(temp) if "_{}.".format(threshold) in p]
-    #
-    # for p in thresh_files:
-    #     fname = os.path.basename(p)
-    #     to_f = os.path.join(final_output,fname)
-    #     out.msg("Moving {} to {}".format(p,to_f))
-    #     shutil.move(p,to_f)
 
     # Convert the watersheds to ascii and move files to streamflow folder for
     # SLF streamflow
@@ -619,7 +570,8 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
 
     # Output File keys WITH a threshold in the filename
     thresholdkeys = ['thresh_streams', 'thresh_basin_streams', 'order', 'tree',
-                     'coord', 'net', 'watersheds', 'basin_outline', 'corrected_points']
+                     'coord', 'net', 'watersheds', 'basin_outline',
+                     'corrected_points']
 
     filekeys = non_thresholdkeys + thresholdkeys
 
@@ -658,14 +610,14 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
             # 1. Pit Remove in order to fill the pits in the DEM
             pitremove(demfile, outfile=imgs['filled'], nthreads=nthreads)
 
-            # 2. D8 Flow Directions in order to compute the flow direction in each
-            #    DEM cell
+            # 2. D8 Flow Directions in order to compute the flow direction in
+            #    each DEM cell
             calcD8Flow(imgs['filled'], d8dir_file=imgs['flow_dir'],
                        d8slope_file=imgs['slope'],
                        nthreads=nthreads)
 
-            # 3. D8 Contributing Area so as to compute the drainage area in each
-            #    DEM cell
+            # 3. D8 Contributing Area so as to compute the drainage area in
+            #    each DEM cell
             calcD8DrainageArea(imgs['flow_dir'], areaD8_out=imgs['drain_area'],
                                nthreads=nthreads)
         else:
@@ -698,7 +650,7 @@ def ernestafy(demfile, pour_points, output=None, temp=None, threshold=100,
     # 7. Stream Definition by Threshold again, but with the catchment outlet
     #    point as additional input data
     defineStreamsByThreshold(imgs['basin_drain_area'],
-                             threshold_streams_out=imgs['thresh_basin_streams'],
+                             threshold_streams_out=imgs['thresh_basin_streams'],  # noqa
                              threshold=threshold,
                              nthreads=nthreads)
 
