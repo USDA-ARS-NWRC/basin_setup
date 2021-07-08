@@ -8,6 +8,6 @@ geopandas==0.4.0
 utm==0.4.2
 coloredlogs==10.0
 spatialnc>=0.3.0,<0.4.0
-inicheck>=0.3.3,<0.4.0
+inicheck>=0.9,<0.10.0
 netcdf4==1.4.1
 cftime<1.1.0

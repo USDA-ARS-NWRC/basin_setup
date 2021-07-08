@@ -122,3 +122,4 @@ scripts/*.csv
 scripts/*.md
 
 .vscode
+.devcontainer
