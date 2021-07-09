@@ -58,7 +58,7 @@ class BSTestCase(FunctionalRunCase):
             self.gold = Dataset(gf)
             self.compare = Dataset(cf)
 
-        #Shapefile comparison, open using geopandas and make dataframes
+        # Shapefile comparison, open using geopandas and make dataframes
         elif self.ext == 'shp':
             self.gold = gpd.read_file(gf)
             self.compare = gpd.read_file(cf)

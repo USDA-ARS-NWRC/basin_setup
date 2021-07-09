@@ -11,11 +11,8 @@ with open('README.md') as readme_file:
 with open('docs/history.rst') as history_file:
     history = history_file.read()
 
-requirements = []
-
-setup_requirements = []
-
-test_requirements = []
+with open('requirements.txt') as requirements_file:
+    requirements = requirements_file.read()
 
 setup(
     author="USDA ARS NWRC",
@@ -34,22 +31,25 @@ setup(
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     long_description_content_type='text/markdown',
-    package_data={'basin_setup': ['./landfire_veg_param.csv',
-                                  'qgis_templates/hillshade.xml',
-                                  'qgis_templates/veg_type_colormap.xml',
-                                  'qgis_templates/netcdf_template.xml',
-                                  'qgis_templates/points_template.xml',
-                                  'qgis_templates/raster_template.xml',
-                                  'qgis_templates/stream_template.xml',
-                                  'qgis_templates/shapefile_template.xml',
-                                  'qgis_templates/template.xml',
-                                  ]},
+    package_data={
+        'basin_setup': [
+            './landfire_veg_param.csv',
+            'qgis_templates/hillshade.xml',
+            'qgis_templates/veg_type_colormap.xml',
+            'qgis_templates/netcdf_template.xml',
+            'qgis_templates/points_template.xml',
+            'qgis_templates/raster_template.xml',
+            'qgis_templates/stream_template.xml',
+            'qgis_templates/shapefile_template.xml',
+            'qgis_templates/template.xml',
+        ]
+    },
     keywords=['basin_setup', 'delineation', 'topo', 'qgis'],
     name='basin_setup',
-    packages=find_packages(include=['basin_setup']),
+    packages=find_packages(include=['basin_setup', 'basin_setup.*']),
     entry_points={
         'console_scripts': [
-            'basin_setup=basin_setup.basin_setup:main',
+            'basin_setup=basin_setup.basin_setup.basin_setup_old:main',
             'delineate=basin_setup.delineate:main',
             'grm=basin_setup.grm:main',
             'pconvert=basin_setup.pconvert:main',
@@ -58,9 +58,7 @@ setup(
             'make_qgis_proj=basin_setup.make_qgis_proj:main',
             'nc2shp=basin_setup.convert:nc_masks_to_shp_cli'
         ]},
-    setup_requires=setup_requirements,
     test_suite='tests',
-    tests_require=test_requirements,
     url='https://github.com/USDA-ARS-NWRC/basin_setup',
     version='0.14.6',
     zip_safe=False,

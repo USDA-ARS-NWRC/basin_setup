@@ -6,7 +6,7 @@ import shutil
 import unittest
 from subprocess import check_output
 
-from basin_setup.basin_setup import *
+from basin_setup.basin_setup.basin_setup_old import *
 
 from .basin_setup_test_case import BSTestCase
 

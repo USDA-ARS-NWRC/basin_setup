@@ -4,7 +4,7 @@
 test_basin_setup
 ----------------------------------
 
-Tests for `basin_setup.basin_setup` module.
+Tests for `basin_setup.basin_setup_old` module.
 """
 
 import os
@@ -13,7 +13,7 @@ import unittest
 from os.path import abspath, join
 from subprocess import check_output
 
-from basin_setup.basin_setup import *
+from basin_setup.basin_setup.basin_setup_old import *
 
 from .basin_setup_test_case import BSTestCase
 
