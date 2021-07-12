@@ -49,7 +49,7 @@ setup(
     packages=find_packages(include=['basin_setup', 'basin_setup.*']),
     entry_points={
         'console_scripts': [
-            'basin_setup=basin_setup.basin_setup.basin_setup_old:main',
+            'basin_setup=basin_setup.generate_topo.basin_setup_old:main',
             'delineate=basin_setup.delineate:main',
             'grm=basin_setup.grm:main',
             'pconvert=basin_setup.pconvert:main',

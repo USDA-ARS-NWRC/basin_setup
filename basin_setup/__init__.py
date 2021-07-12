@@ -7,3 +7,5 @@ __version__ = "0.14.6"
 
 __core_config__ = os.path.abspath(
     os.path.dirname(__file__) + '/CoreConfig.ini')
+__recipes__ = os.path.abspath(
+    os.path.dirname(__file__) + '/recipes.ini')

@@ -10,3 +10,8 @@ class TestBasinSetup(BasinSetupLakes):
     def test_init(self):
         gt = GenerateTopo(config_file=self.config_file)
         self.assertIsInstance(gt.ucfg, UserConfig)
+
+    # def test_run(self):
+    #     gt = GenerateTopo(config_file=self.config_file)
+    #     gt.run()
+    #     gt.topo

@@ -120,6 +120,8 @@ tests/**.xml
 scripts/*.pdf
 scripts/*.csv
 scripts/*.md
+tests/Lakes/output
 
 .vscode
 .devcontainer
+*.aux.xml
