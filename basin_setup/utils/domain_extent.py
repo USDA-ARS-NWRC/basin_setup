@@ -3,7 +3,7 @@ import re
 import netCDF4 as nc
 
 
-def parse_extent(fname, x_field='x', y_field='y'):
+def parse_from_file(fname, x_field='x', y_field='y'):
     """ Parse the information of some GIS file and returns a
     list of the response of the things important to this script.
 
@@ -134,3 +134,59 @@ def parse_extent(fname, x_field='x', y_field='y'):
                       "".format(file_type))
 
     return extent, cellsize
+
+
+def condition_to_cellsize(extent, cell_size, logger=None):
+    """
+    Checks if there is a mismatch in the domain size and cell size. Expands the
+    domain so cells fit evenly.
+
+    Args:
+        extent: A list of 4 values representing the domain in
+            left,bottom, right,top
+        cell_size: integer of the resolution
+        logger (optional): logger instance to log info to
+
+    Returns:
+        result: a list of 4 values representing the domain with evenly
+            fitting cells
+    """
+
+    rl_adjustment = 0.
+    tb_adjustment = 0.
+
+    # Calculate the cell modulus
+    rl_mod = (extent[2] - extent[0]) % cell_size
+    tb_mod = (extent[3] - extent[1]) % cell_size
+
+    if rl_mod > 0:
+        rl_adjustment = (cell_size - rl_mod) / 2.0
+    if tb_mod > 0:
+        tb_adjustment = (cell_size - tb_mod) / 2.0
+
+    if logger is not None:
+        logger.debug("Checking how well the cell size is fitted to the domain:"
+                     "\t\nRight-Left modulus: {0:.2f}"
+                     "\t\nTop - Bottom modulus: {1:.2f}".format(rl_mod, tb_mod))
+
+    # Adjust in both directions to maintain common center
+    result = [
+        extent[0] - rl_adjustment,  # Left
+        extent[1] - tb_adjustment,  # Bottom
+        extent[2] + rl_adjustment,  # Right
+        extent[3] + tb_adjustment  # Top
+    ]
+
+    rl_mod = (result[2] - result[0]) % cell_size  # Modulus right to left
+    tb_mod = (result[3] - result[1]) % cell_size  # Modulus top to bottom
+
+    if (rl_adjustment != 0 or tb_adjustment != 0) and logger is not None:
+
+        logger.warning(" Modeling domain extents are ill fit for cell size {}."
+                       "\nExpanding to fit whole cells...".format(cell_size))
+
+        logger.debug("Checking how well our cell size is fitted to our domain:"
+                     "\t\nRight-Left modulo: {0:.2f}"
+                     "\t\nTop - Bottom modulo: {1:.2f}".format(rl_mod, tb_mod))
+
+    return result

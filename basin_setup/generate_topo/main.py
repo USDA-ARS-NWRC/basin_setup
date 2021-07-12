@@ -1,10 +1,12 @@
 import os
 
 import logging
+from subprocess import check_output
 
 from basin_setup.utils.logger import BasinSetupLogger
-from basin_setup.utils import config
+from basin_setup.utils import config, domain_extent
 from basin_setup import __version__
+from basin_setup.generate_topo.shapefile import Shapefile
 
 
 class GenerateTopo():
@@ -22,167 +24,18 @@ class GenerateTopo():
         config.check(self.ucfg, self._logger)
 
         self.temp_dir = os.path.join(self.config['output_folder'], 'temp')
-
-    def setup_and_check(self):
-        """
-        Check the arguments that were provided and provide some of the
-        directory structure for the setup.
-        """
-
-        # Filename and paths and potential sources
-        images = {
-            'dem': {
-                'path': None,
-                'source': None
-            },
-            'basin outline': {
-                'path': None,
-                'source': None,
-                'epsg': None
-            },
-            'mask': {
-                'path': None,
-                'source': None,
-                'short_name': 'mask'
-            },
-            'vegetation type': {
-                'path': None,
-                'source': None,
-                'map': None,
-                'short_name': 'veg_type'
-            },
-            'vegetation height': {
-                'path': None,
-                'source': None,
-                'map': None,
-                'short_name': 'veg_height'
-            },
-            'vegetation k': {
-                'path': None,
-                'source': None,
-                'short_name': 'veg_k'
-            },
-            'vegetation tau': {
-                'path': None,
-                'source': None,
-                'short_name': 'veg_tau'
-            },
-            'maxus': {
-                'path': None,
-                'source': None
-            }
-        }
-
-        # Populate Images for non downloaded files\
-        images['dem']['path'] = abspath(expanduser(dem))
-
-        # Add in the subbasins
-        if subbasins is not None:
-            if not isinstance(subbasins, list):
-                subbasins = [subbasins]
-
-            for zz, sb in enumerate(subbasins):
-                base = basename(sb).split('.')[0].lower()
-                name = base.replace('_outline', '')
-                name = name.replace('_subbasin', '')
-                name = name.replace('  ', '')  # remove any double spaces
-                name = name.replace('_', ' ')
-                pth = abspath(expanduser(sb))
-                # Capitalize the first letter
-                name = proper_name(name)
-                # Shapefiles
-                images['{} subbasin'.format(name)] = \
-                    {'path': pth, 'source': None, 'epsg': None}
-                # Images of masks
-                images['{} mask'.format(name)] = \
-                    {'path': None, 'source': None, 'short_name': '{}'
-                     ''.format(name + ' mask')}
-
-        # Populate images for downloaded sources
-        images['vegetation type']['source'] = \
-            'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVT_20180618.zip&TYPE=landfire'  # noqa
-
-        images['vegetation height']['source'] = \
-            'https://landfire.cr.usgs.gov/bulk/downloadfile.php?FNAME=US_140_mosaic-US_140EVH_20180618.zip&TYPE=landfire'  # noqa
-
-        images['vegetation type']['path'] = \
-            join(required_dirs['downloads'],
-                 'US_140EVT_20180618',
-                 'Grid', 'us_140evt',
-                 'hdr.adf')
-
-        images['vegetation height']['path'] = \
-            join(required_dirs['downloads'],
-                 'US_140EVH_20180618',
-                 'Grid',
-                 'us_140evh',
-                 'hdr.adf')
-
-        # Make directories and create setup
-        for k, d in required_dirs.items():
-            full = abspath(expanduser(d))
-
-            if not isdir(dirname(full)):
-                raise IOError("Path to vegetation data/download directory does"
-                              " not exist.\n %s" % full)
-
-            if k != 'downloads':
-                if isdir(full):
-                    out.warn("{0} folder exists, potential to overwrite"
-                             " non-downloaded files!".format(k))
-
-                else:
-                    out.msg("Making folder...")
-                    os.mkdir(full)
-            else:
-                if isdir(full):
-                    out.respond("{0} folder found!".format(k))
-                else:
-                    out.msg("Making {0} folder...".format(k))
-                    os.mkdir(full)
-
-        return images
+        self.cell_size = self.config['cell_size']
 
     def run(self):
-        pass
-        # Check and setup for an output dir, downloads dir, and temp dir
-        # required_dirs = {
-        #     'output': self.config['output'],
-        #     'downloads': self.config['vegetation_folder']
-        # }
 
-        # self.setup_and_check(
-        # required_dirs,
-        # args.basin_shapefile,
-        # args.dem,
-        # subbasins=args.subbasins
-        # )
-
-        # if args.desired_extents is not None:
-        #     out.warn("Using --extents will override any padding requested!")
-        #     pad = None
-        # else:
-        #     # DEM Cell padding
-        #     pad = int(args.pad)
-
-        #     # No asymetric padding provided
-        #     if args.apad is None:
-        #         pad = [pad for i in range(4)]
-        #     else:
-        #         pad = [int(i) for i in args.apad]
-
-        # # --------- OPTIONAL POINT MODEL SETUP ---------- #
-        # if args.point is not None:
-        #     out.msg("Point model setup requested!")
-        #     images = setup_point(images, args.point, args.cell_size, TEMP, pad,
-        #                          args.epsg)
-        #     # For point setup the only padding should be around the center pixel
-        #     pad = 0
-        # else:
-        #     images['basin outline']['path'] = \
-        #         abspath(expanduser(args.basin_shapefile))
-
-        # images = check_shp_file(images, epsg=args.epsg, temp=TEMP)
+        self.set_extents()
+        self.load_basin_shapefiles()
+        self.load_dem()
+        # self.load_vegetation()
+        # self.process_images()
+        # self.create_netcdf()
+        # self.calculate_k_and_tau()
+        # self.add_project_to_topo()
 
         # # ===========================================================================
         # # Downloads and Checking
@@ -219,17 +72,6 @@ class GenerateTopo():
         #     images['basin outline']['epsg'],
         #     images['dem']['path'])
 
-        # # Making a point
-        # if args.point is not None:
-        #     if args.uniform:
-        #         out.warn("Using uniform flag, all outputted values will the be"
-        #                  " equal to the center pixel")
-
-        #         topo = make_uniform(topo, approach='middle')
-
-        #     if args.hill:
-        #         topo = make_hill(topo, dem_var='dem')
-
         # # Don't Flip the image over the x axis if it is not requested
         # if not args.noflip:
         #     out.msg("Flipping images...")
@@ -245,3 +87,59 @@ class GenerateTopo():
         # if not DEBUG:
         #     out.msg('Cleaning up temporary files.')
         #     rmtree(required_dirs['temp'])
+
+    def set_extents(self):
+        """Set the extents to clip the rasters to. This will either use
+        the users values in `coordinate_extent` or calculate from the
+        basin outline. If the extents are from the basin outline, the
+        padding will be applied from `pad_domain`.
+        """
+
+        if self.config['coordinate_extent'] is None:
+            extents, _ = domain_extent.parse_from_file(
+                self.config['basin_shapefile'])
+
+            padding = [self.cell_size * pad
+                       for pad in self.config['pad_domain']]
+
+            # Pad the extents
+            extents[0] -= padding[0]  # Left
+            extents[1] -= padding[1]  # Bottom
+            extents[2] += padding[2]  # Right
+            extents[3] += padding[3]  # Top
+
+            # Check cell size fits evenly in extent range
+            extents = domain_extent.condition_to_cellsize(
+                extents, self.cell_size, self._logger)
+
+        else:
+            extents = self.config['coordinate_extent']
+
+        self.extents = extents
+        s_extent = [str(e) for e in extents]
+
+    def load_basin_shapefiles(self):
+        """
+        Check the basin shapefiles to get the EPSG code.
+
+        Args:
+            images: dictionary containing paths and information on the images used
+            epsg: Desired projection code
+            temp: Work directory for temporary files
+
+        Returns:
+            images: a dictionary to modified paths for images in progress
+        """
+
+        self._logger.info("Loading shapefiles...")
+        self.basin_shapefiles = [
+            Shapefile(self.config['basin_shapefile'])
+        ]
+
+        # Add the sub basin files
+        if self.config['sub_basin_files'] is not None:
+            for sub_basin_file in self.config['sub_basin_files']:
+                self.basin_shapefiles += Shapefile(sub_basin_file)
+
+    def load_dem(self):
+        self.config['dem_file']
