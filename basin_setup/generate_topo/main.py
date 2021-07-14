@@ -2,6 +2,9 @@ import os
 
 import logging
 from subprocess import check_output
+import xarray as xr
+from rasterio.enums import Resampling
+import rioxarray
 
 from basin_setup.utils.logger import BasinSetupLogger
 from basin_setup.utils import config, domain_extent
@@ -36,11 +39,6 @@ class GenerateTopo():
         # self.create_netcdf()
         # self.calculate_k_and_tau()
         # self.add_project_to_topo()
-
-        # # ===========================================================================
-        # # Downloads and Checking
-        # # ===========================================================================
-        # images = check_and_download(images, required_dirs)
 
         # # ===========================================================================
         # # Processing
@@ -118,17 +116,12 @@ class GenerateTopo():
         self.extents = extents
         s_extent = [str(e) for e in extents]
 
+        # Create an Affine transform and x/y vectors for the domain
+        self.transform, self.x, self.y = domain_extent.affine_transform_from_extents(  # noqa
+            extents, self.cell_size)
+
     def load_basin_shapefiles(self):
-        """
-        Check the basin shapefiles to get the EPSG code.
-
-        Args:
-            images: dictionary containing paths and information on the images used
-            epsg: Desired projection code
-            temp: Work directory for temporary files
-
-        Returns:
-            images: a dictionary to modified paths for images in progress
+        """ Load the basin and sub basin shapefiles into `Shapefile` class
         """
 
         self._logger.info("Loading shapefiles...")

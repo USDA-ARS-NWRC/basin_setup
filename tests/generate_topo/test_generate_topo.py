@@ -1,4 +1,5 @@
 from inicheck.config import UserConfig
+from rasterio import Affine
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
@@ -21,6 +22,9 @@ class TestBasinSetup(BasinSetupLakes):
             self.subject.extents,
             [320320.405027, 4158537.07547, 327520.405027, 4166337.07547]
         )
+        self.assertIsInstance(self.subject.transform, Affine)
+        self.assertTrue(len(self.subject.x) == 144)
+        self.assertTrue(len(self.subject.y) == 156)
 
     def test_load_basin_shapefiles(self):
         self.subject.load_basin_shapefiles()

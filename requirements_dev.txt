@@ -4,3 +4,5 @@ coverage==4.5.1
 autopep8
 flake8
 isort
+matplotlib
+descartes 

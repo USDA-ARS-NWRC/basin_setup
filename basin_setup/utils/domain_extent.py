@@ -1,6 +1,8 @@
 from subprocess import check_output
 import re
 import netCDF4 as nc
+import numpy as np
+import rasterio
 
 
 def parse_from_file(fname, x_field='x', y_field='y'):
@@ -190,3 +192,19 @@ def condition_to_cellsize(extent, cell_size, logger=None):
                      "\t\nTop - Bottom modulo: {1:.2f}".format(rl_mod, tb_mod))
 
     return result
+
+
+def affine_transform_from_extents(extents, cell_size):
+
+    x = np.arange(extents[0], extents[2], cell_size)
+    y = np.arange(extents[1], extents[3], cell_size)
+    transform = rasterio.transform.from_bounds(
+        extents[0],
+        extents[1],
+        extents[2],
+        extents[3],
+        len(x),
+        len(y)
+    )
+
+    return transform, x, y

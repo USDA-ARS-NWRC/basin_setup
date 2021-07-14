@@ -1,19 +1,32 @@
-from subprocess import check_output
-
-from spatialnc.utilities import strip_chars
+import geopandas as gpd
+from rasterio import features
 
 
 class Shapefile():
 
     def __init__(self, file_name) -> None:
         self.file_name = file_name
+        self.polygon = gpd.read_file(self.file_name)
 
     @property
-    def epsg(self):
-        basin_shp_info = check_output(
-            ['ogrinfo', '-al', self.file_name],
-            universal_newlines=True)
+    def crs(self):
+        return self.polygon.crs
 
-        basin_info = basin_shp_info.split('\n')
-        epsg_info = [auth for auth in basin_info if "epsg" in auth.lower()]
-        return strip_chars(epsg_info[-1].split(',')[-1])
+    def mask(self, nx, ny, transform):
+        """Create a raster mask from the shapefile using rasterio.features.rasterize
+
+        Args:
+            nx (int): number of x cells
+            ny (int): number of y cells
+            transform (list): Affine transformation
+
+        Returns:
+            np.ndarray: 1 for locations inside the mask, 0 for outside
+        """
+
+        return features.rasterize(
+            self.polygon.geometry,
+            out_shape=(ny, nx),
+            fill=0,
+            transform=transform
+        )
