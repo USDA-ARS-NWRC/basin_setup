@@ -3,11 +3,13 @@ from rasterio import Affine
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
-
+from basin_setup.utils import domain_extent
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
 
 class TestBasinSetup(BasinSetupLakes):
+
+    EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
 
     @classmethod
     def setUpClass(self):
@@ -20,7 +22,7 @@ class TestBasinSetup(BasinSetupLakes):
         self.subject.set_extents()
         self.assertListEqual(
             self.subject.extents,
-            [320320.405027, 4158537.07547, 327520.405027, 4166337.07547]
+            self.EXTENTS
         )
         self.assertIsInstance(self.subject.transform, Affine)
         self.assertTrue(len(self.subject.x) == 144)
@@ -32,3 +34,14 @@ class TestBasinSetup(BasinSetupLakes):
         self.assertTrue(len(self.subject.basin_shapefiles) == 1)
         self.assertIsInstance(self.subject.basin_shapefiles[0], Shapefile)
         self.assertTrue(self.subject.basin_shapefiles[0].epsg == '32611')
+
+    def test_load_dem(self):
+        self.subject.crs = {'init': 'EPSG:32611'}
+        self.subject.extents = self.EXTENTS
+        self.subject.load_dem()
+
+        extents, cell_size = domain_extent.parse_from_file(
+            'tests/Lakes/output/temp/clipped_dem.tif')
+
+        self.assertListEqual(extents, self.EXTENTS)
+        self.assertTrue(cell_size == self.subject.config['cell_size'])

@@ -7,7 +7,7 @@ from rasterio.enums import Resampling
 import rioxarray
 
 from basin_setup.utils.logger import BasinSetupLogger
-from basin_setup.utils import config, domain_extent
+from basin_setup.utils import config, domain_extent, gdal
 from basin_setup import __version__
 from basin_setup.generate_topo.shapefile import Shapefile
 
@@ -28,6 +28,8 @@ class GenerateTopo():
 
         self.temp_dir = os.path.join(self.config['output_folder'], 'temp')
         self.cell_size = self.config['cell_size']
+
+        self.images = {}
 
     def run(self):
 
@@ -114,7 +116,6 @@ class GenerateTopo():
             extents = self.config['coordinate_extent']
 
         self.extents = extents
-        s_extent = [str(e) for e in extents]
 
         # Create an Affine transform and x/y vectors for the domain
         self.transform, self.x, self.y = domain_extent.affine_transform_from_extents(  # noqa
@@ -129,10 +130,26 @@ class GenerateTopo():
             Shapefile(self.config['basin_shapefile'])
         ]
 
+        # The project CRS is based on the basin shapefile
+        self.crs = self.basin_shapefiles[0].crs
+
         # Add the sub basin files
         if self.config['sub_basin_files'] is not None:
             for sub_basin_file in self.config['sub_basin_files']:
                 self.basin_shapefiles += Shapefile(sub_basin_file)
 
     def load_dem(self):
-        self.config['dem_file']
+        """Reproject and crop the DEM file to a new image
+        """
+
+        self.images['dem'] = os.path.join(self.temp_dir, 'clipped_dem.tif')
+
+        gdal.gdalwarp(
+            self.config['dem_file'],
+            self.images['dem'],
+            self.crs['init'],
+            self.extents,
+            self.cell_size,
+            resample='bilinear',
+            logger=self._logger
+        )
