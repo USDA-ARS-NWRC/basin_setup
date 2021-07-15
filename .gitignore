@@ -125,3 +125,4 @@ tests/Lakes/output
 .vscode
 .devcontainer
 *.aux.xml
+landfire

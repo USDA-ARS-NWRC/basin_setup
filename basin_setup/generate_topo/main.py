@@ -1,15 +1,13 @@
 import os
 
 import logging
-from subprocess import check_output
 import xarray as xr
-from rasterio.enums import Resampling
-import rioxarray
 
 from basin_setup.utils.logger import BasinSetupLogger
 from basin_setup.utils import config, domain_extent, gdal
 from basin_setup import __version__
 from basin_setup.generate_topo.shapefile import Shapefile
+from basin_setup.generate_topo import vegetation
 
 
 class GenerateTopo():
@@ -36,7 +34,7 @@ class GenerateTopo():
         self.set_extents()
         self.load_basin_shapefiles()
         self.load_dem()
-        # self.load_vegetation()
+        self.load_vegetation()
         # self.process_images()
         # self.create_netcdf()
         # self.calculate_k_and_tau()
@@ -153,3 +151,10 @@ class GenerateTopo():
             resample='bilinear',
             logger=self._logger
         )
+
+    def load_vegetation(self):
+
+        if self.config['vegetation_dataset'] == 'landfire_1.4.0':
+            veg = vegetation.Landfire140()
+
+            veg.reproject(self.extents, self.cell_size, self.crs['init'])
