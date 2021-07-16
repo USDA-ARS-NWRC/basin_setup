@@ -21,7 +21,7 @@ class TestShapefile(BasinSetupLakes):
         self.assertTrue(len(self.shape.polygon) == 1)
 
     def test_crs(self):
-        self.assertDictEqual(self.shape.crs, dict({'init': 'epsg:32611'}))
+        self.assertDictEqual(self.shape.crs, self.CRS)
 
     def test_mask(self):
         transform, x, y = domain_extent.affine_transform_from_extents(

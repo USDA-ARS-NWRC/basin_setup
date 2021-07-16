@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import xarray as xr
+import re
 
 from basin_setup.generate_topo.vegetation import BaseVegetation
 
@@ -41,7 +42,7 @@ class Landfire140(BaseVegetation):
             raise ValueError(
                 'NaN values in veg_k. Missing values in the veg_params_csv.')
 
-        self.tau_k = xr.combine_by_coords([
+        self.veg_tau_k = xr.combine_by_coords([
             veg_tau.to_dataset(name='veg_tau'),
             veg_k.to_dataset(name='veg_k')
         ])
@@ -50,6 +51,30 @@ class Landfire140(BaseVegetation):
 
         veg_df = pd.read_csv(self.veg_height_csv)
         veg_df.set_index('VALUE', inplace=True)
-        # use regex to pull out the numbers
 
-        veg_height = self.ds['height'].copy()
+        # match whole numbers and decimals in the line
+        regex = re.compile(r"(?<!\*)(\d*\.?\d+)(?!\*)")
+        veg_df['height'] = 0  # see assumption below
+        for idx, row in veg_df.iterrows():
+            matches = regex.findall(row.CLASSNAMES)
+            if len(matches) > 0:
+                veg_df.loc[idx, 'height'] = np.mean(
+                    np.array([float(x) for x in matches]))
+
+        # create an image that is full of 0 values. This makes the assumption
+        # that any value that is not found in the csv file will have a
+        # height of 0 meters. This will work most of the time except in
+        # developed or agriculture but there isn't snow there anyways...
+        height = self.ds['height'].copy() * 0
+        veg_heights = np.unique(self.ds['height'])
+
+        for veg_height in veg_heights:
+            idx = self.ds['height'].values == veg_height
+
+            if veg_height in veg_df.index:
+                height.values[idx] = veg_df.loc[veg_height, 'height']
+
+        # sanity check
+        assert np.sum(np.isnan(height.values)) == 0
+
+        self.veg_height = height

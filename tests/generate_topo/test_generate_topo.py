@@ -25,18 +25,18 @@ class TestBasinSetup(BasinSetupLakes):
             self.EXTENTS
         )
         self.assertIsInstance(self.subject.transform, Affine)
-        self.assertTrue(len(self.subject.x) == 144)
-        self.assertTrue(len(self.subject.y) == 156)
+        self.assertTrue(len(self.subject.x) == 73)
+        self.assertTrue(len(self.subject.y) == 69)
 
     def test_load_basin_shapefiles(self):
         self.subject.load_basin_shapefiles()
 
         self.assertTrue(len(self.subject.basin_shapefiles) == 1)
         self.assertIsInstance(self.subject.basin_shapefiles[0], Shapefile)
-        self.assertTrue(self.subject.basin_shapefiles[0].epsg == '32611')
+        self.assertDictEqual(self.subject.basin_shapefiles[0].crs, self.CRS)
 
     def test_load_dem(self):
-        self.subject.crs = {'init': 'EPSG:32611'}
+        self.subject.crs = self.CRS
         self.subject.extents = self.EXTENTS
         self.subject.load_dem()
 

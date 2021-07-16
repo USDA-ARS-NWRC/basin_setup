@@ -35,34 +35,9 @@ class GenerateTopo():
         self.load_basin_shapefiles()
         self.load_dem()
         self.load_vegetation()
-        # self.process_images()
         # self.create_netcdf()
         # self.calculate_k_and_tau()
         # self.add_project_to_topo()
-
-        # # ===========================================================================
-        # # Processing
-        # # ===========================================================================
-        # images, extents = process(images, TEMP, args.cell_size, pad=pad,
-        #                           extents=args.desired_extents)
-
-        # # ===========================================================================
-        # # Post Processing
-        # # ===========================================================================
-        # if args.basin_name is not None:
-        #     basin_name = " ".join(args.basin_name)
-        # else:
-        #     basin_name = None
-
-        # topo = create_netcdf(images, extents, args.cell_size,
-        #                      required_dirs['output'], basin_name)
-        # # Calculates TAU and K
-        # if args.veg_params is None:
-        #     veg_params = __veg_parameters__
-        # else:
-        #     veg_params = args.veg_params
-        # topo = calculate_height_tau_k(topo, images, veg_params=veg_params,
-        #                               bypass_veg_check=args.bypass_veg_check)
 
         # # Add the projection information
         # topo = add_proj(
@@ -154,7 +129,12 @@ class GenerateTopo():
 
     def load_vegetation(self):
 
+        veg = None
         if self.config['vegetation_dataset'] == 'landfire_1.4.0':
             veg = vegetation.Landfire140()
 
             veg.reproject(self.extents, self.cell_size, self.crs['init'])
+            veg.calculate_tau_and_k()
+            veg.calculate_height()
+
+        self.veg = veg

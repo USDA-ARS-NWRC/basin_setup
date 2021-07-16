@@ -2,7 +2,7 @@ import os
 import unittest
 from pathlib import Path
 from copy import deepcopy
-from inicheck.tools import cast_all_variables, get_user_config
+from inicheck.tools import get_user_config
 
 import basin_setup
 
@@ -10,6 +10,7 @@ import basin_setup
 class BasinSetupLakes(unittest.TestCase):
 
     BASE_INI_FILE_NAME = 'config.ini'
+    CRS = dict({'init': 'epsg:32611'})
 
     test_dir = Path(basin_setup.__file__).parent.parent.joinpath('tests')
     basin_dir = test_dir.joinpath('Lakes')
