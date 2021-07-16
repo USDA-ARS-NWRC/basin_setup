@@ -22,10 +22,10 @@ class BaseVegetation():
             )
 
         self.input_images = {
-            'type': os.path.join(self.config['vegetation_folder'],
-                                 self.VEGETATION_TYPE),
-            'height': os.path.join(self.config['vegetation_folder'],
-                                   self.VEGETATION_HEIGHT),
+            'veg_type': os.path.join(self.config['vegetation_folder'],
+                                     self.VEGETATION_TYPE),
+            'veg_height': os.path.join(self.config['vegetation_folder'],
+                                       self.VEGETATION_HEIGHT),
         }
 
         for dataset, file_name in self.input_images.items():
@@ -49,17 +49,20 @@ class BaseVegetation():
                 Defaults to 'bilinear'.
         """
 
+        self._logger.debug(
+            'Reprojecting and clipping veg type and height datasets')
+
         self.clipped_images = {
-            'type': os.path.join(self.config['output_folder'],
-                                 'temp', 'clipped_veg_type.tif'),
-            'height': os.path.join(self.config['output_folder'],
-                                   'temp', 'clipped_veg_height.tif')
+            'veg_type': os.path.join(self.config['output_folder'],
+                                     'temp', 'clipped_veg_type.tif'),
+            'veg_height': os.path.join(self.config['output_folder'],
+                                       'temp', 'clipped_veg_height.tif')
         }
 
         # vegetation type
         gdal.gdalwarp(
-            self.input_images['type'],
-            self.clipped_images['type'],
+            self.input_images['veg_type'],
+            self.clipped_images['veg_type'],
             target_crs,
             extents,
             cell_size,
@@ -69,8 +72,8 @@ class BaseVegetation():
 
         # vegetation height
         gdal.gdalwarp(
-            self.input_images['height'],
-            self.clipped_images['height'],
+            self.input_images['veg_height'],
+            self.clipped_images['veg_height'],
             target_crs,
             extents,
             cell_size,
@@ -84,6 +87,8 @@ class BaseVegetation():
             da.append(rioxarray.open_rasterio(image, default_name=dataset))
         da = [w.to_dataset() for w in da]
         self.ds = xr.combine_by_coords(da)
+        self.ds = self.ds.squeeze('band')
+        self.ds = self.ds.drop_vars('band')
 
     def calculate_tau_and_k(self):
         raise NotImplementedError('calculate_tau_and_k is not implemented')

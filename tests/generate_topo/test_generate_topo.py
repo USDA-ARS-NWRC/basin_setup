@@ -1,5 +1,8 @@
+import os
+from basin_setup.generate_topo.vegetation import Landfire140
 from inicheck.config import UserConfig
 from rasterio import Affine
+import xarray as xr
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
@@ -45,3 +48,57 @@ class TestBasinSetup(BasinSetupLakes):
 
         self.assertListEqual(extents, self.EXTENTS)
         self.assertTrue(cell_size == self.subject.config['cell_size'])
+        self.assertIsInstance(self.subject.dem, xr.DataArray)
+        self.assertCountEqual(list(self.subject.dem.coords.keys()), [
+                              'y', 'x', 'spatial_ref'])
+
+    def test_load_vegetation(self):
+        self.subject.crs = self.CRS
+        self.subject.extents = self.EXTENTS
+        self.subject.load_vegetation()
+
+        extents, cell_size = domain_extent.parse_from_file(
+            'tests/Lakes/output/temp/clipped_veg_type.tif')
+
+        self.assertListEqual(extents, self.EXTENTS)
+        self.assertTrue(cell_size == self.subject.config['cell_size'])
+        self.assertIsInstance(self.subject.veg, Landfire140)
+        self.assertCountEqual(
+            list(self.subject.veg.veg_tau_k.coords.keys()),
+            ['y', 'x', 'spatial_ref']
+        )
+        self.assertCountEqual(
+            list(self.subject.veg.veg_height.coords.keys()),
+            ['y', 'x', 'spatial_ref']
+        )
+
+    def test_run(self):
+        gt = GenerateTopo(config_file=self.config_file)
+        gt.run()
+
+        ds = xr.open_dataset(os.path.join(self.basin_dir, 'output', 'topo.nc'))
+
+        self.assertCountEqual(
+            list(ds.coords.keys()),
+            ['y', 'x']
+        )
+        self.assertCountEqual(
+            list(ds.keys()),
+            ['dem', 'mask', 'veg_height', 'veg_k',
+                'veg_tau', 'veg_type', 'projection']
+        )
+
+        # TODO compare against gold file once created
+
+
+# class TestVegetationOptions(BasinSetupLakes):
+
+#     EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
+
+#     @classmethod
+#     def setUpClass(self):
+#         self.subject = GenerateTopo(config_file=self.config_file)
+#         self.subject.set_extents()
+
+#     def test_landfire_140(self):
+#         pass

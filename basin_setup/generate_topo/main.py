@@ -1,7 +1,8 @@
 import os
-
+from datetime import datetime
 import logging
 import xarray as xr
+import rioxarray
 
 from basin_setup.utils.logger import BasinSetupLogger
 from basin_setup.utils import config, domain_extent, gdal
@@ -35,8 +36,7 @@ class GenerateTopo():
         self.load_basin_shapefiles()
         self.load_dem()
         self.load_vegetation()
-        # self.create_netcdf()
-        # self.calculate_k_and_tau()
+        self.create_netcdf()
         # self.add_project_to_topo()
 
         # # Add the projection information
@@ -115,6 +115,8 @@ class GenerateTopo():
         """Reproject and crop the DEM file to a new image
         """
 
+        self._logger.info('Loading DEM dataset and cropping')
+
         self.images['dem'] = os.path.join(self.temp_dir, 'clipped_dem.tif')
 
         gdal.gdalwarp(
@@ -127,14 +129,93 @@ class GenerateTopo():
             logger=self._logger
         )
 
+        self.dem = rioxarray.open_rasterio(
+            self.images['dem'], default_name='dem')
+        self.dem = self.dem.squeeze('band')
+        self.dem = self.dem.drop_vars('band')
+        self.dem.attrs = {
+            'long_name': 'dem'
+        }
+
     def load_vegetation(self):
+
+        self._logger.info('Loading vegetation dataset')
 
         veg = None
         if self.config['vegetation_dataset'] == 'landfire_1.4.0':
-            veg = vegetation.Landfire140()
+            veg = vegetation.Landfire140(self.config)
 
             veg.reproject(self.extents, self.cell_size, self.crs['init'])
             veg.calculate_tau_and_k()
             veg.calculate_height()
 
         self.veg = veg
+
+    def create_netcdf(self):
+
+        self._logger.info('Create and output netcdf for topo.nc')
+
+        # convert the basin mask to DataArray
+        mask = []
+        for i, shapefile in enumerate(self.basin_shapefiles):
+            basin = self.dem.copy()
+            basin.values = shapefile.mask(
+                len(self.x), len(self.y), self.transform)
+
+            if i == 0:
+                basin.name = 'mask'
+                basin.attrs = {'long_name': self.config['basin_name']}
+            else:
+                basin.name = 'subbasin_mask'
+                basin.attrs = {'long_name': 'Sub basin name'}
+
+            mask.append(basin.to_dataset())
+        mask = xr.combine_by_coords(mask)
+
+        output = xr.combine_by_coords([
+            self.dem.to_dataset(),
+            self.veg.veg_tau_k,
+            self.veg.veg_height.to_dataset(),
+            mask
+        ])
+
+        # The shapefile are the basis for the projection
+        # Also change to projection to keep in line with other topo.nc files
+        output['projection'] = mask['spatial_ref']
+        del output['spatial_ref']
+
+        # set attributes for x/y dimensions
+        output.x.attrs = {
+            'units': 'meters',
+            'description': 'UTM, east west',
+            'long_name': 'x coordinate',
+            'standard_name': 'projection_x_coordinate'
+        }
+        output.y.attrs = {
+            'units': 'meters',
+            'description': 'UTM, north south',
+            'long_name': 'y coordinate',
+            'standard_name': 'projection_y_coordinate'
+        }
+
+        for key in list(output.keys()):
+            output[key].attrs["grid_mapping"] = "projection"
+
+        # Global attributes
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        output.attrs = {
+            'Conventions': 'CF-1.6',
+            'dateCreated': now,
+            'Title': 'Topographic Images for SMRF/AWSM',
+            'history': '[{}] Create netCDF4 file using Basin Setup v{}'.format(
+                now,
+                __version__),
+            'institution': ('USDA Agricultural Research Service, Northwest '
+                            'Watershed Research Center')
+        }
+
+        # TODO encoding
+        output_path = os.path.join(self.config['output_folder'], 'topo.nc')
+        output.to_netcdf(output_path, format='NETCDF4')  # , encoding={})
+
+        self._logger.info('topo.nc file at {}'.format(output_path))

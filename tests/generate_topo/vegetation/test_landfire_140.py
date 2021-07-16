@@ -35,8 +35,20 @@ class TestLandfire140(BasinSetupLakes):
         self.subject.reproject(self.EXTENTS, self.CELL_SIZE, self.CRS)
         self.subject.calculate_tau_and_k()
         self.assertIsInstance(self.subject.veg_tau_k, xr.Dataset)
+        self.assertCountEqual(
+            list(self.subject.veg_tau_k.coords.keys()),
+            ['y', 'x', 'spatial_ref']
+        )
+        self.assertCountEqual(
+            list(self.subject.veg_tau_k.keys()),
+            ['veg_k', 'veg_tau', 'veg_type']
+        )
 
     def test_calculate_height(self):
         self.subject.reproject(self.EXTENTS, self.CELL_SIZE, self.CRS)
         self.subject.calculate_height()
         self.assertIsInstance(self.subject.veg_height, xr.DataArray)
+        self.assertCountEqual(
+            list(self.subject.veg_height.coords.keys()),
+            ['y', 'x', 'spatial_ref']
+        )
