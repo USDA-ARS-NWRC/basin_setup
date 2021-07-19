@@ -1,5 +1,6 @@
-from subprocess import check_output
 import re
+from subprocess import check_output
+
 import netCDF4 as nc
 import numpy as np
 import rasterio
@@ -167,9 +168,10 @@ def condition_to_cellsize(extent, cell_size, logger=None):
         tb_adjustment = (cell_size - tb_mod) / 2.0
 
     if logger is not None:
-        logger.debug("Checking how well the cell size is fitted to the domain:"
-                     "\t\nRight-Left modulus: {0:.2f}"
-                     "\t\nTop - Bottom modulus: {1:.2f}".format(rl_mod, tb_mod))
+        logger.debug(
+            "Checking how well the cell size is fitted to the domain:"
+            "\t\nRight-Left modulus: {0:.2f}"
+            "\t\nTop - Bottom modulus: {1:.2f}".format(rl_mod, tb_mod))
 
     # Adjust in both directions to maintain common center
     result = [

@@ -1,12 +1,13 @@
-import os
-import unittest
-from pathlib import Path
-from copy import deepcopy
 import logging
-from inicheck.tools import get_user_config
+import os
 import shutil
-import numpy as np
+import unittest
+from copy import deepcopy
+from pathlib import Path
+
 import netCDF4 as nc
+import numpy as np
+from inicheck.tools import get_user_config
 
 import basin_setup
 

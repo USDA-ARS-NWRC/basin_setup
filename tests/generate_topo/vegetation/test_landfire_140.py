@@ -1,10 +1,9 @@
 import os
+
 import xarray as xr
-import os
 
 from basin_setup.generate_topo.vegetation import Landfire140
 from basin_setup.utils import domain_extent
-
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
 

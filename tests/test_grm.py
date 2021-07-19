@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest
 import os
-from subprocess import check_output
 import shutil
+import unittest
+from subprocess import check_output
 
 import numpy as np
 import pandas as pd

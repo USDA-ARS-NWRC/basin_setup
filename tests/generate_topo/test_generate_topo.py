@@ -1,11 +1,12 @@
 import os
-from basin_setup.generate_topo.vegetation import Landfire140
+
+import xarray as xr
 from inicheck.config import UserConfig
 from rasterio import Affine
-import xarray as xr
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
+from basin_setup.generate_topo.vegetation import Landfire140
 from basin_setup.utils import domain_extent
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 

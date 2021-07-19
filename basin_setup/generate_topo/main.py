@@ -1,14 +1,15 @@
+import logging
 import os
 from datetime import datetime
-import logging
-import xarray as xr
-import rioxarray
 
-from basin_setup.utils.logger import BasinSetupLogger
-from basin_setup.utils import config, domain_extent, gdal
+import rioxarray
+import xarray as xr
+
 from basin_setup import __version__
-from basin_setup.generate_topo.shapefile import Shapefile
 from basin_setup.generate_topo import vegetation
+from basin_setup.generate_topo.shapefile import Shapefile
+from basin_setup.utils import config, domain_extent, gdal
+from basin_setup.utils.logger import BasinSetupLogger
 
 
 class GenerateTopo():

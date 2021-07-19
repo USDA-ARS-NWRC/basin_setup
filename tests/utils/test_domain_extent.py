@@ -1,7 +1,6 @@
 import os
 
 from basin_setup.utils import domain_extent
-
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
 

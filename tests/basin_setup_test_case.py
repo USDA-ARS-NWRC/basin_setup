@@ -109,8 +109,9 @@ class BSTestCase(FunctionalRunCase):
         if self.ext == 'nc':
             for v in self.gold.variables.keys():
                 if v not in ['projection']:
-                    np.testing.assert_almost_equal(self.compare.variables[v][:],
-                                                   self.gold.variables[v][:],
-                                                   decimal=decimal)
+                    np.testing.assert_almost_equal(
+                        self.compare.variables[v][:],
+                        self.gold.variables[v][:],
+                        decimal=decimal)
         elif self.ext == 'shp':
             pd.testing.assert_frame_equal(self.compare, self.gold)

@@ -23,5 +23,4 @@ class TestDelineateCLI(BSTestCase):
         """
         Test the full run of the basin_setup command
         """
-        cmd = self.cmd_str + ' -t 1000'
         self.run_test(self.cmd_str)

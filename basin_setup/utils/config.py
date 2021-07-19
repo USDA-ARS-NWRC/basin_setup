@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 from inicheck.config import UserConfig
 from inicheck.output import print_config_report

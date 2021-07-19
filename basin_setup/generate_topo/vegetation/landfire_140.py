@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-import xarray as xr
 import re
+
+import numpy as np
+import pandas as pd
+import xarray as xr
 
 from basin_setup.generate_topo.vegetation import BaseVegetation
 
