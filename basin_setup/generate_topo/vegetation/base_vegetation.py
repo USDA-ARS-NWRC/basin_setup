@@ -37,6 +37,9 @@ class BaseVegetation():
         self.veg_height_csv = os.path.join(self.config['vegetation_folder'],
                                            self.VEG_HEIGHT_CSV)
 
+        self.debug = self.config['leave_intermediate_files']
+        self.temp_dir = os.path.join(self.config['output_folder'], 'temp')
+
     def reproject(self, extents, cell_size, target_crs,
                   resample='bilinear') -> None:
         """reproject vegetation datasets to the desired extents.
@@ -53,10 +56,8 @@ class BaseVegetation():
             'Reprojecting and clipping veg type and height datasets')
 
         self.clipped_images = {
-            'veg_type': os.path.join(self.config['output_folder'],
-                                     'temp', 'clipped_veg_type.tif'),
-            'veg_height': os.path.join(self.config['output_folder'],
-                                       'temp', 'clipped_veg_height.tif')
+            'veg_type': os.path.join(self.temp_dir, 'clipped_veg_type.tif'),
+            'veg_height': os.path.join(self.temp_dir, 'clipped_veg_height.tif')
         }
 
         # vegetation type
@@ -85,6 +86,10 @@ class BaseVegetation():
         da = []
         for dataset, image in self.clipped_images.items():
             da.append(rioxarray.open_rasterio(image, default_name=dataset))
+
+            if not self.debug:
+                os.remove(image)
+
         da = [w.to_dataset() for w in da]
         self.ds = xr.combine_by_coords(da)
         self.ds = self.ds.squeeze('band')

@@ -59,3 +59,9 @@ def check(config, logger):
         logger.error("Errors in the config file. See configuration"
                      " status report above.")
         sys.exit()
+
+
+def proper_name(name):
+    name = name.replace('_', " ")
+    name = ' '.join([c.capitalize() for c in name.split(' ')])
+    return name

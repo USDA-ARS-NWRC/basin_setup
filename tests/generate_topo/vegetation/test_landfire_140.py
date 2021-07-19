@@ -1,4 +1,6 @@
+import os
 import xarray as xr
+import os
 
 from basin_setup.generate_topo.vegetation import Landfire140
 from basin_setup.utils import domain_extent
@@ -8,7 +10,11 @@ from tests.Lakes.lakes_test_case import BasinSetupLakes
 
 class TestLandfire140(BasinSetupLakes):
 
-    EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
+    # TODO change extents to this instead of decimals
+    # EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
+    EXTENTS = [319570.405027, 4157787.07547, 328270.405027, 4167087.07547]
+    EXTENTS_RASTER = [319570.405, 4157787.075, 328270.405, 4167087.075]
+
     CELL_SIZE = 150
     CRS = 'EPSG:32611'
 
@@ -18,6 +24,8 @@ class TestLandfire140(BasinSetupLakes):
         config = self.base_config_copy()
         self.subject = Landfire140(config.cfg['generate_topo'])
 
+        os.makedirs(self.subject.temp_dir, exist_ok=True)
+
     def test_init(self):
         self.assertIsInstance(self.subject.config, dict)
 
@@ -26,7 +34,7 @@ class TestLandfire140(BasinSetupLakes):
 
         for image in self.subject.clipped_images.values():
             extents, cell_size = domain_extent.parse_from_file(image)
-            self.assertListEqual(extents, self.EXTENTS)
+            self.assertListEqual(extents, self.EXTENTS_RASTER)
             self.assertTrue(cell_size == self.CELL_SIZE)
 
         self.assertIsInstance(self.subject.ds, xr.Dataset)

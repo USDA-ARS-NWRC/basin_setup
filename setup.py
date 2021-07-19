@@ -50,6 +50,7 @@ setup(
     entry_points={
         'console_scripts': [
             'basin_setup=basin_setup.generate_topo.basin_setup_old:main',
+            'generate_topo=basin_setup.cli.generate_topo:main',
             'delineate=basin_setup.delineate:main',
             'grm=basin_setup.grm:main',
             'pconvert=basin_setup.pconvert:main',

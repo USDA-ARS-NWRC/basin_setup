@@ -26,40 +26,22 @@ class GenerateTopo():
         config.check(self.ucfg, self._logger)
 
         self.temp_dir = os.path.join(self.config['output_folder'], 'temp')
+        os.makedirs(self.temp_dir, exist_ok=True)
+
         self.cell_size = self.config['cell_size']
+        self.debug = self.config['leave_intermediate_files']
 
         self.images = {}
 
     def run(self):
+        """Helper method to run the full workflow for `GenerateTopo`
+        """
 
         self.set_extents()
         self.load_basin_shapefiles()
         self.load_dem()
         self.load_vegetation()
         self.create_netcdf()
-        # self.add_project_to_topo()
-
-        # # Add the projection information
-        # topo = add_proj(
-        #     topo,
-        #     images['basin outline']['epsg'],
-        #     images['dem']['path'])
-
-        # # Don't Flip the image over the x axis if it is not requested
-        # if not args.noflip:
-        #     out.msg("Flipping images...")
-        #     topo = flip_image(topo)
-
-        # topo.close()
-
-        # out.msg('\nRequested output written to:')
-        # out.respond('{0}'.format(join(required_dirs['output'], 'topo.nc')))
-        # out.msg("Basin setup files complete!\n")
-
-        # # Don't Clean up if we are debugging so we can look at the steps
-        # if not DEBUG:
-        #     out.msg('Cleaning up temporary files.')
-        #     rmtree(required_dirs['temp'])
 
     def set_extents(self):
         """Set the extents to clip the rasters to. This will either use
@@ -137,7 +119,13 @@ class GenerateTopo():
             'long_name': 'dem'
         }
 
+        if not self.debug:
+            os.remove(self.images['dem'])
+
     def load_vegetation(self):
+        """Load the vegetation images and parse based on which dataset
+        is desired
+        """
 
         self._logger.info('Loading vegetation dataset')
 
@@ -152,10 +140,12 @@ class GenerateTopo():
         self.veg = veg
 
     def create_netcdf(self):
+        """Create a netcdf topo.nc file.
+        """
 
         self._logger.info('Create and output netcdf for topo.nc')
 
-        # convert the basin mask to DataArray
+        # convert the basin mask to DataArray, will be encoded as ubyte
         mask = []
         for i, shapefile in enumerate(self.basin_shapefiles):
             basin = self.dem.copy()
@@ -164,10 +154,12 @@ class GenerateTopo():
 
             if i == 0:
                 basin.name = 'mask'
-                basin.attrs = {'long_name': self.config['basin_name']}
+                basin.attrs = {'long_name': config.proper_name(
+                    self.config['basin_name'])}
             else:
                 basin.name = 'subbasin_mask'
-                basin.attrs = {'long_name': 'Sub basin name'}
+                basin.attrs = {
+                    'long_name': config.proper_name('Sub basin name')}
 
             mask.append(basin.to_dataset())
         mask = xr.combine_by_coords(mask)
@@ -214,8 +206,18 @@ class GenerateTopo():
                             'Watershed Research Center')
         }
 
-        # TODO encoding
         output_path = os.path.join(self.config['output_folder'], 'topo.nc')
-        output.to_netcdf(output_path, format='NETCDF4')  # , encoding={})
+        output.to_netcdf(
+            output_path,
+            format='NETCDF4',
+            encoding={
+                "x": {"dtype": "f4"},
+                "y": {"dtype": "f4"},
+                "veg_type": {"dtype": 'u2'},
+                "veg_height": {"dtype": "f4"},
+                "veg_tau": {"dtype": "f4"},
+                "veg_k": {"dtype": "f4"},
+            }
+        )
 
         self._logger.info('topo.nc file at {}'.format(output_path))

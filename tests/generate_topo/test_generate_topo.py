@@ -12,10 +12,16 @@ from tests.Lakes.lakes_test_case import BasinSetupLakes
 
 class TestBasinSetup(BasinSetupLakes):
 
-    EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
+    # TODO change extents to this instead of decimals
+    # EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
+    EXTENTS = [319570.405027, 4157787.07547, 328270.405027, 4167087.07547]
+    EXTENTS_RASTER = [319570.405, 4157787.075, 328270.405, 4167087.075]
 
     @classmethod
     def setUpClass(self):
+        super().setUpClass()
+
+    def setUp(self) -> None:
         self.subject = GenerateTopo(config_file=self.config_file)
 
     def test_init(self):
@@ -28,8 +34,8 @@ class TestBasinSetup(BasinSetupLakes):
             self.EXTENTS
         )
         self.assertIsInstance(self.subject.transform, Affine)
-        self.assertTrue(len(self.subject.x) == 73)
-        self.assertTrue(len(self.subject.y) == 69)
+        self.assertTrue(len(self.subject.x) == 58)
+        self.assertTrue(len(self.subject.y) == 62)
 
     def test_load_basin_shapefiles(self):
         self.subject.load_basin_shapefiles()
@@ -46,7 +52,7 @@ class TestBasinSetup(BasinSetupLakes):
         extents, cell_size = domain_extent.parse_from_file(
             'tests/Lakes/output/temp/clipped_dem.tif')
 
-        self.assertListEqual(extents, self.EXTENTS)
+        self.assertListEqual(extents, self.EXTENTS_RASTER)
         self.assertTrue(cell_size == self.subject.config['cell_size'])
         self.assertIsInstance(self.subject.dem, xr.DataArray)
         self.assertCountEqual(list(self.subject.dem.coords.keys()), [
@@ -60,7 +66,7 @@ class TestBasinSetup(BasinSetupLakes):
         extents, cell_size = domain_extent.parse_from_file(
             'tests/Lakes/output/temp/clipped_veg_type.tif')
 
-        self.assertListEqual(extents, self.EXTENTS)
+        self.assertListEqual(extents, self.EXTENTS_RASTER)
         self.assertTrue(cell_size == self.subject.config['cell_size'])
         self.assertIsInstance(self.subject.veg, Landfire140)
         self.assertCountEqual(
@@ -88,7 +94,7 @@ class TestBasinSetup(BasinSetupLakes):
                 'veg_tau', 'veg_type', 'projection']
         )
 
-        # TODO compare against gold file once created
+        self.compare_netcdf_files('topo.nc')
 
 
 # class TestVegetationOptions(BasinSetupLakes):
