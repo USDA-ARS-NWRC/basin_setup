@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Script to plot difference in gold files between current branch and master
+# Script to plot difference in gold files between current branch and main
 # Must be ran from the project root directory
 #
 
@@ -58,9 +58,9 @@ def main(args):
         os.path.join(
             repo_path,
             'tests',
-            args.basin,
+            'Lakes',
             'gold',
-            "{}.nc".format(gf)
+            "topo.nc"
         )
     )
 
@@ -70,7 +70,7 @@ def main(args):
             'tests',
             'data',
             'gold',
-            "{}.nc".format(gf)
+            "topo.nc"
         )
     )
 
@@ -78,8 +78,8 @@ def main(args):
         repo_path=repo_path,
         gold_files=gold_files,
         file_type='netcdf',
-        old_branch=args.old_branch,
-        new_branch=args.new_branch)
+        old_branch='main',
+        new_branch='basin_setup_update)
 
     results = gc.compare()
 
