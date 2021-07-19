@@ -53,16 +53,26 @@ def main(args):
     repo_path = os.getcwd()
 
     gold_files = []
-    for gf in files:
-        gold_files.append(
-            os.path.join(
-                repo_path,
-                'tests',
-                args.basin,
-                'gold',
-                "{}.nc".format(gf)
-            )
+    # for gf in files:
+    gold_files.append(
+        os.path.join(
+            repo_path,
+            'tests',
+            args.basin,
+            'gold',
+            "{}.nc".format(gf)
         )
+    )
+
+    gold_files.append(
+        os.path.join(
+            repo_path,
+            'tests',
+            'data',
+            'gold',
+            "{}.nc".format(gf)
+        )
+    )
 
     gc = GoldGitBranchCompare(
         repo_path=repo_path,
