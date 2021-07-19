@@ -20,8 +20,9 @@ class FunctionalRunCase(unittest.TestCase):
     def setUpClass(self):
         super().setUpClass()
         self.test_path = abspath(dirname(__file__))
-        self.data_path = join(self.test_path, 'Lakes')
-        self.gold_path = join(self.data_path, 'gold')
+        self.basin_path = join(self.test_path, 'Lakes')
+        self.data_path = join(self.basin_path, 'data')
+        self.gold_path = join(self.basin_path, 'gold')
 
     def run_cmd(self, cmd):
         # print("Running: {}".format(cmd))
@@ -34,7 +35,7 @@ class BSTestCase(FunctionalRunCase):
     @classmethod
     def setUpClass(self):
         super().setUpClass()
-        self.output = join(self.data_path, dirname(self.cfname))
+        self.output = join(self.basin_path, 'output')
 
         if isdir(self.output):
             shutil.rmtree(self.output)
@@ -51,7 +52,7 @@ class BSTestCase(FunctionalRunCase):
         self.ext = self.gfname.split('.')[-1]
 
         gf = join(self.gold_path, self.gfname)
-        cf = join(join(self.data_path, self.cfname))
+        cf = join(join(self.output, self.cfname))
 
         # Netcdf comparison, retrieve the dataset
         if self.ext == 'nc':
