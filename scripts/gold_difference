@@ -57,9 +57,9 @@ def main(args):
         gold_files.append(
             os.path.join(
                 repo_path,
-                'tests/basins',
+                'tests',
                 args.basin,
-                args.gold_dir,
+                'gold',
                 "{}.nc".format(gf)
             )
         )
