@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 import xarray as xr
 from inicheck.config import UserConfig
@@ -10,7 +11,16 @@ from basin_setup.generate_topo.vegetation import Landfire140
 from basin_setup.utils import domain_extent
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
+# patch the landfire datasets for testing. Comment out to test with the
+# real thing
 
+
+@patch.object(Landfire140, 'veg_height_csv',
+              new='tests/Lakes/data/landfire_1.4.0/LF_140EVH_05092014.csv')
+@patch.object(Landfire140, 'clipped_images', new={
+    'veg_type': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_type.tif',
+    'veg_height': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_height.tif'
+})
 class TestBasinSetup(BasinSetupLakes):
 
     # TODO change extents to this instead of decimals
@@ -59,16 +69,18 @@ class TestBasinSetup(BasinSetupLakes):
         self.assertCountEqual(list(self.subject.dem.coords.keys()), [
                               'y', 'x', 'spatial_ref'])
 
-    def test_load_vegetation(self):
+    @patch.object(Landfire140, 'reproject', return_value=True)
+    def test_load_vegetation(self, mock_veg):
         self.subject.crs = self.CRS
         self.subject.extents = self.EXTENTS
         self.subject.load_vegetation()
 
         extents, cell_size = domain_extent.parse_from_file(
-            'tests/Lakes/output/temp/clipped_veg_type.tif')
+            self.subject.veg.clipped_images['veg_type'])
 
         self.assertListEqual(extents, self.EXTENTS_RASTER)
         self.assertTrue(cell_size == self.subject.config['cell_size'])
+
         self.assertIsInstance(self.subject.veg, Landfire140)
         self.assertCountEqual(
             list(self.subject.veg.veg_tau_k.coords.keys()),
@@ -79,7 +91,8 @@ class TestBasinSetup(BasinSetupLakes):
             ['y', 'x', 'spatial_ref']
         )
 
-    def test_run(self):
+    @patch.object(Landfire140, 'reproject', return_value=True)
+    def test_run(self, mock_veg):
         gt = GenerateTopo(config_file=self.config_file)
         gt.run()
 

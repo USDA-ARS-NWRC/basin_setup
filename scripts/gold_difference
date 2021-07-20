@@ -53,33 +53,23 @@ def main(args):
     repo_path = os.getcwd()
 
     gold_files = []
-    # for gf in files:
-    gold_files.append(
-        os.path.join(
-            repo_path,
-            'tests',
-            'Lakes',
-            'gold',
-            "topo.nc"
+    for gf in files:
+        gold_files.append(
+            os.path.join(
+                repo_path,
+                'tests',
+                args.basin,
+                'gold',
+                "{}.nc".format(gf)
+            )
         )
-    )
-
-    gold_files.append(
-        os.path.join(
-            repo_path,
-            'tests',
-            'data',
-            'gold',
-            "topo.nc"
-        )
-    )
 
     gc = GoldGitBranchCompare(
         repo_path=repo_path,
         gold_files=gold_files,
         file_type='netcdf',
-        old_branch='main',
-        new_branch='basin_setup_update)
+        old_branch=args.old_branch,
+        new_branch=args.new_branch)
 
     results = gc.compare()
 

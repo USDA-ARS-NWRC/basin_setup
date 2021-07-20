@@ -22,27 +22,38 @@ class BaseVegetation():
                 'landfire_veg_param.csv'
             )
 
-        self.input_images = {
-            'veg_type': os.path.join(self.config['vegetation_folder'],
-                                     self.VEGETATION_TYPE),
-            'veg_height': os.path.join(self.config['vegetation_folder'],
-                                       self.VEGETATION_HEIGHT),
-        }
-
-        for dataset, file_name in self.input_images.items():
-            if not os.path.exists(file_name):
-                raise Exception(
-                    'Vegetation {} dataset does not exist: {}'.format(
-                        dataset, file_name))
-
-        self.veg_height_csv = os.path.join(self.config['vegetation_folder'],
-                                           self.VEG_HEIGHT_CSV)
-
         self.debug = self.config['leave_intermediate_files']
         self.temp_dir = os.path.join(self.config['output_folder'], 'temp')
 
-    def reproject(self, extents, cell_size, target_crs,
-                  resample='bilinear') -> None:
+    @property
+    def veg_type_image(self):
+        return os.path.join(
+            self.config['vegetation_folder'],
+            self.VEGETATION_TYPE
+        )
+
+    @property
+    def veg_height_image(self):
+        return os.path.join(
+            self.config['vegetation_folder'],
+            self.VEGETATION_HEIGHT
+        )
+
+    @property
+    def veg_height_csv(self):
+        return os.path.join(
+            self.config['vegetation_folder'],
+            self.VEG_HEIGHT_CSV
+        )
+
+    @property
+    def clipped_images(self):
+        return {
+            'veg_type': os.path.join(self.temp_dir, 'clipped_veg_type.tif'),
+            'veg_height': os.path.join(self.temp_dir, 'clipped_veg_height.tif')
+        }
+
+    def reproject(self, extents, cell_size, target_crs) -> None:
         """reproject vegetation datasets to the desired extents.
 
         Args:
@@ -56,32 +67,29 @@ class BaseVegetation():
         self._logger.debug(
             'Reprojecting and clipping veg type and height datasets')
 
-        self.clipped_images = {
-            'veg_type': os.path.join(self.temp_dir, 'clipped_veg_type.tif'),
-            'veg_height': os.path.join(self.temp_dir, 'clipped_veg_height.tif')
-        }
-
         # vegetation type
         gdal.gdalwarp(
-            self.input_images['veg_type'],
+            self.veg_type_image,
             self.clipped_images['veg_type'],
             target_crs,
             extents,
             cell_size,
-            resample='near',
+            resample='mode',
             logger=self._logger
         )
 
         # vegetation height
         gdal.gdalwarp(
-            self.input_images['veg_height'],
+            self.veg_height_image,
             self.clipped_images['veg_height'],
             target_crs,
             extents,
             cell_size,
-            resample=resample,
+            resample='mode',
             logger=self._logger
         )
+
+    def load_clipped_images(self):
 
         # load into xarray dataset
         da = []

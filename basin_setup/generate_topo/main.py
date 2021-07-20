@@ -135,6 +135,7 @@ class GenerateTopo():
             veg = vegetation.Landfire140(self.config)
 
             veg.reproject(self.extents, self.cell_size, self.crs['init'])
+            veg.load_clipped_images()
             veg.calculate_tau_and_k()
             veg.calculate_height()
 

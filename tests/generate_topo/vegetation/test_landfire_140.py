@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 import xarray as xr
 
@@ -7,6 +8,14 @@ from basin_setup.utils import domain_extent
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
 
+# patch the landfire datasets for testing. Comment out to test with the
+# real thing
+@patch.object(Landfire140, 'veg_height_csv',
+              new='tests/Lakes/data/landfire_1.4.0/LF_140EVH_05092014.csv')
+@patch.object(Landfire140, 'clipped_images', new={
+    'veg_type': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_type.tif',
+    'veg_height': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_height.tif'
+})
 class TestLandfire140(BasinSetupLakes):
 
     # TODO change extents to this instead of decimals
@@ -17,10 +26,11 @@ class TestLandfire140(BasinSetupLakes):
     CELL_SIZE = 150
     CRS = 'EPSG:32611'
 
-    @classmethod
+    @ classmethod
     def setUpClass(self):
         super().setUpClass()
         config = self.base_config_copy()
+
         self.subject = Landfire140(config.cfg['generate_topo'])
 
         os.makedirs(self.subject.temp_dir, exist_ok=True)
@@ -28,7 +38,8 @@ class TestLandfire140(BasinSetupLakes):
     def test_init(self):
         self.assertIsInstance(self.subject.config, dict)
 
-    def test_reproject(self):
+    @patch.object(Landfire140, 'reproject', return_value=True)
+    def test_reproject(self, mock_veg):
         self.subject.reproject(self.EXTENTS, self.CELL_SIZE, self.CRS)
 
         for image in self.subject.clipped_images.values():
@@ -36,10 +47,12 @@ class TestLandfire140(BasinSetupLakes):
             self.assertListEqual(extents, self.EXTENTS_RASTER)
             self.assertTrue(cell_size == self.CELL_SIZE)
 
+    def test_load_clipped_images(self):
+        self.subject.load_clipped_images()
         self.assertIsInstance(self.subject.ds, xr.Dataset)
 
     def test_calculate_tau_and_k(self):
-        self.subject.reproject(self.EXTENTS, self.CELL_SIZE, self.CRS)
+        self.subject.load_clipped_images()
         self.subject.calculate_tau_and_k()
         self.assertIsInstance(self.subject.veg_tau_k, xr.Dataset)
         self.assertCountEqual(
@@ -52,7 +65,7 @@ class TestLandfire140(BasinSetupLakes):
         )
 
     def test_calculate_height(self):
-        self.subject.reproject(self.EXTENTS, self.CELL_SIZE, self.CRS)
+        self.subject.load_clipped_images()
         self.subject.calculate_height()
         self.assertIsInstance(self.subject.veg_height, xr.DataArray)
         self.assertCountEqual(

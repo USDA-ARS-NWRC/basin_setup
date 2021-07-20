@@ -4,6 +4,8 @@
 # Run this script in the main smrf directory, the config
 # file will put the outputs in the correct place
 #
+# NOTE: MAKE SURE THIS IS GENERATED WITH A FULL LANDFIRE DATASET
+#
 # Run as:
 #     $ ./tests/Lakes/gold/make_gold_lakes
 
