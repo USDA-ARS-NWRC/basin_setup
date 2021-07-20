@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import shutil
 import unittest
-from os.path import join
 from subprocess import check_output
 
 import numpy as np
 import pandas as pd
 
-from basin_setup.grm import *
+from basin_setup.grm import parse_fname_date
 
 from .basin_setup_test_case import BSTestCase
 
@@ -18,13 +19,20 @@ class TestGRMCLI(BSTestCase):
     @classmethod
     def setUpClass(self):
         self.gfname = 'lidar_depths_wy2019.nc'
-        self.cfname = join('output', self.gfname)
+        self.cfname = self.gfname
         super().setUpClass()
 
-        self.image_1 = join(self.data_path, 'USCALB20190325_test_100m.tif')
-        self.image_2 = join(self.data_path, 'USCALB20190501_test_100m.tif')
-        self.topo = join(self.gold_path, 'topo.nc')
+        self.image_1 = os.path.join(
+            self.data_path, 'USCALB20190325_test_100m.tif')
+        self.image_2 = os.path.join(
+            self.data_path, 'USCALB20190501_test_100m.tif')
+        self.topo = os.path.join(self.gold_path, 'topo.nc')
         self.cmd_str = 'grm -i {} -t {} -b lakes -o {}'
+
+    @classmethod
+    def tearDownClass(cls):
+        if hasattr(cls, 'output') and os.path.exists(cls.output):
+            shutil.rmtree(cls.output)
 
     def test_lidar_images(self):
         '''
@@ -78,13 +86,17 @@ class TestGRM(unittest.TestCase):
         Test the parsing of dates
         """
 
-        parseable = ['20200414.tif',
-                     'ASO_SanJoaquin_20200414_SUPERsnow_depth_50p0m_agg.tif',
-                     'USCATE20200414_ARS_MERGED_depth_50p0m_agg.tif']
+        parseable = [
+            '20200414.tif',
+            'ASO_SanJoaquin_20200414_SUPERsnow_depth_50p0m_agg.tif',
+            'USCATE20200414_ARS_MERGED_depth_50p0m_agg.tif'
+        ]
 
-        not_parseable = ['ASO_SanJoaquin_2020Apr14_SUPERsnow_depth_50p0m_agg.tif',
-                         'ASO_SanJoaquin_20205030_SUPERsnow_depth_50p0m_agg.tif',
-                         '04142020.tif']
+        not_parseable = [
+            'ASO_SanJoaquin_2020Apr14_SUPERsnow_depth_50p0m_agg.tif',
+            'ASO_SanJoaquin_20205030_SUPERsnow_depth_50p0m_agg.tif',
+            '04142020.tif'
+        ]
         true_dt = pd.to_datetime('2020-04-14')
 
         for p in parseable:

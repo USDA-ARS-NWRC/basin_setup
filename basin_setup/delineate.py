@@ -12,7 +12,7 @@ import geopandas as gpd
 import numpy as np
 
 from basin_setup import __version__
-from basin_setup.basin_setup import Messages
+from basin_setup.generate_topo.basin_setup_old import Messages
 
 DEBUG = False
 

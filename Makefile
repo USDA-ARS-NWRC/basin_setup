@@ -54,7 +54,7 @@ isort: ## using isort to sort imports
 	isort -rc -v .
 
 lint: ## check style with isort and autopep8
-	flake8 basin_setup
+	flake8 basin_setup tests
 
 test: ## run tests quickly with the default python3
 	python3 setup.py test

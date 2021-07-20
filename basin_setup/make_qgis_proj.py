@@ -16,7 +16,7 @@ from os.path import basename, dirname, join
 
 import requests
 
-from basin_setup.basin_setup import parse_extent
+from basin_setup.generate_topo.basin_setup_old import parse_extent
 
 
 def get_xml_spatial_ref(epsg):

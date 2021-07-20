@@ -244,7 +244,7 @@ class GRM(object):
         })
 
         # Attribute gets copied over from the topo
-        self.ds.delncattr("generation_command")
+        # self.ds.delncattr("generation_command")
 
     def add_to_collection(self):
         """
