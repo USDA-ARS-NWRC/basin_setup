@@ -19,7 +19,7 @@ class BasinSetupLakes(unittest.TestCase):
 
     test_dir = Path(basin_setup.__file__).parent.parent.joinpath('tests')
     basin_dir = test_dir.joinpath('Lakes')
-    gold_dir = test_dir.joinpath(basin_dir, 'gold')
+    gold_dir = test_dir.joinpath(basin_dir, 'gold', 'landfire_140')
     config_file = os.path.join(basin_dir, BASE_INI_FILE_NAME)
 
     @classmethod

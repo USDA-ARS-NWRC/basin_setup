@@ -22,7 +22,7 @@ class FunctionalRunCase(unittest.TestCase):
         self.test_path = abspath(dirname(__file__))
         self.basin_path = join(self.test_path, 'Lakes')
         self.data_path = join(self.basin_path, 'data')
-        self.gold_path = join(self.basin_path, 'gold')
+        self.gold_path = join(self.basin_path, 'gold', 'landfire_140')
 
     def run_cmd(self, cmd):
         # print("Running: {}".format(cmd))
