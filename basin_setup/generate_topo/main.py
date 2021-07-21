@@ -131,7 +131,6 @@ class GenerateTopo():
 
         self._logger.info('Loading vegetation dataset')
 
-        veg = None
         if self.config['vegetation_dataset'] == 'landfire_1.4.0':
             veg = vegetation.Landfire140(self.config)
 
