@@ -1,9 +1,6 @@
 # Basin Setup Tools
 
-The basin setup tools is a set of CLI tools designed to create the required
-inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and
-[AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations and QGIS projects
-for looking at the resulting data.
+The basin setup tools is a set of CLI tools designed to create the required inputs for running [SMRF](https://smrf.readthedocs.io/en/develop/) and [AWSM](https://github.com/USDA-ARS-NWRC/AWSM) snow simulations.
 
 1. [delineate](#delineate) - Automatically delineates a new basin given a pour_points file and a DEM.
 2. [generate_topo](#generate\_topo) - Creates all the images in a single netcdf for running SMRF/AWSM, often referred to as the topo.nc

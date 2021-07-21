@@ -143,6 +143,9 @@ History
 * Added in linting with isort and autopep8
 * Added integration tests on travis for delineate grm and basin_setup CLI tools
 * Added conversion tool to extract masks into shapefiles
+* Converted to Github Actions
+* Complete update of ``basin_setup`` which migrated to ``generate_topo``
+* Clean up repository for unused scripts
 
 .. _30: https://github.com/USDA-ARS-NWRC/basin_setup/issues/30
 .. _46: https://github.com/USDA-ARS-NWRC/basin_setup/issues/46
