@@ -1,10 +1,10 @@
 import os
 from unittest.mock import patch
 
+import numpy as np
 import xarray as xr
 from inicheck.config import UserConfig
 from rasterio import Affine
-import numpy as np
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile

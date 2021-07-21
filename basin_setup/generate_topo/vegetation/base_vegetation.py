@@ -2,9 +2,9 @@ import logging
 import os
 import pathlib
 
+import numpy as np
 import rioxarray
 import xarray as xr
-import numpy as np
 
 from basin_setup.utils import gdal
 

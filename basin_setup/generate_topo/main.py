@@ -4,7 +4,6 @@ from datetime import datetime
 
 import rioxarray
 import xarray as xr
-import numpy as np
 
 from basin_setup import __version__
 from basin_setup.generate_topo import vegetation
