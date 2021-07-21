@@ -26,7 +26,7 @@ setup(
     license="CCO 1.0",
     long_description=readme,
     include_package_data=True,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     package_data={
         'basin_setup': [
             './CoreConfig.ini',

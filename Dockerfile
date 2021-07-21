@@ -6,7 +6,7 @@ ENV TAUDEM_HASH f927ca639a1834565a76cb3df5acbcd2909d6d0d
 ADD https://github.com/dtarb/TauDEM/archive/${TAUDEM_HASH}.tar.gz .
 
 RUN apt-get -y update \
-    && apt-get install -y mpich wget zip unzip python3-pip \
+    && apt-get install -y git mpich wget zip unzip python3-pip \
     && apt-get autoremove
 
 # Build taudem
