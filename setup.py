@@ -33,7 +33,9 @@ setup(
     long_description_content_type='text/markdown',
     package_data={
         'basin_setup': [
-            './landfire_veg_param.csv',
+            './CoreConfig.ini',
+            './recipies.ini'
+            './generate_topo/vegetation/landfire_veg_param.csv',
             'qgis_templates/hillshade.xml',
             'qgis_templates/veg_type_colormap.xml',
             'qgis_templates/netcdf_template.xml',
