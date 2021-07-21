@@ -13,3 +13,4 @@ cftime<1.1.0
 xarray>=0.16.2
 rioxarray>=0.3.1
 Shapely>=1.6.4
+setuptools_scm<4.2

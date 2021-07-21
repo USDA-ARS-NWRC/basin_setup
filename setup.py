@@ -34,7 +34,7 @@ setup(
             './generate_topo/vegetation/landfire_veg_param.csv'
         ]
     },
-    keywords=['basin_setup', 'delineation', 'topo', 'qgis'],
+    keywords=['basin_setup', 'delineation', 'topo'],
     name='basin_setup',
     packages=find_packages(include=['basin_setup', 'basin_setup.*']),
     entry_points={
@@ -45,6 +45,11 @@ setup(
         ]},
     test_suite='tests',
     url='https://github.com/USDA-ARS-NWRC/basin_setup',
-    version='0.14.6',
     zip_safe=False,
+    use_scm_version={
+        'local_scheme': 'node-and-date',
+    },
+    setup_requires=[
+        'setuptools_scm',
+    ],
 )
