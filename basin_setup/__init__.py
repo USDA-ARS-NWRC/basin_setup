@@ -10,7 +10,10 @@ except DistributionNotFound:
 
 __veg_parameters__ = os.path.join(
     os.path.dirname(__file__),
-    "landfire_veg_param.csv")
+    'generate_topo',
+    'vegetation',
+    'landfire_veg_param.csv'
+)
 
 __core_config__ = os.path.abspath(
     os.path.dirname(__file__) + '/CoreConfig.ini')
