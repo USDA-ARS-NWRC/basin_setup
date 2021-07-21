@@ -72,3 +72,10 @@ target/
 # misc
 *.py~
 *.swp
+
+landfire
+.vscode
+.devcontainer
+.github
+notebooks
+tests/Gunnison
