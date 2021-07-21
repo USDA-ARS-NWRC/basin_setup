@@ -51,11 +51,6 @@ class Landfire140(BaseVegetation):
             veg_k.to_dataset(name='veg_k')
         ])
 
-        # set the attributes for the layers
-        self.veg_tau_k['veg_type'].attrs = {'long_name': 'vegetation type'}
-        self.veg_tau_k['veg_tau'].attrs = {'long_name': 'vegetation tau'}
-        self.veg_tau_k['veg_k'].attrs = {'long_name': 'vegetation k'}
-
     def calculate_height(self):
 
         self._logger.debug('Calculating veg height')
@@ -89,4 +84,3 @@ class Landfire140(BaseVegetation):
         assert np.sum(np.isnan(height.values)) == 0
 
         self.veg_height = height
-        self.veg_height.attrs = {'long_name': 'vegetation height'}

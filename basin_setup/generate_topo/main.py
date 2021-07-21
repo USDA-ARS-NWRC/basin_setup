@@ -4,6 +4,7 @@ from datetime import datetime
 
 import rioxarray
 import xarray as xr
+import numpy as np
 
 from basin_setup import __version__
 from basin_setup.generate_topo import vegetation
@@ -139,6 +140,11 @@ class GenerateTopo():
             veg.calculate_tau_and_k()
             veg.calculate_height()
 
+        else:
+            veg = vegetation.BaseVegetation(self.config)
+            veg.empty(self.dem)
+
+        veg.set_attributes()
         self.veg = veg
 
     def create_netcdf(self):

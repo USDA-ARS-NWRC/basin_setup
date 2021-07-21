@@ -4,6 +4,7 @@ from unittest.mock import patch
 import xarray as xr
 from inicheck.config import UserConfig
 from rasterio import Affine
+import numpy as np
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
@@ -160,4 +161,9 @@ class TestVegetationOptions(BasinSetupLakes):
                 'veg_tau', 'veg_type', 'projection']
         )
 
-        self.compare_netcdf_files('topo.nc')
+        for image in gt.veg.VEG_IMAGES:
+            if image == 'veg_type':
+                # all veg type are 0 values
+                self.assertTrue(np.sum(ds[image].isnull().values) == 0)
+            else:
+                self.assertTrue(np.all(ds[image].isnull().values))
