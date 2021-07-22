@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 
+import numpy as np
 import rioxarray
 import xarray as xr
 
@@ -10,6 +11,13 @@ from basin_setup.utils import gdal
 
 class BaseVegetation():
     """Base class for vegetation classes"""
+
+    VEG_IMAGES = [
+        'veg_type',
+        'veg_tau',
+        'veg_k',
+        'veg_height'
+    ]
 
     def __init__(self, config) -> None:
 
@@ -109,3 +117,27 @@ class BaseVegetation():
 
     def calculate_height(self):
         raise NotImplementedError('calculate_height is not implemented')
+
+    def set_attributes(self):
+        """Set the attributes for the layers"""
+
+        self.veg_tau_k['veg_type'].attrs = {'long_name': 'vegetation type'}
+        self.veg_tau_k['veg_tau'].attrs = {'long_name': 'vegetation tau'}
+        self.veg_tau_k['veg_k'].attrs = {'long_name': 'vegetation k'}
+        self.veg_height.attrs = {'long_name': 'vegetation height'}
+
+    def empty(self, dem):
+        """Create empty data arrays when no vegetation dataset is used
+
+        Args:
+            dem (xr.DataArray): DataArray for the dem to copy off
+        """
+
+        images = []
+        for image in self.VEG_IMAGES:
+            veg = dem.copy() * np.NaN
+            veg.name = image
+            images.append(veg.to_dataset())
+
+        self.veg_tau_k = xr.combine_by_coords(images[:3])
+        self.veg_height = images[-1]['veg_height']
