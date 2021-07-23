@@ -2,7 +2,6 @@ import re
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from basin_setup.generate_topo.vegetation import BaseVegetation
 
@@ -10,51 +9,16 @@ from basin_setup.generate_topo.vegetation import BaseVegetation
 class Landfire200(BaseVegetation):
     """Landfire 2.0.0"""
 
-    # Files for the landfire dataset
-    VEGETATION_TYPE = 'US_140EVT_20180618/Grid/us_140evt/hdr.adf'
-    VEGETATION_HEIGHT = 'US_140EVH_20180618/Grid/us_140evh/hdr.adf'
+    DATASET = 'landfire200'
 
-    VEG_HEIGHT_CSV = 'US_140EVH_20180618/CSV_Data/LF_140EVH_05092014.csv'
+    # Files for the landfire dataset
+    VEGETATION_TYPE = 'LF2016_EVT_200_CONUS/LF2016_EVT_200_CONUS/Tif/LC16_EVT_200.tif'  # noqa
+    VEGETATION_HEIGHT = 'LF2016_EVH_200_CONUS/LF2016_EVH_200_CONUS/Tif/LC16_EVH_200.tif'  # noqa
+
+    VEG_HEIGHT_CSV = 'LF2016_EVH_200_CONUS/LF2016_EVH_200_CONUS/CSV_Data/LF16_EVH_200.csv'  # noqa
 
     def __init__(self, config) -> None:
         super().__init__(config)
-
-    def calculate_tau_and_k(self):
-
-        self._logger.debug('Calculating veg tau and k')
-
-        # Open the key provided by Landfire to assign values in Tau and K
-        veg_df = pd.read_csv(self.config['veg_params_csv'])
-        veg_df.set_index('veg', inplace=True)
-
-        # create NaN filled DataArray's to populate
-        veg_tau = self.ds['veg_type'].copy() * np.NaN
-        veg_k = self.ds['veg_type'].copy() * np.NaN
-
-        veg_types = np.unique(self.ds['veg_type'])
-
-        for veg_type in veg_types:
-            idx = self.ds['veg_type'].values == veg_type
-            veg_tau.values[idx] = veg_df.loc[veg_type, 'tau']
-            veg_k.values[idx] = veg_df.loc[veg_type, 'k']
-
-        if np.sum(np.isnan(veg_tau.values)) > 0:
-            raise ValueError(
-                'NaN values in veg_tau. Missing values in the veg_params_csv.')
-        if np.sum(np.isnan(veg_k.values)) > 0:
-            raise ValueError(
-                'NaN values in veg_k. Missing values in the veg_params_csv.')
-
-        self.veg_tau_k = xr.combine_by_coords([
-            self.ds['veg_type'].to_dataset(),
-            veg_tau.to_dataset(name='veg_tau'),
-            veg_k.to_dataset(name='veg_k')
-        ])
-
-        # set the attributes for the layers
-        self.veg_tau_k['veg_type'].attrs = {'long_name': 'vegetation type'}
-        self.veg_tau_k['veg_tau'].attrs = {'long_name': 'vegetation tau'}
-        self.veg_tau_k['veg_k'].attrs = {'long_name': 'vegetation k'}
 
     def calculate_height(self):
 

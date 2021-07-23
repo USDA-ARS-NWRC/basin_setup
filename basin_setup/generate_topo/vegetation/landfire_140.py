@@ -10,6 +10,8 @@ from basin_setup.generate_topo.vegetation import BaseVegetation
 class Landfire140(BaseVegetation):
     """Landfire 1.4.0"""
 
+    DATASET = 'landfire140'
+
     # Files for the landfire dataset
     VEGETATION_TYPE = 'US_140EVT_20180618/Grid/us_140evt/hdr.adf'
     VEGETATION_HEIGHT = 'US_140EVH_20180618/Grid/us_140evh/hdr.adf'
@@ -25,7 +27,7 @@ class Landfire140(BaseVegetation):
 
         # Open the key provided by Landfire to assign values in Tau and K
         veg_df = pd.read_csv(self.config['veg_params_csv'])
-        veg_df.set_index('veg', inplace=True)
+        veg_df.set_index('landfire140', inplace=True)
 
         # create NaN filled DataArray's to populate
         veg_tau = self.ds['veg_type'].copy() * np.NaN

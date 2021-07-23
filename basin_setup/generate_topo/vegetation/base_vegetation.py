@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 
+import pandas as pd
 import numpy as np
 import rioxarray
 import xarray as xr
@@ -113,7 +114,41 @@ class BaseVegetation():
         self.ds = self.ds.drop_vars('band')
 
     def calculate_tau_and_k(self):
-        raise NotImplementedError('calculate_tau_and_k is not implemented')
+
+        self._logger.debug('Calculating veg tau and k')
+
+        # Open the key provided by Landfire to assign values in Tau and K
+        veg_df = pd.read_csv(self.config['veg_params_csv'])
+        veg_df.set_index(self.DATASET, inplace=True)
+
+        # create NaN filled DataArray's to populate
+        veg_tau = self.ds['veg_type'].copy() * np.NaN
+        veg_k = self.ds['veg_type'].copy() * np.NaN
+
+        veg_types = np.unique(self.ds['veg_type'])
+
+        for veg_type in veg_types:
+            idx = self.ds['veg_type'].values == veg_type
+            veg_tau.values[idx] = veg_df.loc[veg_type, 'tau']
+            veg_k.values[idx] = veg_df.loc[veg_type, 'k']
+
+        if np.sum(np.isnan(veg_tau.values)) > 0:
+            raise ValueError(
+                'NaN values in veg_tau. Missing values in the veg_params_csv.')
+        if np.sum(np.isnan(veg_k.values)) > 0:
+            raise ValueError(
+                'NaN values in veg_k. Missing values in the veg_params_csv.')
+
+        self.veg_tau_k = xr.combine_by_coords([
+            self.ds['veg_type'].to_dataset(),
+            veg_tau.to_dataset(name='veg_tau'),
+            veg_k.to_dataset(name='veg_k')
+        ])
+
+        # set the attributes for the layers
+        self.veg_tau_k['veg_type'].attrs = {'long_name': 'vegetation type'}
+        self.veg_tau_k['veg_tau'].attrs = {'long_name': 'vegetation tau'}
+        self.veg_tau_k['veg_k'].attrs = {'long_name': 'vegetation k'}
 
     def calculate_height(self):
         raise NotImplementedError('calculate_height is not implemented')
