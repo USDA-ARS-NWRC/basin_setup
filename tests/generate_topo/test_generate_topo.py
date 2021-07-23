@@ -1,6 +1,7 @@
 import os
 from unittest.mock import patch
 
+import numpy as np
 import xarray as xr
 from inicheck.config import UserConfig
 from rasterio import Affine
@@ -111,14 +112,58 @@ class TestBasinSetup(BasinSetupLakes):
         self.compare_netcdf_files('topo.nc')
 
 
-# class TestVegetationOptions(BasinSetupLakes):
+@patch.object(Landfire140, 'veg_height_csv',
+              new='tests/Lakes/data/landfire_1.4.0/LF_140EVH_05092014.csv')
+@patch.object(Landfire140, 'clipped_images', new={
+    'veg_type': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_type.tif',
+    'veg_height': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_height.tif'
+})
+@patch.object(Landfire140, 'reproject', return_value=True)
+class TestVegetationOptions(BasinSetupLakes):
 
-#     EXTENTS = [318520.0, 4157550.0, 329470.0, 4167900.0]
+    def test_landfire_140(self, mock_reproject):
+        gt = GenerateTopo(config_file=self.config_file)
+        gt.run()
+        self.assertTrue(mock_reproject.called)
+        self.assertTrue(mock_reproject.call_count == 1)
 
-#     @classmethod
-#     def setUpClass(self):
-#         self.subject = GenerateTopo(config_file=self.config_file)
-#         self.subject.set_extents()
+        ds = xr.open_dataset(os.path.join(self.basin_dir, 'output', 'topo.nc'))
 
-#     def test_landfire_140(self):
-#         pass
+        self.assertCountEqual(
+            list(ds.coords.keys()),
+            ['y', 'x']
+        )
+        self.assertCountEqual(
+            list(ds.keys()),
+            ['dem', 'mask', 'veg_height', 'veg_k',
+                'veg_tau', 'veg_type', 'projection']
+        )
+
+        self.compare_netcdf_files('topo.nc')
+
+    def test_no_veg(self, mock_reproject):
+        gt = GenerateTopo(config_file=self.config_file)
+        gt.config['vegetation_dataset'] = None
+        gt.run()
+
+        self.assertFalse(mock_reproject.called)
+        self.assertTrue(mock_reproject.call_count == 0)
+
+        ds = xr.open_dataset(os.path.join(self.basin_dir, 'output', 'topo.nc'))
+
+        self.assertCountEqual(
+            list(ds.coords.keys()),
+            ['y', 'x']
+        )
+        self.assertCountEqual(
+            list(ds.keys()),
+            ['dem', 'mask', 'veg_height', 'veg_k',
+                'veg_tau', 'veg_type', 'projection']
+        )
+
+        for image in gt.veg.VEG_IMAGES:
+            if image == 'veg_type':
+                # all veg type are 0 values
+                self.assertTrue(np.sum(ds[image].isnull().values) == 0)
+            else:
+                self.assertTrue(np.all(ds[image].isnull().values))

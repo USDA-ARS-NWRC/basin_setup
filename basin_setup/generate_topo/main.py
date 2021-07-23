@@ -130,7 +130,6 @@ class GenerateTopo():
 
         self._logger.info('Loading vegetation dataset')
 
-        veg = None
         if self.config['vegetation_dataset'] == 'landfire_1.4.0':
             veg = vegetation.Landfire140(self.config)
 
@@ -139,6 +138,11 @@ class GenerateTopo():
             veg.calculate_tau_and_k()
             veg.calculate_height()
 
+        else:
+            veg = vegetation.BaseVegetation(self.config)
+            veg.empty(self.dem)
+
+        veg.set_attributes()
         self.veg = veg
 
     def create_netcdf(self):

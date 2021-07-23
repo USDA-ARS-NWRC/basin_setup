@@ -1,6 +1,5 @@
 -r requirements.txt
 git+https://github.com/USDA-ARS-NWRC/goldmeister.git@main
-bumpversion==0.5.3
 coverage==4.5.1
 autopep8
 flake8
