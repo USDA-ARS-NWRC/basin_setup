@@ -19,7 +19,7 @@ class BasinSetupLakes(unittest.TestCase):
 
     test_dir = Path(basin_setup.__file__).parent.parent.joinpath('tests')
     basin_dir = test_dir.joinpath('Lakes')
-    gold_dir = test_dir.joinpath(basin_dir, 'gold', 'landfire_140')
+    gold_dir = test_dir.joinpath(basin_dir, 'gold')
     config_file = os.path.join(basin_dir, BASE_INI_FILE_NAME)
 
     @classmethod
@@ -98,14 +98,14 @@ class BasinSetupLakes(unittest.TestCase):
                 err_msg=error_msg
             )
 
-    def compare_netcdf_files(self, output_file):
+    def compare_netcdf_files(self, gold_file, output_file):
         """
         Compare two netcdf files to ensure that they are identical. The
         tests will compare the attributes of each variable and ensure that
         the values are exact
         """
 
-        gold = nc.Dataset(self.gold_dir.joinpath(output_file))
+        gold = nc.Dataset(self.gold_dir.joinpath(gold_file))
         test = nc.Dataset(self.output_dir.joinpath(output_file))
 
         # go through all variables and compare everything including

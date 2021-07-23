@@ -109,7 +109,7 @@ class TestBasinSetup(BasinSetupLakes):
                 'veg_tau', 'veg_type', 'projection']
         )
 
-        self.compare_netcdf_files('topo.nc')
+        self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')
 
 
 @patch.object(Landfire140, 'veg_height_csv',
@@ -139,7 +139,7 @@ class TestVegetationOptions(BasinSetupLakes):
                 'veg_tau', 'veg_type', 'projection']
         )
 
-        self.compare_netcdf_files('topo.nc')
+        self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')
 
     def test_no_veg(self, mock_reproject):
         gt = GenerateTopo(config_file=self.config_file)
