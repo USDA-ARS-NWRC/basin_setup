@@ -1,8 +1,8 @@
 import os
 from unittest.mock import patch
 
-from inicheck.tools import cast_all_variables
 import xarray as xr
+from inicheck.tools import cast_all_variables
 
 from basin_setup.generate_topo.vegetation import Landfire200
 from basin_setup.utils import domain_extent
