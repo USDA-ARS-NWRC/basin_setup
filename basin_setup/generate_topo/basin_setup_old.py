@@ -22,6 +22,7 @@ from spatialnc.proj import add_proj
 from spatialnc.utilities import strip_chars
 
 from basin_setup import __veg_parameters__, __version__
+from basin_setup.utils import config
 
 # Initialize colors
 init()
@@ -104,12 +105,6 @@ class Messages():
 
 
 out = Messages()
-
-
-def proper_name(name):
-    name = name.replace('_', " ")
-    name = ' '.join([c.capitalize() for c in name.split(' ')])
-    return name
 
 
 def is_float(str_val):
@@ -549,7 +544,7 @@ def setup_and_check(required_dirs, basin_shapefile, dem, subbasins=None):
             name = name.replace('_', ' ')
             pth = abspath(expanduser(sb))
             # Capitalize the first letter
-            name = proper_name(name)
+            name = config.proper_name(name)
             # Shapefiles
             images['{} subbasin'.format(name)] = \
                 {'path': pth, 'source': None, 'epsg': None}
@@ -1034,7 +1029,7 @@ def create_netcdf(images, extent, cell_size, output_dir, basin_name='Mask'):
                         if basin_name is None:
                             long_name = 'Full Basin'
                         else:
-                            long_name = proper_name(basin_name)
+                            long_name = config.proper_name(basin_name)
                 else:
                     long_name = name.replace(' mask', '')
 
