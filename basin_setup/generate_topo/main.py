@@ -130,17 +130,20 @@ class GenerateTopo():
 
         self._logger.info('Loading vegetation dataset')
 
-        if self.config['vegetation_dataset'] == 'landfire_1.4.0':
-            veg = vegetation.Landfire140(self.config)
+        if self.config['vegetation_dataset'] is None:
+            veg = vegetation.BaseVegetation(self.config)
+            veg.empty(self.dem)
+
+        elif 'landfire' in self.config['vegetation_dataset']:
+            if self.config['vegetation_dataset'] == 'landfire_1.4.0':
+                veg = vegetation.Landfire140(self.config)
+            elif self.config['vegetation_dataset'] == 'landfire_2.0.0':
+                veg = vegetation.Landfire200(self.config)
 
             veg.reproject(self.extents, self.cell_size, self.crs['init'])
             veg.load_clipped_images()
             veg.calculate_tau_and_k()
             veg.calculate_height()
-
-        else:
-            veg = vegetation.BaseVegetation(self.config)
-            veg.empty(self.dem)
 
         veg.set_attributes()
         self.veg = veg

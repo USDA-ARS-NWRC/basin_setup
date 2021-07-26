@@ -20,7 +20,7 @@ class TestParseFromFile(BasinSetupLakes):
 
     def test_netcdf(self):
         file_name = os.path.join(
-            self.basin_dir, 'gold', 'topo.nc')
+            self.basin_dir, 'gold', 'landfire_140', 'topo.nc')
         extents, cellsize = domain_extent.parse_from_file(file_name)
 
         self.assertListEqual(

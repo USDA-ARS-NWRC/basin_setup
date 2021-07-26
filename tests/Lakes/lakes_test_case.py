@@ -98,14 +98,14 @@ class BasinSetupLakes(unittest.TestCase):
                 err_msg=error_msg
             )
 
-    def compare_netcdf_files(self, output_file):
+    def compare_netcdf_files(self, gold_file, output_file):
         """
         Compare two netcdf files to ensure that they are identical. The
         tests will compare the attributes of each variable and ensure that
         the values are exact
         """
 
-        gold = nc.Dataset(self.gold_dir.joinpath(output_file))
+        gold = nc.Dataset(self.gold_dir.joinpath(gold_file))
         test = nc.Dataset(self.output_dir.joinpath(output_file))
 
         # go through all variables and compare everything including

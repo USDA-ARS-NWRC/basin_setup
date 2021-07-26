@@ -18,15 +18,15 @@ class TestGRMCLI(BSTestCase):
 
     @classmethod
     def setUpClass(self):
-        self.gfname = 'lidar_depths_wy2019.nc'
-        self.cfname = self.gfname
+        self.gfname = 'landfire_140/lidar_depths_wy2019.nc'
+        self.cfname = 'lidar_depths_wy2019.nc'
         super().setUpClass()
 
         self.image_1 = os.path.join(
             self.data_path, 'USCALB20190325_test_100m.tif')
         self.image_2 = os.path.join(
             self.data_path, 'USCALB20190501_test_100m.tif')
-        self.topo = os.path.join(self.gold_path, 'topo.nc')
+        self.topo = os.path.join(self.gold_path, 'landfire_140', 'topo.nc')
         self.cmd_str = 'grm -i {} -t {} -b lakes -o {}'
 
     @classmethod

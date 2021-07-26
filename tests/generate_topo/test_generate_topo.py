@@ -4,11 +4,12 @@ from unittest.mock import patch
 import numpy as np
 import xarray as xr
 from inicheck.config import UserConfig
+from inicheck.tools import cast_all_variables
 from rasterio import Affine
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
-from basin_setup.generate_topo.vegetation import Landfire140
+from basin_setup.generate_topo.vegetation import Landfire140, Landfire200
 from basin_setup.utils import domain_extent
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
@@ -109,7 +110,7 @@ class TestBasinSetup(BasinSetupLakes):
                 'veg_tau', 'veg_type', 'projection']
         )
 
-        self.compare_netcdf_files('topo.nc')
+        self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')
 
 
 @patch.object(Landfire140, 'veg_height_csv',
@@ -118,9 +119,15 @@ class TestBasinSetup(BasinSetupLakes):
     'veg_type': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_type.tif',
     'veg_height': 'tests/Lakes/data/landfire_1.4.0/clipped_veg_height.tif'
 })
-@patch.object(Landfire140, 'reproject', return_value=True)
+@patch.object(Landfire200, 'veg_height_csv',
+              new='tests/Lakes/data/landfire_2.0.0/LF16_EVH_200.csv')
+@patch.object(Landfire200, 'clipped_images', new={
+    'veg_type': 'tests/Lakes/data/landfire_2.0.0/clipped_veg_type.tif',
+    'veg_height': 'tests/Lakes/data/landfire_2.0.0/clipped_veg_height.tif'
+})
 class TestVegetationOptions(BasinSetupLakes):
 
+    @patch.object(Landfire140, 'reproject', return_value=True)
     def test_landfire_140(self, mock_reproject):
         gt = GenerateTopo(config_file=self.config_file)
         gt.run()
@@ -139,8 +146,38 @@ class TestVegetationOptions(BasinSetupLakes):
                 'veg_tau', 'veg_type', 'projection']
         )
 
-        self.compare_netcdf_files('topo.nc')
+        self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')
 
+    @patch.object(Landfire200, 'reproject', return_value=True)
+    def test_landfire_200(self, mock_reproject):
+        config = self.base_config_copy()
+
+        config.raw_cfg['generate_topo']['vegetation_dataset'] = 'landfire_2.0.0'  # noqa
+        config.raw_cfg['generate_topo']['vegetation_folder'] = '../../landfire/landfire_200'  # noqa
+
+        config.apply_recipes()
+        config = cast_all_variables(config, config.mcfg)
+
+        gt = GenerateTopo(config_file=config)
+        gt.run()
+        self.assertTrue(mock_reproject.called)
+        self.assertTrue(mock_reproject.call_count == 1)
+
+        ds = xr.open_dataset(os.path.join(self.basin_dir, 'output', 'topo.nc'))
+
+        self.assertCountEqual(
+            list(ds.coords.keys()),
+            ['y', 'x']
+        )
+        self.assertCountEqual(
+            list(ds.keys()),
+            ['dem', 'mask', 'veg_height', 'veg_k',
+                'veg_tau', 'veg_type', 'projection']
+        )
+
+        self.compare_netcdf_files('landfire_200/topo.nc', 'topo.nc')
+
+    @patch.object(Landfire140, 'reproject', return_value=True)
     def test_no_veg(self, mock_reproject):
         gt = GenerateTopo(config_file=self.config_file)
         gt.config['vegetation_dataset'] = None
