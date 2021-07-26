@@ -192,9 +192,7 @@ class BaseVegetation():
 
         for veg_height in veg_heights:
             idx = self.ds['veg_height'].values == veg_height
-
-            if veg_height in veg_df.index:
-                height.values[idx] = veg_df.loc[veg_height, 'height']
+            height.values[idx] = veg_df.loc[veg_height, 'height']
 
         # sanity check
         assert np.sum(np.isnan(height.values)) == 0
