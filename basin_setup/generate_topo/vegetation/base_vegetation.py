@@ -117,7 +117,7 @@ class BaseVegetation():
         self.ds = self.ds.drop_vars('band')
 
     def calculate_tau_and_k(self):
-        """Populate an image of veg_tau and veg_k from the vegitation parameters
+        """Populate an image of veg_tau and veg_k from the vegetation parameters
         csv file.
 
         Raises:
