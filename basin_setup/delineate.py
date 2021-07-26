@@ -10,11 +10,89 @@ from subprocess import check_output
 
 import geopandas as gpd
 import numpy as np
+from colorama import Fore, Style, init
 
 from basin_setup import __version__
-from basin_setup.generate_topo.basin_setup_old import Messages
+
+# Initialize colors
+init()
 
 DEBUG = False
+
+
+class Messages():
+    def __init__(self):
+        self.context = {'warning': Fore.YELLOW,
+                        'error': Fore.RED,
+                        'ok': Fore.GREEN,
+                        'normal': Style.NORMAL + Fore.WHITE,
+                        'header': Style.BRIGHT}
+
+    def build_msg(self, str_msg, context_str=None):
+        """
+        Constructs the desired strings for color and Style
+
+        Args;
+            str_msg: String the user wants to output
+            context_str: type of print style and color, key associated with
+                         self.context
+        Returns:
+            final_msg: Str containing the desired colors and styles
+        """
+
+        if context_str is None:
+            context_str = 'normal'
+
+        if context_str in self.context.keys():
+            if isinstance(str_msg, list):
+                str_msg = ', '.join([str(s) for s in str_msg])
+
+            final_msg = self.context[context_str] + str_msg + Style.RESET_ALL
+        else:
+            raise ValueError("Not a valid context")
+        return final_msg
+
+    def _structure_msg(self, a_msg):
+        if isinstance(a_msg, list):
+            a_msg = ', '.join([str(s) for s in a_msg])
+
+        if not isinstance(a_msg, str):
+            a_msg = str(a_msg)
+
+        return a_msg
+
+    def msg(self, str_msg, context_str=None):
+        final_msg = self.build_msg(str_msg, context_str)
+        print('\n' + final_msg)
+
+    def dbg(self, str_msg, context_str=None):
+        """
+        Messages designed for debugging set by a global variable DEBUG
+        """
+        if DEBUG:
+            final_msg = self.build_msg('[DEBUG]: ', 'header')
+            final_msg += self._structure_msg(str_msg)
+            final_msg = self.build_msg(final_msg, context_str)
+            print('\n' + final_msg)
+
+    def warn(self, str_msg):
+        final_msg = self.build_msg('[WARNING]: ', 'header')
+        final_msg = self.build_msg(final_msg + str_msg, 'warning')
+        print('\n' + final_msg)
+
+    def error(self, str_msg):
+        final_msg = self.build_msg('[ERROR]: ', 'header')
+        final_msg = self.build_msg(final_msg + str_msg, 'error')
+        print('\n' + final_msg)
+
+    def respond(self, str_msg):
+        """
+        Messages acting like a confirmation to the user and in response to the
+        previous message
+        """
+        final_msg = self.build_msg(str_msg, 'ok')
+        print('\t' + final_msg)
+
 
 out = Messages()
 

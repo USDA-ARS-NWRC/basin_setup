@@ -6,6 +6,12 @@ import numpy as np
 import rasterio
 
 
+def create_extents(x_ll, y_ll, n_cols, n_rows, dx, dy):
+    return [x_ll, y_ll,
+            x_ll + (n_cols) * dx,
+            y_ll + (n_rows) * dy]
+
+
 def parse_from_file(fname, x_field='x', y_field='y'):
     """ Parse the information of some GIS file and returns a
     list of the response of the things important to this script.
@@ -82,25 +88,20 @@ def parse_from_file(fname, x_field='x', y_field='y'):
         for line in parse_list:
             ll = line.lower()
             w = line.split(' ')
+            w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
+
             if 'xllcorner' in ll:
-                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 x_ll = float(w[-1])
             elif 'yllcorner' in ll:
-                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 y_ll = float(w[-1])
             elif 'ncols' in ll:
-                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 n_cols = float(w[-1])
             elif 'nrows' in ll:
-                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 n_rows = float(w[-1])
             elif 'cellsize' in ll:
-                w = [w[i_w] for i_w in range(len(w)) if w[i_w] != '']
                 cellsize = float(w[-1])
 
-            extent = [x_ll, y_ll,
-                      x_ll + (n_cols) * cellsize,
-                      y_ll + (n_rows) * cellsize]
+        extent = create_extents(x_ll, y_ll, n_cols, n_rows, cellsize, cellsize)
 
     elif file_type == 'nc':
 
@@ -125,9 +126,7 @@ def parse_from_file(fname, x_field='x', y_field='y'):
         x_ll = x_vector.min() - dx / 2
         y_ll = y_vector.min() - dy / 2
 
-        extent = [x_ll, y_ll,
-                  x_ll + (n_cols) * dx,
-                  y_ll + (n_rows) * dy]
+        extent = create_extents(x_ll, y_ll, n_cols, n_rows, dx, dy)
 
         cellsize = [dx, dy]
         ncfile.close()
