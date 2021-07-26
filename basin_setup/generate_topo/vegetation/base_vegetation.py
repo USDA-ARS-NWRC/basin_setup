@@ -125,16 +125,26 @@ class BaseVegetation():
         veg_tau = self.ds['veg_type'].copy() * np.NaN
         veg_k = self.ds['veg_type'].copy() * np.NaN
 
+        # check for missing values
         veg_types = np.unique(self.ds['veg_type'])
+        check = veg_df.loc[veg_types, 'tau']
+        missing = check[check.isnull()]
+
+        if len(missing) > 0:
+            raise ValueError(
+                'Missing tau/k for the following veg type classes: {}'.format(
+                    list(missing.index)
+                ))
 
         for veg_type in veg_types:
             idx = self.ds['veg_type'].values == veg_type
             veg_tau.values[idx] = veg_df.loc[veg_type, 'tau']
             veg_k.values[idx] = veg_df.loc[veg_type, 'k']
 
+        # sanity check to make sure that there are no NaN values in the images
         if np.sum(np.isnan(veg_tau.values)) > 0:
             raise ValueError(
-                'NaN values in veg_tau. Missing values in the veg_params_csv.')
+                'NaN values in veg_tau. Missing valu    es in the veg_params_csv.')
         if np.sum(np.isnan(veg_k.values)) > 0:
             raise ValueError(
                 'NaN values in veg_k. Missing values in the veg_params_csv.')
