@@ -32,8 +32,8 @@ class TestLandfire200(BasinSetupLakes):
         super().setUpClass()
         config = self.base_config_copy()
 
-        config.raw_cfg['generate_topo']['vegetation_dataset'] = 'landfire_2.0.0'
-        config.raw_cfg['generate_topo']['vegetation_folder'] = '../../landfire/landfire_200'
+        config.raw_cfg['generate_topo']['vegetation_dataset'] = 'landfire_2.0.0'  # noqa
+        config.raw_cfg['generate_topo']['vegetation_folder'] = '../../landfire/landfire_200'  # noqa
 
         config.apply_recipes()
         config = cast_all_variables(config, config.mcfg)
@@ -71,11 +71,11 @@ class TestLandfire200(BasinSetupLakes):
             ['veg_k', 'veg_tau', 'veg_type']
         )
 
-    # def test_calculate_height(self):
-    #     self.subject.load_clipped_images()
-    #     self.subject.calculate_height()
-    #     self.assertIsInstance(self.subject.veg_height, xr.DataArray)
-    #     self.assertCountEqual(
-    #         list(self.subject.veg_height.coords.keys()),
-    #         ['y', 'x', 'spatial_ref']
-    #     )
+    def test_calculate_height(self):
+        self.subject.load_clipped_images()
+        self.subject.calculate_height()
+        self.assertIsInstance(self.subject.veg_height, xr.DataArray)
+        self.assertCountEqual(
+            list(self.subject.veg_height.coords.keys()),
+            ['y', 'x', 'spatial_ref']
+        )

@@ -7,21 +7,21 @@
 # NOTE: MAKE SURE THIS IS GENERATED WITH A FULL LANDFIRE DATASET
 #
 # Run as:
-#     $ ./tests/Lakes/gold/landfire_140/make_gold_lakes
+#     $ ./tests/Lakes/gold/landfire_200/make_gold_lakes
 
-read -r -p "Recreating Lakes gold standard Landfire 1.4.0, are you sure? [y/N] " response
+read -r -p "Recreating Lakes gold standard Landfire v2.0.0, are you sure? [y/N] " response
 if [[ "$response" = "yes" || "$response" = "y" ]]
 then
     echo "Updating Lakes gold files"
     echo "Removing old gold files"
-    rm tests/Lakes/gold/landfire_140/topo.nc
+    rm tests/Lakes/gold/landfire_200/topo.nc
 
     echo "Running generate_topo"
-    generate_topo tests/Lakes/gold/landfire_140/gold_config.ini
+    generate_topo tests/Lakes/gold/landfire_200/gold_config.ini
 
     if [ $? == 0 ]; then
         echo "Cleaning up"
-        rm -rf tests/Lakes/gold/landfire_140/temp
+        rm -rf tests/Lakes/gold/landfire_200/temp
     fi
 else
     echo "Lakes gold files not updated"
