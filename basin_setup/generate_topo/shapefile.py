@@ -10,7 +10,12 @@ class Shapefile():
 
     @property
     def crs(self):
-        return self.polygon.crs
+        """The EPSG code for the shapefile  
+
+        Returns:
+            str: EPSG code, ex 'epsg:32611'
+        """
+        return self.polygon.crs.srs
 
     def mask(self, nx, ny, transform):
         """Create a raster mask from the shapefile using rasterio.features.rasterize

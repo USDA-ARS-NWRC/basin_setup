@@ -15,7 +15,7 @@ import basin_setup
 class BasinSetupLakes(unittest.TestCase):
 
     BASE_INI_FILE_NAME = 'config.ini'
-    CRS = dict({'init': 'epsg:32611'})
+    CRS = 'epsg:32611'
 
     test_dir = Path(basin_setup.__file__).parent.parent.joinpath('tests')
     basin_dir = test_dir.joinpath('Lakes')
