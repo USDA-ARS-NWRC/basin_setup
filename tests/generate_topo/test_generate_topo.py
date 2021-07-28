@@ -1,15 +1,12 @@
-import os
 from unittest.mock import patch
 
-import numpy as np
 import xarray as xr
 from inicheck.config import UserConfig
-from inicheck.tools import cast_all_variables
 from rasterio import Affine
 
 from basin_setup.generate_topo import GenerateTopo
 from basin_setup.generate_topo.shapefile import Shapefile
-from basin_setup.generate_topo.vegetation import Landfire140, Landfire200
+from basin_setup.generate_topo.vegetation import Landfire140
 from basin_setup.utils import domain_extent
 from tests.Lakes.lakes_test_case import BasinSetupLakes
 
@@ -111,4 +108,3 @@ class TestBasinSetup(BasinSetupLakes):
         )
 
         self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')
-

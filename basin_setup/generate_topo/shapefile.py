@@ -10,7 +10,7 @@ class Shapefile():
 
     @property
     def crs(self):
-        """The EPSG code for the shapefile  
+        """The EPSG code for the shapefile
 
         Returns:
             str: EPSG code, ex 'epsg:32611'
