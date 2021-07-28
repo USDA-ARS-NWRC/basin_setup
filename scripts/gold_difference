@@ -23,12 +23,12 @@ def argument_parser():
     )
 
     parser.add_argument(
-        '--basin', '-b',
-        metavar='BASIN',
+        '--veg', '-v',
+        metavar='VEGETATION',
         type=str,
-        default='Lakes',
-        choices=['Lakes'],
-        help='Test basin name (Lakes)'
+        default='landfire_140',
+        choices=['landfire_140', 'landfire_200'],
+        help='Vegetation dataset to compare'
     )
 
     parser.add_argument(
@@ -58,20 +58,9 @@ def main(args):
             os.path.join(
                 repo_path,
                 'tests',
-                args.basin,
+                'Lakes',
                 'gold',
-                'landfire_140',
-                "{}.nc".format(gf)
-            )
-        )
-
-        gold_files.append(
-            os.path.join(
-                repo_path,
-                'tests',
-                args.basin,
-                'gold',
-                'landfire_200',
+                args.veg,
                 "{}.nc".format(gf)
             )
         )
