@@ -199,8 +199,8 @@ class GenerateTopo():
             'standard_name': 'projection_y_coordinate'
         }
 
-        for key in list(output.keys()):
-            output[key].attrs["grid_mapping"] = "projection"
+        # for key in list(output.keys()):
+        #     output[key].attrs["grid_mapping"] = "projection"
 
         # Global attributes
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -222,10 +222,12 @@ class GenerateTopo():
             encoding={
                 "x": {"dtype": "f4"},
                 "y": {"dtype": "f4"},
-                "veg_type": {"dtype": 'u2'},
-                "veg_height": {"dtype": "f4"},
-                "veg_tau": {"dtype": "f4"},
-                "veg_k": {"dtype": "f4"},
+                "dem": {"dtype": "f4", "grid_mapping": "projection"},
+                "mask": {"grid_mapping": "projection"},
+                "veg_type": {"dtype": 'u2', "grid_mapping": "projection"},
+                "veg_height": {"dtype": "f4", "grid_mapping": "projection"},
+                "veg_tau": {"dtype": "f4", "grid_mapping": "projection"},
+                "veg_k": {"dtype": "f4", "grid_mapping": "projection"},
             }
         )
 

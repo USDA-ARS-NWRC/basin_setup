@@ -21,6 +21,7 @@ class BasinSetupLakes(unittest.TestCase):
     basin_dir = test_dir.joinpath('Lakes')
     gold_dir = test_dir.joinpath(basin_dir, 'gold')
     config_file = os.path.join(basin_dir, BASE_INI_FILE_NAME)
+    output_topo = os.path.join(basin_dir, 'output', 'topo.nc')
 
     @classmethod
     def base_config_copy(cls):
