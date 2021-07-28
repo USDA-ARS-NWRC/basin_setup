@@ -114,5 +114,4 @@ class BSTestCase(FunctionalRunCase):
                         self.gold.variables[v][:],
                         decimal=decimal)
         elif self.ext == 'shp':
-            pd.testing.assert_series_equal(
-                self.gold.geometry, self.compare.geometry)
+            pd.testing.assert_frame_equal(self.compare, self.gold)
