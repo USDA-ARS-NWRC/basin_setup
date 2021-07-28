@@ -60,6 +60,18 @@ def main(args):
                 'tests',
                 args.basin,
                 'gold',
+                'landfire_140',
+                "{}.nc".format(gf)
+            )
+        )
+
+        gold_files.append(
+            os.path.join(
+                repo_path,
+                'tests',
+                args.basin,
+                'gold',
+                'landfire_200',
                 "{}.nc".format(gf)
             )
         )
