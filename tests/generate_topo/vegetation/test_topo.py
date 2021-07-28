@@ -24,9 +24,6 @@ from tests.Lakes.lakes_test_case import BasinSetupLakes
 })
 class TestVegetationOptions(BasinSetupLakes):
 
-    def tearDown(self):
-        os.remove(self.output_topo)
-
     @patch.object(Landfire140, 'reproject', return_value=True)
     def test_landfire_140(self, mock_reproject):
         gt = GenerateTopo(config_file=self.config_file)
@@ -45,6 +42,7 @@ class TestVegetationOptions(BasinSetupLakes):
             ['dem', 'mask', 'veg_height', 'veg_k',
                 'veg_tau', 'veg_type', 'projection']
         )
+        ds.close()
 
         self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')
 
@@ -74,11 +72,12 @@ class TestVegetationOptions(BasinSetupLakes):
             ['dem', 'mask', 'veg_height', 'veg_k',
                 'veg_tau', 'veg_type', 'projection']
         )
+        ds.close()
 
         self.compare_netcdf_files('landfire_200/topo.nc', 'topo.nc')
 
     @patch.object(Landfire140, 'reproject', return_value=True)
-    def test_0no_veg(self, mock_reproject):
+    def test_no_veg(self, mock_reproject):
         gt = GenerateTopo(config_file=self.config_file)
         gt.config['vegetation_dataset'] = None
         gt.run()
@@ -86,9 +85,6 @@ class TestVegetationOptions(BasinSetupLakes):
         self.assertFalse(mock_reproject.called)
         self.assertTrue(mock_reproject.call_count == 0)
 
-        # For some reason, this does not open the actual topo file but a
-        # cached version even with cache set to False when ran after
-        # the other tests
         ds = xr.open_dataset(self.output_topo, cache=False)
 
         self.assertCountEqual(
@@ -100,6 +96,7 @@ class TestVegetationOptions(BasinSetupLakes):
             ['dem', 'mask', 'veg_height', 'veg_k',
                 'veg_tau', 'veg_type', 'projection']
         )
+        ds.close()
 
         for image in gt.veg.VEG_IMAGES:
             if image == 'veg_type':

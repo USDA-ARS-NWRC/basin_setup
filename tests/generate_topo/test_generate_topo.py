@@ -106,5 +106,6 @@ class TestBasinSetup(BasinSetupLakes):
             ['dem', 'mask', 'veg_height', 'veg_k',
                 'veg_tau', 'veg_type', 'projection']
         )
+        ds.close()
 
         self.compare_netcdf_files('landfire_140/topo.nc', 'topo.nc')

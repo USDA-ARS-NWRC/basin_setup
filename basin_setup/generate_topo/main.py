@@ -199,9 +199,6 @@ class GenerateTopo():
             'standard_name': 'projection_y_coordinate'
         }
 
-        # for key in list(output.keys()):
-        #     output[key].attrs["grid_mapping"] = "projection"
-
         # Global attributes
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         output.attrs = {
