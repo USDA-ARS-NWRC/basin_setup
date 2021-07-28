@@ -11,7 +11,7 @@ class TestDelineateCLI(BSTestCase):
         self.cfname = self.gfname
         super().setUpClass()
 
-        self.pour_points = os.path.join(self.data_path, 'pour_points.bna')
+        self.pour_points = os.path.join(self.data_path, 'pour_points.geojson')
         self.dem = os.path.join(self.data_path, 'dem_epsg_32611_100m.tif')
         self.cmd_str = 'delineate -d {} -p {}  -o {}'.format(
             self.dem,

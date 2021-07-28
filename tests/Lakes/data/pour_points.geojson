@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "name": "pour_points",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "Primary ID": "Lakes",
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          322895,
+          4165837.8
+        ]
+      }
+    }
+  ]
+}
