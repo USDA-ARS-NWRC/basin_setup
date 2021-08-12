@@ -446,7 +446,12 @@ class GRM(object):
         """
 
         times = self.ds.variables['time']
-        ncdates = nc.num2date(times[:], times.units, calendar=times.calendar)
+        ncdates = nc.num2date(
+            times[:],
+            times.units,
+            calendar=times.calendar,
+            only_use_cftime_datetimes=False
+        )
         ncdates = np.array([pd.to_datetime(dt).date() for dt in ncdates])
 
         # Is the incoming date already in the file?
