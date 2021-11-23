@@ -105,7 +105,7 @@ class GenerateTopo():
         gdal.gdalwarp(
             self.config['dem_file'],
             self.images['dem'],
-            self.crs['init'],
+            self.crs,
             self.extents,
             self.cell_size,
             resample='bilinear',
@@ -140,7 +140,7 @@ class GenerateTopo():
             elif self.config['vegetation_dataset'] == 'landfire_2.0.0':
                 veg = vegetation.Landfire200(self.config)
 
-            veg.reproject(self.extents, self.cell_size, self.crs['init'])
+            veg.reproject(self.extents, self.cell_size, self.crs)
             veg.load_clipped_images()
             veg.calculate_tau_and_k()
             veg.calculate_height()
@@ -199,9 +199,6 @@ class GenerateTopo():
             'standard_name': 'projection_y_coordinate'
         }
 
-        for key in list(output.keys()):
-            output[key].attrs["grid_mapping"] = "projection"
-
         # Global attributes
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         output.attrs = {
@@ -222,10 +219,12 @@ class GenerateTopo():
             encoding={
                 "x": {"dtype": "f4"},
                 "y": {"dtype": "f4"},
-                "veg_type": {"dtype": 'u2'},
-                "veg_height": {"dtype": "f4"},
-                "veg_tau": {"dtype": "f4"},
-                "veg_k": {"dtype": "f4"},
+                "dem": {"dtype": "f4", "grid_mapping": "projection"},
+                "mask": {"grid_mapping": "projection"},
+                "veg_type": {"dtype": 'u2', "grid_mapping": "projection"},
+                "veg_height": {"dtype": "f4", "grid_mapping": "projection"},
+                "veg_tau": {"dtype": "f4", "grid_mapping": "projection"},
+                "veg_k": {"dtype": "f4", "grid_mapping": "projection"},
             }
         )
 
